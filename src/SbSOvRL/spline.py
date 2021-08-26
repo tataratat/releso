@@ -42,6 +42,7 @@ class VariableLocation(BaseModel):
             raise RuntimeError("This should not have happended.")
         if v < values["min_value"]:
             raise SbSOvRLParserException("VariableLocation", field, f"The min_value {values['min_value']} must be smaller or equal to the max_value {v}.")
+        return v
 
     @root_validator
     def define_step(cls, values) -> Dict[str, Any]:
@@ -63,9 +64,11 @@ class VariableLocation(BaseModel):
     def apply_discrete_action(self, increasing: bool) -> float:
         step = self.step if increasing else - self.step
         self.current_position = np.clip(self.current_position + step, self.min_value, self.max_value)
+        return self.current_position
 
     def apply_continuos_action(self, value: float) -> float:
         self.current_position = np.clip(self.current_position + value, self.min_value, self.max_value)
+        return self.current_position
 
 class SplineSpaceDimension(BaseModel):
     name: str
