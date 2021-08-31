@@ -60,7 +60,6 @@ class VariableLocation(BaseModel):
 
     def is_action(self) -> bool:
         if self._is_action is None:
-            print("I am here")
             self._is_action = (self.max_value > self.current_position) or (self.min_value < self.current_position)
         return self._is_action
 

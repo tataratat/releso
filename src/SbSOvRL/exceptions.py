@@ -66,5 +66,5 @@ class SbSOvRLParserException(Exception):
     """Parser Exception for the SbSOvRL package. Shows the context of the error. Also colors the output if colouring is available.
     """
     def __init__(self, parent: str, item: str, message: str) -> None:
-        parser_logger.exception(f"In {parent} object while parsing {item} the following error has occurred: {message}.")
-        super().__init__(f"In {underline(parent)} object while parsing {underline(item)} the following error has occurred: {red(message)}.")
+        parser_logger.exception(f"In {parent} object while parsing {item} the following error has occurred: {message}")
+        super().__init__(f"In {underline(parent)} object while parsing {underline(item)} the following error has occurred: {red(message)}")

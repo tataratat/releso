@@ -6,6 +6,7 @@ from SbSOvRL.mesh import Mesh
 from SbSOvRL.solver import SolverTypeDefinition
 from gustav import FreeFormDeformation
 from pydantic.fields import PrivateAttr
+from SbSOvRL.reward_parser import RewardFunctionTypes
 
 
 
@@ -18,6 +19,7 @@ class Environment(BaseModel): # TODO make this gym environment
     spline: Spline
     mesh: Mesh
     solver: SolverTypeDefinition
+    reward: RewardFunctionTypes
     
     # object variables
     _actions: List[Any] = PrivateAttr()

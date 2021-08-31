@@ -1,8 +1,7 @@
 from typing import Optional, List, Union
 from pydantic.main import BaseModel
 from pydantic.types import DirectoryPath, conint
-import subprocess
-import os
+from SbSOvRL.util.util_funcs import call_commandline
 
 class MultiProcessor(BaseModel):
     command: str = "mpiexec -np"
@@ -41,32 +40,11 @@ class Solver(BaseModel):
 class CommandLineSolver(Solver):
     execution_command: str
     command_options: List[str] = []
-    # TODO how is the return value handled. There is not a direct return value from the function but a file needs to be opened and than a specific value read. And some other processing.
-
-    def _call_commandline(command,folder):
-        """
-            Executes a command which is provided as a string in the command line
-            Author: Michael Binder (e1325632@student.tuwien.ac.at)
-        """
-
-        print('-- Executing command {} in {}'.format(command, os.getcwd()))
-        try:
-            # try to execute the provided command in the shell
-            output = subprocess.check_output(command, shell=True,cwd=folder)
-            #print(output.decode('utf-8')) #utf-8 decoding macht öfters Probleme!
-            exitcode=0
-        except subprocess.CalledProcessError as exc:
-            # if anything went wrong, catch the error, report to the user and abort
-            print('-- Execution failed with return code {}'.format(exc.returncode)) # TODO better logging of errors need to be implemented
-            exitcode=exc.returncode
-        return exitcode, output
-
-
+ 
     def start_solver(self, core_count: int) -> float:
         command_str = self.get_multiprocessor_command_prefix(core_count) + self.get_command()
         command_str += self.execution_command + " " + " ".join(self.command_options)
-        print(command_str)
-        exit_code, output = self._call_commandline(command_str, self.working_directory)
+        exit_code, output = call_commandline(command_str, self.working_directory)
         if exit_code != 1: # TODO should be also use the output somehow?
             pass
             # TODO generate return value
