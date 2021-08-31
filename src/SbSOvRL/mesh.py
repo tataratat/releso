@@ -1,5 +1,5 @@
 import pathlib
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, Tuple
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.util.logger import set_up_logger
@@ -11,11 +11,9 @@ parser_logger = set_up_logger("SbSOvRL_parser")
 environment_logger = set_up_logger("SbSOvRL_environment")
 
 class Mesh(BaseModel):
-    # not necessary from json
     mxyz_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think.")
     mien_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.")
 
-    # from json
     path: str # after validation Tuple["path_to_mxyz_file", "path_to_mien_file"]
     hypercube: bool = Field(description="If True Mesh is made of hypercubes. If False Mesh is made of simplexes.", default=True)
     dimensions: conint(ge=1)

@@ -1,5 +1,8 @@
 import sys, os, platform, enum
 from typing import List
+from SbSOvRL.util.logger import set_up_logger
+
+parser_logger = set_up_logger("SbSOvRL_parser")
 
 class Stylings(enum.Enum):
     """Possible stylings supported by this Tool.
@@ -48,19 +51,20 @@ def output_styling(message: str, stylings: List[Stylings]):
 def red(message):
     """
     If ANSI styling is available the message is colored red and bold. After the message the styling is removed again.
-    For more informations please see SbSOvRL.exceptions.output_styling().
+    For more information please see SbSOvRL.exceptions.output_styling().
     """
     return output_styling(message=message, stylings=[Stylings.Red, Stylings.Bold])
 
 def underline(message):
     """
     If ANSI styling is available the message is styled by an underscore and bold. After the message the styling is removed again.
-    For more informations please see SbSOvRL.exceptions.output_styling().
+    For more information please see SbSOvRL.exceptions.output_styling().
     """
     return output_styling(message=message, stylings=[Stylings.Underline, Stylings.Bold])
 
 class SbSOvRLParserException(Exception):
-    """Parser Exception for the SbSOvRL package. Shows the context of the error. Also colors the ouput if colouring is available.
+    """Parser Exception for the SbSOvRL package. Shows the context of the error. Also colors the output if colouring is available.
     """
     def __init__(self, parent: str, item: str, message: str) -> None:
-        super().__init__(f"In {underline(parent)} object while parsing {underline(item)} the following error has occured: {red(message)}.")
+        parser_logger.exception(f"In {parent} object while parsing {item} the following error has occurred: {message}.")
+        super().__init__(f"In {underline(parent)} object while parsing {underline(item)} the following error has occurred: {red(message)}.")
