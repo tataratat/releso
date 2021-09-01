@@ -19,14 +19,18 @@ else:
 
 base = BaseParser(**example_input)
 
-pprint(base.dict(), indent=1)
+base.environment.step(action = "asd")
 
-# testing mesh loading
-print(base.environment.mesh.get_mesh())
+base.environment.get_gym_environment()
 
-print(base.environment.spline.get_actions())
+# pprint(base.dict(), indent=1)
 
-print(base.environment.spline.get_spline())
+# # testing mesh loading
+# print(base.environment.mesh.get_mesh())
 
-base.environment.step()
-print(base.environment._FFD.deformed_mesh)
+# print(base.environment.spline.get_actions())
+
+# print(base.environment.spline.get_spline())
+
+# # base.environment.step()
+# print(base.environment._FFD.deformed_mesh)

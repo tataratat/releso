@@ -21,6 +21,7 @@ class VariableLocation(BaseModel):
     
     # non json variables
     _is_action: Optional[bool] = PrivateAttr(default=None)
+    _original_position: Optional[float] = PrivateAttr(default=None)
 
     @validator("min_value", "max_value", always=True)
     @classmethod
@@ -64,13 +65,23 @@ class VariableLocation(BaseModel):
         return self._is_action
 
     def apply_discrete_action(self, increasing: bool) -> float:
+        if self._original_position is None:
+            self._original_position = self.current_position
         step = self.step if increasing else - self.step
         self.current_position = np.clip(self.current_position + step, self.min_value, self.max_value)
         return self.current_position
 
     def apply_continuos_action(self, value: float) -> float:
-        self.current_position = np.clip(self.current_position + value, self.min_value, self.max_value)
+        if self._original_position is None:
+            self._original_position = self.current_position
+        delta = self.max_value - self.min_value
+        descaled_value = ((value+1.)/2.) * delta
+        self.current_position = np.clip(descaled_value, self.min_value, self.max_value)
         return self.current_position
+
+    def reset(self) -> None:
+        if self._original_position is not None:
+            self.current_position = self._original_position
 
 class SplineSpaceDimension(BaseModel):
     name: str
@@ -179,6 +190,11 @@ class SplineDefinition(BaseModel):
             Spline: Spline that is generated.
         """
         raise NotImplementedError
+    
+    def reset(self) -> None:
+        for control_point in self.control_point_variables:
+            for dim in control_point:
+                dim.reset()
 
 class BSplineDefinition(SplineDefinition):
 
@@ -220,4 +236,7 @@ class Spline(BaseModel):
             List[VariableLocation]: VariableLocations that have wriggle room.
         """
         return self.spline_definition.get_actions()
+
+    def reset(self) -> None:
+        self.spline_definition.reset()
     
