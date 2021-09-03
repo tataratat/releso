@@ -9,12 +9,8 @@ import gym
 from gym import spaces
 from stable_baselines3.common.env_checker import check_env
 from SbSOvRL.gym_environment import GymEnvironment
-from SbSOvRL.util.logger import set_up_logger
+from SbSOvRL.util.logger import parser_logger, environment_logger
 import numpy as np
-
-parser_logger = set_up_logger("SbSOvRL_parser")
-environment_logger = set_up_logger("SbSOvRL_environment")
-
 
 class MultiProcessing(BaseModel):
     number_of_cores: conint(ge=1)
@@ -84,7 +80,7 @@ class Environment(BaseModel):
 
         # apply Free Form Deformation
         self._apply_FFD(self.solver.working_directory /
-                        "mesh/deformed/mesh.xns")
+                        "mesh/deformed/_.xns")
         # run solver
         reward_solver_output, done = self.solver.start_solver(
             core_count=self.is_multiprocessing())
@@ -116,4 +112,4 @@ class Environment(BaseModel):
         self._FFD.deformed_spline.export(file_name)
 
     def export_mesh(self, file_name: str) -> None:
-        self._FFD.deformed_mesh.export(file_name)
+        self._FFD.deformed_mesh.export(file_name, space_time=True)

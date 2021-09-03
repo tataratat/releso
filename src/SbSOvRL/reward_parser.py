@@ -5,12 +5,9 @@ from pydantic.fields import Field
 from pydantic.types import DirectoryPath, FilePath
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.util.util_funcs import call_commandline, which
-from SbSOvRL.util.logger import set_up_logger
 import sys
 from ast import literal_eval
-
-parser_logger = set_up_logger("SbSOvRL_parser")
-environment_logger = set_up_logger("SbSOvRL_environment")
+from SbSOvRL.util.logger import parser_logger, environment_logger
 
 
 

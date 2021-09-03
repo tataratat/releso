@@ -1,8 +1,6 @@
 import sys, os, platform, enum
 from typing import List
-from SbSOvRL.util.logger import set_up_logger
-
-parser_logger = set_up_logger("SbSOvRL_parser")
+from SbSOvRL.util.logger import parser_logger
 
 class Stylings(enum.Enum):
     """Possible stylings supported by this Tool.

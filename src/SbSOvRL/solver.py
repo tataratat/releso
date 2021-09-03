@@ -4,10 +4,7 @@ from pydantic.main import BaseModel
 from pydantic.types import DirectoryPath, conint
 from SbSOvRL.util.util_funcs import call_commandline
 from SbSOvRL.reward_parser import RewardFunctionTypes
-from SbSOvRL.util.logger import set_up_logger
-
-parser_logger = set_up_logger("SbSOvRL_parser")
-environment_logger = set_up_logger("SbSOvRL_environment")
+from SbSOvRL.util.logger import parser_logger, environment_logger
 
 
 class MultiProcessor(BaseModel):

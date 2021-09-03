@@ -2,13 +2,10 @@ import pathlib
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, Tuple
 from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.util.logger import set_up_logger
 from gustav import Mesh, load_mixd, load_volume_mixd
 from pydantic.class_validators import root_validator
 from pydantic.types import FilePath, conint
-
-parser_logger = set_up_logger("SbSOvRL_parser")
-environment_logger = set_up_logger("SbSOvRL_environment")
+from SbSOvRL.util.logger import parser_logger, environment_logger
 
 class Mesh(BaseModel):
     mxyz_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think.")
@@ -66,7 +63,7 @@ class Mesh(BaseModel):
             if path.exists():
                 if path.is_dir():
                     parser_logger.debug(f"Given path is a directory, trying to find mxyz and mien files as files {path}/mxyz and {path}/mien.")
-                    mxyz_path = (path / "mxyz")
+                    mxyz_path = (path / "mxyz.space")
                     mien_path = (path / "mien")
                     if mxyz_path.exists() and mxyz_path.is_file() and mien_path.exists() and mien_path.is_file():
                         parser_logger.debug("Mesh files located with filepath given as the root folder.")

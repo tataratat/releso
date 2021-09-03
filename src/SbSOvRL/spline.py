@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.util.logger import set_up_logger
+from SbSOvRL.util.logger import parser_logger, environment_logger
 from gustav import BSpline
 from pydantic import BaseModel
 from typing import List, Union, Optional, Dict, Any
@@ -8,9 +8,6 @@ import numpy as np
 from pydantic.class_validators import root_validator, validator
 from pydantic.fields import PrivateAttr
 from pydantic.types import confloat, conint
-
-parser_logger = set_up_logger("SbSOvRL_parser")
-environment_logger = set_up_logger("SbSOvRL_environment")
  
 class VariableLocation(BaseModel):
     current_position: confloat(le=1, ge=0)

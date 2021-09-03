@@ -41,3 +41,9 @@ def set_up_logger(loggerName: str = '') -> logging.Logger:
     logger.addHandler(eh)
     
     return logger
+
+
+
+
+parser_logger = set_up_logger("SbSOvRL_parser")
+environment_logger = set_up_logger("SbSOvRL_environment")
