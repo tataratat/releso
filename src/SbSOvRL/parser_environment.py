@@ -7,7 +7,6 @@ from gustav import FreeFormDeformation
 from pydantic.fields import PrivateAttr
 import gym
 from gym import spaces
-from stable_baselines3.common.env_checker import check_env
 from SbSOvRL.gym_environment import GymEnvironment
 from SbSOvRL.util.logger import parser_logger, environment_logger
 import numpy as np
@@ -43,6 +42,7 @@ class Environment(BaseModel):
             return spaces.Box(low=-1, high=1, shape=(len(self._actions),))
 
     def _define_observation_space(self) -> gym.Space:
+        # TODO This needs to be changed
         return spaces.Box(low=-1, high=1, shape=(len(self._actions)+self.additional_observations,))
 
     def _get_spline_observations(self) -> List[float]:
@@ -58,8 +58,8 @@ class Environment(BaseModel):
         else: # use observed observations
             observations.extend(
                 [item for item in reward_solver_output["observations"]])
-
-        return np.array(observations)
+        obs = np.array(observations)
+        return obs
 
     def _apply_FFD(self, path: str) -> None:
         self._FFD.set_deformed_spline(self.spline.get_spline())
@@ -67,7 +67,14 @@ class Environment(BaseModel):
         self.export_mesh(path)
 
     def apply_action(self, action) -> None:
-        print("New action", action)
+        if self.discrete_actions:
+            increasing = (action%2 == 0)
+            action_index = int(action/2)
+            self._actions[action_index].apply_discrete_action(increasing)
+            # TODO check if this is correct
+        else:
+            for new_value, action in zip(action, self._actions):
+                action.apply_continuos_action(new_value)
 
     def is_multiprocessing(self):
         if self.multi_processing is None:
@@ -105,7 +112,6 @@ class Environment(BaseModel):
                              self._define_observation_space())
         env.step = self.step
         env.reset = self.reset
-        check_env(env)
         return env
 
     def export_spline(self, file_name: str) -> None:

@@ -27,7 +27,7 @@ def main(args) -> None:
     #  Training the RL Agent  #
     #                         #
     ###########################
-    optimization_object.train()
+    optimization_object.learn()
 
     ###########################
     #                         #
@@ -45,10 +45,19 @@ def main(args) -> None:
     if args.export_mesh is not None:
         optimization_object.export_mesh(args.export_mesh)
 
+    ###########################
+    #                         #
+    #      saving model       #
+    #                         #
+    ###########################
+    if args.save_model is not None:
+        optimization_object.export_mesh(args.export_mesh)
+
 if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser(description="Spline base Shape Optimization via Reinforcement Learning Toolbox. This is the basic script that can load a json file and run the resulting optimization problem.")
     parser.add_argument("-i", "--input_file", action="store", required=True, help="Path to the json file storing the optimization definition.")
     parser.add_argument("-s", "--export_spline", action="store", help="Path to the file location where the resulting spline should be exported to. Suffix can be .iges | .xml | .itd")
     parser.add_argument("-m", "--export_mesh", action="store", help="Path to the file location where the resulting spline should be exported to.  Suffix can be `.grd` | `.xns` | `.campiga` | `.h5`")
+    parser.add_argument("-e", "--save_model", action="store", help="Path to the file location where the resulting model should be saved to.")
     args = parser.parse_args()
     main(args)

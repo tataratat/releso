@@ -2,9 +2,10 @@ import pathlib
 import json
 from SbSOvRL.base_parser import BaseParser
 from pprint import pprint
+from stable_baselines3.common.env_checker import check_env
 
 
-example_file_path = pathlib.Path("/home/clemensfricke/repos/sa072021-rl-shape-opti-framework/04-Data/examples/input.json")
+example_file_path = pathlib.Path("../../04-Data/examples/input_c.json")
 
 example_input = None
 print(example_file_path.resolve())
@@ -19,9 +20,13 @@ else:
 
 base = BaseParser(**example_input)
 
-base.environment.step(action = "asd")
+# base.environment.step(action = "asd")
 
-base.environment.get_gym_environment()
+env = base.environment.get_gym_environment()
+
+print(env.reset())
+
+check_env(env)
 
 # pprint(base.dict(), indent=1)
 
