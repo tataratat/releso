@@ -1,13 +1,14 @@
 from abc import ABCMeta, abstractmethod
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.util.logger import parser_logger, environment_logger
-from gustav import BSpline
+from gustav import BSpline, NURBS
 from pydantic import BaseModel
 from typing import List, Union, Optional, Dict, Any
 import numpy as np
 from pydantic.class_validators import root_validator, validator
 from pydantic.fields import PrivateAttr
 from pydantic.types import confloat, conint
+import copy
  
 class VariableLocation(BaseModel):
     current_position: confloat(le=1, ge=0)
@@ -23,6 +24,19 @@ class VariableLocation(BaseModel):
     @validator("min_value", "max_value", always=True)
     @classmethod
     def set_variable_to_current_position_if_not_given(cls, v, values, field) -> float:
+        """Validation of the min and max values for the current VariableLocation. If non are set no variability is assumed min = max = current_position
+
+        Args:
+            v ([type]): Value to validate.
+            values ([type]): Already validated values.
+            field ([type]): Name of the field that is currently validated.
+
+        Raises:
+            SbSOvRLParserException: Parser error if current_position is not already validated.
+
+        Returns:
+            float: value of the validated value.
+        """
         if v is None:
             if "current_position" in values.keys():
                 return values["current_position"]
@@ -33,6 +47,19 @@ class VariableLocation(BaseModel):
     @validator("max_value", always=True)
     @classmethod
     def max_value_is_greater_than_min_value(cls, v, values, field) -> float:
+        """Validates that the max value is greater or equal to the min value.
+
+        Args:
+            v ([type]): Value to validate.
+            values ([type]): Already validated values.
+            field ([type]): Name of the field that is currently validated.
+
+        Raises:
+            SbSOvRLParserException: Parser error if min_value is not already validated and if min value greater if max value.
+
+        Returns:
+            float: value of the validated value.
+        """
         if "min_value" not in values.keys():
             raise SbSOvRLParserException("VariableLocation", field, "Please define the min_value.")
         if v is None:
@@ -44,6 +71,14 @@ class VariableLocation(BaseModel):
     @root_validator
     @classmethod
     def define_step(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validation function that defines the step taken if the action would be discrete. If nothing is given for the calculation a n_steps default value of 10 is used.
+
+        Args:
+            values (Dict[str, Any]): Validated variables of the object.
+
+        Returns:
+            Dict[str, Any]: Validated variables but if steps was not given before now it has a value.
+        """
         discrete = values.get("discrete")
         if discrete:
             step, n_steps, min_value, max_value = values.get("step"), values.get("n_steps"), values.get("min_value"), values.get("max_value")
@@ -57,11 +92,24 @@ class VariableLocation(BaseModel):
         return values
 
     def is_action(self) -> bool:
+        """Checks if the variable has variability. Meaning is there optimization between the min_value and the max_value.
+
+        Returns:
+            bool: True if (self.max_value > self.current_position) or (self.min_value < self.current_position)
+        """
         if self._is_action is None:
             self._is_action = (self.max_value > self.current_position) or (self.min_value < self.current_position)
         return self._is_action
 
     def apply_discrete_action(self, increasing: bool) -> float:
+        """Apply the a discrete action to the current value. Also applies clipping if min/max value is surpassed.
+
+        Args:
+            increasing (bool): Toggle whether or not the value should increase or not.
+
+        Returns:
+            float: Value of the position that the current position is now at.
+        """
         if self._original_position is None:
             self._original_position = self.current_position
         step = self.step if increasing else - self.step
@@ -69,6 +117,13 @@ class VariableLocation(BaseModel):
         return self.current_position
 
     def apply_continuos_action(self, value: float) -> float:
+        """Apply the zero-mean normalized value as the new current position. Needs to descale the value first. Also applies clipping.
+        Args:
+            value (float): Scaled value [-1,1] that needs to be descaled and applied as the new current position.
+
+        Returns:
+            float: New clipped value.
+        """
         if self._original_position is None:
             self._original_position = self.current_position
         delta = self.max_value - self.min_value
@@ -77,6 +132,8 @@ class VariableLocation(BaseModel):
         return self.current_position
 
     def reset(self) -> None:
+        """Resets the current_location to the initial position.
+        """
         if self._original_position is not None:
             self.current_position = self._original_position
 
@@ -89,6 +146,19 @@ class SplineSpaceDimension(BaseModel):
     @validator("knot_vector", always=True)
     @classmethod
     def validate_knot_vector(cls, v: Optional[List[float]], values: Dict[str, Any]) -> List[float]:
+        """If knot vector not given tries to make a default open knot vector. If knot vector is 
+
+        Args:
+            v ([type]): Value to validate.
+            values ([type]): Already validated values.
+            field ([type]): Name of the field that is currently validated.
+
+        Raises:
+            SbSOvRLParserException: Emitted parser error.
+
+        Returns:
+            float: value of the validated value.
+        """
         if "number_of_points" in values.keys() and "degree" in values.keys() and "name" in values.keys():
             n_knots = values["number_of_points"] + values["degree"] + 1
         else:
@@ -98,7 +168,7 @@ class SplineSpaceDimension(BaseModel):
             if len(v) == n_knots:
                 return v
             else:
-                raise SbSOvRLParserException("SplineSpaceDimension", "knot_vector", f"The knot vector does not contain the correct number of items (is: {len(v)}, should_be: {n_knots}).")
+                parser_logger.warning(f"The knot vector does not contain the correct number of items for an open knot vector definition. (is: {len(v)}, should_be: {n_knots}).")
         elif v is None:
             parser_logger.debug(f"The knot_vector for dimension {values['name']} is not given, trying to generate one in the open format.")
             parser_logger
@@ -112,49 +182,88 @@ class SplineSpaceDimension(BaseModel):
             return knot_vec
 
     def get_knot_vector(self) -> List[float]:
+        """Function returns the Knot vector given in the object.
+
+        Returns:
+            List[float]: Direct return of the inner variable.
+        """
         return self.knot_vector
 
 class SplineDefinition(BaseModel):
     space_dimensions: List[SplineSpaceDimension]
     spline_dimension: conint(ge=1)
-    number_of_element_variables: conint(ge=0)
-    control_point_variables: List[List[Union[VariableLocation, confloat(ge=0, le=1)]]]
-    weights: Optional[List[float]] = [] # TODO check if correct number of weights are given
+    control_point_variables: Optional[List[List[Union[VariableLocation, confloat(ge=0, le=1)]]]]
+
+    @validator("control_point_variables", always=True)
+    @classmethod
+    def make_default_default_controll_point_grid(cls, v, values) -> List[List[Union[VariableLocation]]]:
+        """If value is None a equidistant grid of controll points will be given with variability of half the space between the each control point.
+
+        Args:
+            v ([type]): Value to validate.
+            values ([type]): Already validated values.
+            field ([type]): Name of the field that is currently validated.
+
+        Raises:
+            SbSOvRLParserException: Emitted parser error.
+
+        Returns:
+            List[List[VariableLocation]]: Definition of the controll_points
+        """
+        if v is None:
+            if "space_dimension" not in values.keys():
+                raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "During validation the prerequisite variable space_dimension was not present.")
+            spline_dimensions = values["spline_dimension"]
+            n_points_in_dim = [dim.number_of_points for dim in spline_dimensions]
+            # this can be done in a smaller and faster footprint but for readability and understanding 
+            dimension_lists = []
+            dim_spacings = []
+            # create value range in each dimension separately
+            for n_p in n_points_in_dim:
+                dimension_lists.append(list(np.linspace(0.,1.,n_p)))
+                dim_spacings.append(1./((n_p-1)*2))
+
+            # create each controll point for by concatenating each value in each list with each value of all other lists
+            for inner_dim, dim_spacing in zip(dimension_lists, dim_spacings):
+                if v is None: # first iteration the v vector must be initialized with the first dimesion vector
+                    v = []
+                    for element in inner_dim:
+                        if element == 0.:
+                            v.append(VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing))
+                        elif element == 1.:
+                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element))
+                        else:
+                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing))
+                else: # for each successive dimension for each existing element in v each value in the new dimesion must be added
+                    temp_v = []
+                    for current_list in v:
+                        for element in inner_dim:
+                            elem = copy.deepcopy(current_list if type(current_list) is list else [current_list])
+                            if element == 0.:
+                                temp_v.append(elem + [VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing)])
+                            elif element == 1.:
+                                temp_v.append(elem + [VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element)])
+                            else:
+                                temp_v.append(elem + [VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing)])
+                    v = temp_v
+        return v
+
 
     @validator("control_point_variables", each_item=True)
     @classmethod
     def convert_all_control_point_locations_to_variable_locations(cls, v):
+        """ Converts all controll points values into VariabelLocations if the value is given as a simple float. Simple float will be converted into VariableLocation with current_position=value and no variability.
+
+        Args:
+            v ([type]): value to validate
+
+        Returns:
+            [type]: validated value
+        """
         new_list = []
         for element in v:
             new_list.append(VariableLocation(current_position=element) if type(element) is float else element)
         return new_list
-
-    @validator("weights", always=True)
-    @classmethod
-    def validate_weights(cls, v: Optional[List[float]], values: Dict[str, Any]) -> List[float]:
-        """Validate if the correct number of weights are present in the weight vector. If weight vector is not given weight vector should be all ones.
-
-        Args:
-            v (Optional[List[float]]): Value to validate
-            values (Dict[str, Any]): Previously validated variables
-
-        Raises:
-            SbSOvRLParserException: Parser Error
-
-        Returns:
-            List[float]: Filled weight vector.
-        """
-        if "space_dimensions" not in values.keys():
-            raise SbSOvRLParserException("SplineDefinition", "weights", "During validation the prerequisite variable space_dimensions were not present.")
-        n_cp = np.prod([space_dim.number_of_points for space_dim in values["space_dimensions"]])
-        if type(v) is list:
-            if len(v) == n_cp:
-                parser_logger.debug("Found correct number of weights in SplineDefinition.")
-            else:
-                raise SbSOvRLParserException("SplineDefinition", "weights", f"The length of the weight vector {len(v)} is not the same as the number of control_points {n_cp}.")
-        elif v is None:
-            v = list(np.ones(n_cp))
-        return v
 
     def get_number_of_points(self) -> int:
         """Returns the number of points in the Spline. Currently the number of points in the spline is calculated by multiplying the number of points in each spline dimension.
@@ -189,6 +298,8 @@ class SplineDefinition(BaseModel):
         raise NotImplementedError
     
     def reset(self) -> None:
+        """Resets all control points in the spline to its original position (position they were initialized with).
+        """
         for control_point in self.control_point_variables:
             for dim in control_point:
                 dim.reset()
@@ -212,7 +323,55 @@ class BSplineDefinition(SplineDefinition):
             self.get_controll_points()
             )
 
-SplineTypes = Union[BSplineDefinition] # should always be a derivate of SplineDefinition #TODO add NURBS
+class NURBSDefinition(SplineDefinition):
+    weights: Optional[List[float]] = [] # TODO check if correct number of weights are given
+
+    @validator("weights", always=True)
+    @classmethod
+    def validate_weights(cls, v: Optional[List[float]], values: Dict[str, Any]) -> List[float]:
+        """Validate if the correct number of weights are present in the weight vector. If weight vector is not given weight vector should be all ones.
+
+        Args:
+            v (Optional[List[float]]): Value to validate
+            values (Dict[str, Any]): Previously validated variables
+
+        Raises:
+            SbSOvRLParserException: Parser Error
+
+        Returns:
+            List[float]: Filled weight vector.
+        """
+        if "space_dimensions" not in values.keys():
+            raise SbSOvRLParserException("SplineDefinition", "weights", "During validation the prerequisite variable space_dimensions were not present.")
+        n_cp = np.prod([space_dim.number_of_points for space_dim in values["space_dimensions"]])
+        if type(v) is list:
+            if len(v) == n_cp:
+                parser_logger.debug("Found correct number of weights in SplineDefinition.")
+            else:
+                raise SbSOvRLParserException("SplineDefinition", "weights", f"The length of the weight vector {len(v)} is not the same as the number of control_points {n_cp}.")
+        elif v is None:
+            v = list(np.ones(n_cp))
+        return v
+
+    def get_spline(self) -> NURBS:
+        """Creates a NURBSSpline from the defintion given by the json file.
+
+        Returns:
+            NURBS: NURBSSpline
+        """
+        environment_logger.debug("Creating Gustav NURBS.")
+        # environment_logger.debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
+        # environment_logger.debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
+        # environment_logger.debug(f"controll_points: {self.get_controll_points()}")
+        
+        return NURBS(
+            [space_dim.degree for space_dim in self.space_dimensions],
+            [space_dim.get_knot_vector() for space_dim in self.space_dimensions],
+            self.get_controll_points(),
+            self.weights
+            )
+
+SplineTypes = Union[BSplineDefinition, NURBSDefinition] # should always be a derivate of SplineDefinition #TODO add NURBS
 
 class Spline(BaseModel):
     spline_definition: SplineTypes
@@ -235,5 +394,7 @@ class Spline(BaseModel):
         return self.spline_definition.get_actions()
 
     def reset(self) -> None:
+        """Resets the spline to its initial values.
+        """
         self.spline_definition.reset()
     

@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, Tuple
 from SbSOvRL.exceptions import SbSOvRLParserException
 from gustav import Mesh, load_mixd, load_volume_mixd
-from pydantic.class_validators import root_validator
+from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
 from SbSOvRL.util.logger import parser_logger, environment_logger
 
@@ -12,9 +12,34 @@ class Mesh(BaseModel):
     mien_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.")
 
     path: str # after validation Tuple["path_to_mxyz_file", "path_to_mien_file"]
-    hypercube: bool = Field(description="If True Mesh is made of hypercubes. If False Mesh is made of simplexes.", default=True)
+    export_path: str # Path to the default export location of the mesh during environment operations. (So that the solver can use it.)
+    hypercube: bool = Field(description="If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).", default=True)
     dimensions: conint(ge=1)
-    
+
+    @validator("export_path")
+    @classmethod
+    def validate_path_has_correct_ending(cls, v) -> pathlib.Path:
+        """Validate that the given path has a xns suffix or if no suffix xns as name. Also converts str to pathlib.Path
+
+        Args:
+            v ([type]): value to validate
+
+        Raises:
+            SbSOvRLParserException: If validation fails throws this error.
+
+        Returns:
+            pathlib.Path: Path to where the mesh should per default be exported to.
+        """
+        path = pathlib.Path(v).expanduser().resolve()
+        if path.suffix is '':
+            if path.name is "xns":
+                path = path.with_name("_.xns")
+            else:
+                raise SbSOvRLParserException("Mesh", "export_path", "Currently only the name xns without suffix is supported. If campiga should be added pls notify the author.")
+        elif path.suffix is not ".xns":
+            raise SbSOvRLParserException("Mesh", "export_path", "Currently only the suffix xns is supported. If campiga should be added pls notify the author.")
+        return path
+        
     def get_mesh(self) -> Mesh:
         """Calls the correct method to load the mesh for the gustav library.
 
@@ -33,6 +58,16 @@ class Mesh(BaseModel):
             mesh = load_mixd(dim=self.dimensions, mxyz=self.mxyz_path, mien=self.mien_path, quad=self.hypercube)
             environment_logger.info("Done loading mesh.")
         return mesh
+
+    def get_export_path(self) -> str:
+        """Direct return of object variable.
+
+
+        Returns:
+            str: Path to the default export location of the mesh during environment operations. (So that the solver can use it.)
+        """
+        return self.export_path
+
 
     @root_validator
     @classmethod
