@@ -1,9 +1,9 @@
 from pydantic import BaseModel, confloat, validator
-from typing import Literal, Optional, Union, List
+from typing import Literal, Optional, Union, Dict, Any
 import numpy as np
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.gym_environment import GymEnvironment
-from stable_baselines3.ppo import PPO
+from stable_baselines3 import PPO, DDPG, SAC
 
 class Schedule(BaseModel):
     """Exponential Scheduler function is as follows:
@@ -12,7 +12,7 @@ class Schedule(BaseModel):
 
     There is an extra clipping step to absolutely ensure that the end value is in between upper and lower bound.
 
-    The constant factor in the exponent (5) is used to better fit the exponential function to the intervall 0-1. For exponential prefactor of -1.
+    The constant factor in the exponent (5) is used to better fit the exponential function to the interval 0-1. For exponential prefactor of -1.
     """
     exponent: confloat(lt=0.) = -1
     start_value: confloat(gt=0., le=1.)
@@ -41,7 +41,7 @@ class PPOAgent(BaseModel):
         BaseModel ([type]): [description]
     """
     type: Literal["PPO"]
-    policy: Literal["MlpPolicy", "MlpPolicy"]
+    policy: Literal["MlpPolicy"]
     learning_rate: Union[float, Schedule] = 3e-4 # The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     n_steps: int = 2048 # The number of steps to run for each environment per update(i.e. rollout buffer size is n_steps * n_envs where n_envs is number of environment copies running in parallel) NOTE: n_steps * n_envs must be greater than 1 (because of the advantage normalization) See https://github.com/pytorch/pytorch/issues/29372
     batch_size: Optional[int] = 64 # Minibatch size
@@ -53,7 +53,7 @@ class PPOAgent(BaseModel):
     vf_coef: float = 0.5 # Value function coefficient for the loss calculation
     seed: Optional[int] = None # Seed for the pseudo random generators
     device: str = "auto" # Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
-    policy_kwargs: Optional[List[List[int]]] = None # additional arguments to be passed to the policy on creation
+    policy_kwargs: Optional[Dict[str, Any]] = None # additional arguments to be passed to the policy on creation
 
     def get_agent(self, environment: GymEnvironment) -> PPO:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
@@ -66,6 +66,66 @@ class PPOAgent(BaseModel):
         """
         return PPO(env = environment, **{k:v for k,v in self.__dict__.items() if k is not 'type'})
 
+class DDPGAgent(BaseModel):
+    """DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.
+    """
+    type: Literal["DDPG"]
+    policy: Literal["MlpPolicy"]
+    learning_rate: Union[float, Schedule] = 1e-3 # The learning rate, it can be a function of the current progress remaining (from 1 to 0)
+    buffer_size: int = 1000000 # size of the replay buffer
+    learning_starts: int = 100 # how many steps of the model to collect transitions for before learning starts
+    batch_size: Optional[int] = 64 # Minibatch size
+    tau: float = 0.005 # the soft update coefficient ("Polyak update", between 0 and 1)
+    gamma: float = 0.99 # Discount factor
+    optimize_memory_usage: float = 0.95 # Enable a memory efficient variant of the replay buffer at a cost of more complexity. See https://github.com/DLR-RM/stable-baselines3/issues/37#issuecomment-637501195
+    seed: Optional[int] = None # Seed for the pseudo random generators
+    device: str = "auto" # Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
+    policy_kwargs: Optional[Dict[str, Any]] = None # additional arguments to be passed to the policy on creation
+
+    def get_agent(self, environment: GymEnvironment) -> PPO:
+        """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
+
+        Args:
+            environment (GymEnvironment): The environment the agent uses to train.
+
+        Returns:
+            PPO: Initialized DDPG agent.
+        """
+        return DDPG(env = environment, **{k:v for k,v in self.__dict__.items() if k is not 'type'})
+
+class SACAgent(BaseModel):
+    """SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.
+    """
+    type: Literal["SAC"]
+    policy: Literal["MlpPolicy"]
+    learning_rate: Union[float, Schedule] = 1e-3 # The learning rate, it can be a function of the current progress remaining (from 1 to 0)
+    buffer_size: int = 1000000 # size of the replay buffer
+    learning_starts: int = 100 # how many steps of the model to collect transitions for before learning starts
+    batch_size: Optional[int] = 64 # Minibatch size
+    tau: float = 0.005 # the soft update coefficient ("Polyak update", between 0 and 1)
+    gamma: float = 0.99 # Discount factor
+    optimize_memory_usage: float = 0.95 # Enable a memory efficient variant of the replay buffer at a cost of more complexity. See https://github.com/DLR-RM/stable-baselines3/issues/37#issuecomment-637501195
+    ent_coef: Union[str, float] = "auto" # Entropy regularization coefficient. (Equivalent to inverse of reward scale in the original SAC paper.)  Controlling exploration/exploitation trade-off. Set it to 'auto' to learn it automatically (and 'auto_0.1' for using 0.1 as initial value)
+    target_update_interval: int = 1 # update the target network every ``target_network_update_freq`` gradient steps.
+    target_entropy: Union[str, float] = "auto" # target entropy when learning ``ent_coef`` (``ent_coef = 'auto'``)
+    use_sde: bool = False # Whether to use generalized State Dependent Exploration (gSDE) instead of action noise exploration (default: False)
+    sde_sample_freq: int = -1 # Sample a new noise matrix every n steps when using gSDE Default: -1 (only sample at the beginning of the rollout)
+    use_sde_at_warmup: bool = False # Whether to use gSDE instead of uniform sampling during the warm up phase (before learning starts)
+    seed: Optional[int] = None # Seed for the pseudo random generators
+    device: str = "auto" # Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
+    policy_kwargs: Optional[Dict[str, Any]] = None # additional arguments to be passed to the policy on creation
+
+    def get_agent(self, environment: GymEnvironment) -> PPO:
+        """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
+
+        Args:
+            environment (GymEnvironment): The environment the agent uses to train.
+
+        Returns:
+            PPO: Initialized SAC agent.
+        """
+        return SAC(env = environment, **{k:v for k,v in self.__dict__.items() if k is not 'type'})
 
 
-AgentTypeDefinition = Union[PPOAgent]
+
+AgentTypeDefinition = Union[PPOAgent, DDPGAgent, SACAgent]
