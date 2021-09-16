@@ -8,8 +8,10 @@ from pydantic.fields import PrivateAttr
 import gym
 from gym import spaces
 from SbSOvRL.gym_environment import GymEnvironment
-from SbSOvRL.util.logger import parser_logger, environment_logger
+import logging
 import numpy as np
+from copy import deepcopy
+from stable_baselines3.common.monitor import Monitor
 
 class MultiProcessing(BaseModel):
     """Defines if the Problem should use Multiprocessing and with how many cores the solver can work. Does not force Multiprocessing for example if the solver does not support it.
@@ -21,7 +23,7 @@ class Environment(BaseModel):
     """
     Parser Environment object is created by pydantic during the parsing of the json object defining the Spline base Shape optimization. Each object can create a gym environment that represents the given problem.
     """
-    multi_processing: Optional[MultiProcessing] = None
+    multi_processing: Optional[MultiProcessing]
     spline: Spline
     mesh: Mesh
     solver: SolverTypeDefinition
@@ -30,6 +32,7 @@ class Environment(BaseModel):
 
     # object variables
     _actions: List[VariableLocation] = PrivateAttr()
+    _last_observation: np.ndarray = PrivateAttr()
     _FFD: FreeFormDeformation = PrivateAttr(
         default_factory=FreeFormDeformation)
 
@@ -39,6 +42,7 @@ class Environment(BaseModel):
         super().__init__(**data)
         self._actions = self.spline.get_actions()
         self._FFD.set_mesh(self.mesh.get_mesh())
+        self._last_observation = None
 
     def _set_up_actions(self) -> gym.Space:
         """Creates the action space the gym environment uses to define its action space.
@@ -68,7 +72,7 @@ class Environment(BaseModel):
         """
         return [variable.current_position for variable in self._actions]
 
-    def _get_observations(self, reward_solver_output: Dict[str, Any], done: bool) -> List[float]:
+    def _get_observations(self, reward_solver_output: Dict[str, Any], done: bool, reset: bool = False) -> List[float]:
         """Collects all observations (Spline observations and solver observations) into a single observation vector.
 
         Note: This tool is currently setup to only work with and MLP policy since otherwise a multidimensional observation vector needs to be created.
@@ -82,7 +86,14 @@ class Environment(BaseModel):
         """
         # get spline observations
         observations = self._get_spline_observations()
-
+        done_from_observation = False
+        
+        if self._last_observation == observations:
+            logging.getLogger("SbSOvRL_environment").info("The Spline observation have not changed will exit episode.")
+            done_from_observation = True
+        
+        if reset or done:
+            self._last_observation = deepcopy(observations)
         # add solver observations
         if done: # if solver failed use 0 solver observations
             observations.extend([0 for _ in range(self.additional_observations)])
@@ -90,7 +101,7 @@ class Environment(BaseModel):
             observations.extend(
                 [item for item in reward_solver_output["observations"]])
         obs = np.array(observations)
-        return obs
+        return obs, done_from_observation
 
     def _apply_FFD(self, path: Optional[str] = None) -> None:
         """Apply the Free Form Deformation using the current spline to the mesh and export the resulting mesh to the path given.
@@ -108,6 +119,7 @@ class Environment(BaseModel):
         Args:
             action ([type]):  Action value depends on if the ActionSpace is discrete (int - Signifier of the action) or Continuous (List[float] - Value for each continuous variable.)
         """
+        # logging.getLogger("SbSOvRL_environment").debug(f"Applying action {action}")
         if self.discrete_actions:
             increasing = (action%2 == 0)
             action_index = int(action/2)
@@ -137,6 +149,7 @@ class Environment(BaseModel):
             Tuple[Any, float, bool, Dict[str, Any]]: [description]
         """
         # apply new action
+        logging.getLogger("SbSOvRL_environment").debug(f"Action {action}")
         self.apply_action(action)
 
         # apply Free Form Deformation
@@ -147,7 +160,13 @@ class Environment(BaseModel):
 
         info = {}
 
-        return self._get_observations(reward_solver_output=reward_solver_output, done=done), reward_solver_output["reward"], done, info
+        observations, done_from_obs = self._get_observations(reward_solver_output=reward_solver_output, done=done)
+
+        # check if done from observations
+        done = done or done_from_obs
+
+        logging.getLogger("SbSOvRL_environment").info(f"Current reward {reward_solver_output['reward']} and episode is done: {done}.")
+        return observations, reward_solver_output["reward"], done, info
 
     def reset(self) -> Tuple[Any]:
         """Function that is called when the agents wants to reset the environment. This can either be the case if the episode is done due to #time_steps or the environment emits the done signal.
@@ -155,15 +174,19 @@ class Environment(BaseModel):
         Returns:
             Tuple[Any]: Reward of the newly resetted environment.
         """
-        environment_logger.info("Resetting the Environment.")
+        logging.getLogger("SbSOvRL_environment").info("Resetting the Environment.")
         # reset spline
         self.spline.reset()
+
+        # apply Free Form Deformation should now just recreate the non deformed mesh
+        self._apply_FFD()
 
         # run solver and reset reward and get new solver observations
         reward_solver_output, done = self.solver.start_solver(
             reset=True, core_count=self.is_multiprocessing())
 
-        return self._get_observations(reward_solver_output=reward_solver_output, done=done)
+        obs, _ = self._get_observations(reward_solver_output=reward_solver_output, done=done, reset=True)
+        return obs
 
     def get_gym_environment(self) -> gym.Env:
         """Creates and configures the gym environment so it can be used for training.
@@ -171,12 +194,12 @@ class Environment(BaseModel):
         Returns:
             gym.Env: openai gym environment that can be used to train with [stable_]baselines[3] agents.
         """
-        environment_logger("Setting up Gym environment.")
+        logging.getLogger("SbSOvRL_environment").info("Setting up Gym environment.")
         env = GymEnvironment(self._set_up_actions(),
-                             self._define_observation_space())
+                             self._define_observation_space()) 
         env.step = self.step
         env.reset = self.reset
-        return env
+        return Monitor(env)
 
     def export_spline(self, file_name: str) -> None:
         """Export the current spline to the given path. The export will be done via gustav.

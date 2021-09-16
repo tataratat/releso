@@ -1,54 +1,63 @@
+from pathlib import Path
 from pydantic import BaseModel, confloat, validator
 from typing import Literal, Optional, Union, Dict, Any
-import numpy as np
-from SbSOvRL.exceptions import SbSOvRLParserException
+# import numpy as np
+# from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.gym_environment import GymEnvironment
 from stable_baselines3 import PPO, DDPG, SAC
+import datetime
 
-class Schedule(BaseModel):
-    """Exponential Scheduler function is as follows:
+# class Schedule(BaseModel):
+#     """Exponential Scheduler function is as follows:
 
-    end_value + (start_value-end_value) * e^(exponent * 5 * value) 
+#     end_value + (start_value-end_value) * e^(exponent * 5 * value) 
 
-    There is an extra clipping step to absolutely ensure that the end value is in between upper and lower bound.
+#     There is an extra clipping step to absolutely ensure that the end value is in between upper and lower bound.
 
-    The constant factor in the exponent (5) is used to better fit the exponential function to the interval 0-1. For exponential prefactor of -1.
-    """
-    exponent: confloat(lt=0.) = -1
-    start_value: confloat(gt=0., le=1.)
-    end_value: confloat(gt=0., le=1.) = 0
+#     The constant factor in the exponent (5) is used to better fit the exponential function to the interval 0-1. For exponential prefactor of -1.
+#     """
+#     exponent: confloat(lt=0.) = -1
+#     start_value: confloat(gt=0., le=1.)
+#     end_value: confloat(gt=0., le=1.) = 0
 
-    ###### validators
-    @validator("end_value", always=True)
-    @classmethod
-    def end_value_check_if_lower_than_start_value(cls, v, values, field):
-        if "start_value" in values.keys():
-            if values["start_value"] > v:
-                return v
-            else:
-                raise SbSOvRLParserException("Schedule", field, "Please ensure that the start_value is higher than the end_value.")
-        else:
-            raise SbSOvRLParserException("Schedule", field, "Please select a start value.")
-    #### object functions
+#     ###### validators
+#     @validator("end_value", always=True)
+#     @classmethod
+#     def end_value_check_if_lower_than_start_value(cls, v, values, field):
+#         if "start_value" in values.keys():
+#             if values["start_value"] > v:
+#                 return v
+#             else:
+#                 raise SbSOvRLParserException("Schedule", field, "Please ensure that the start_value is higher than the end_value.")
+#         else:
+#             raise SbSOvRLParserException("Schedule", field, "Please select a start value.")
+#     #### object functions
 
-    def __call__(self, value: float) -> float:
-        return np.clip(np.exp(self.exponent * value) * (self.start_value - self.end_value) + self.end_value, self.end_value, self.start_value)
+#     def __call__(self, value: float) -> float:
+#         return np.clip(np.exp(self.exponent * value) * (self.start_value - self.end_value) + self.end_value, self.end_value, self.start_value)
+class BaseAgent(BaseModel):
+    tensorboard_log: Optional[str]
 
-class PPOAgent(BaseModel):
+    def get_next_tensorboard_experiment_name(self) -> str:
+        if self.tensorboard_log is not None:
+            return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        return None
+
+
+
+
+class PPOAgent(BaseAgent):
     """PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.
-
-    Args:
-        BaseModel ([type]): [description]
     """
     type: Literal["PPO"]
     policy: Literal["MlpPolicy"]
-    learning_rate: Union[float, Schedule] = 3e-4 # The learning rate, it can be a function of the current progress remaining (from 1 to 0)
+    learning_rate: Union[float] = 3e-4 # The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     n_steps: int = 2048 # The number of steps to run for each environment per update(i.e. rollout buffer size is n_steps * n_envs where n_envs is number of environment copies running in parallel) NOTE: n_steps * n_envs must be greater than 1 (because of the advantage normalization) See https://github.com/pytorch/pytorch/issues/29372
     batch_size: Optional[int] = 64 # Minibatch size
     n_epochs: int = 10 # Number of epoch when optimizing the surrogate loss
     gamma: float = 0.99 # Discount factor
     gae_lambda: float = 0.95 # Factor for trade-off of bias vs variance for Generalized Advantage Estimator
-    clip_range: Union[float, Schedule] = 0.2 # Clipping parameter, it can be a function of the current progress remaining (from 1 to 0).
+    clip_range: Union[float] = 0.2 # Clipping parameter, it can be a function of the current progress remaining (from 1 to 0).
     ent_coef: float = 0.0 # Entropy coefficient for the loss calculation
     vf_coef: float = 0.5 # Value function coefficient for the loss calculation
     seed: Optional[int] = None # Seed for the pseudo random generators
@@ -64,14 +73,14 @@ class PPOAgent(BaseModel):
         Returns:
             PPO: Initialized PPO agent.
         """
-        return PPO(env = environment, **{k:v for k,v in self.__dict__.items() if k is not 'type'})
+        return PPO(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
 
-class DDPGAgent(BaseModel):
+class DDPGAgent(BaseAgent):
     """DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.
     """
     type: Literal["DDPG"]
     policy: Literal["MlpPolicy"]
-    learning_rate: Union[float, Schedule] = 1e-3 # The learning rate, it can be a function of the current progress remaining (from 1 to 0)
+    learning_rate: Union[float] = 1e-3 # The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000 # size of the replay buffer
     learning_starts: int = 100 # how many steps of the model to collect transitions for before learning starts
     batch_size: Optional[int] = 64 # Minibatch size
@@ -91,14 +100,14 @@ class DDPGAgent(BaseModel):
         Returns:
             PPO: Initialized DDPG agent.
         """
-        return DDPG(env = environment, **{k:v for k,v in self.__dict__.items() if k is not 'type'})
+        return DDPG(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
 
-class SACAgent(BaseModel):
+class SACAgent(BaseAgent):
     """SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.
     """
     type: Literal["SAC"]
     policy: Literal["MlpPolicy"]
-    learning_rate: Union[float, Schedule] = 1e-3 # The learning rate, it can be a function of the current progress remaining (from 1 to 0)
+    learning_rate: Union[float] = 1e-3 # The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000 # size of the replay buffer
     learning_starts: int = 100 # how many steps of the model to collect transitions for before learning starts
     batch_size: Optional[int] = 64 # Minibatch size
@@ -124,7 +133,7 @@ class SACAgent(BaseModel):
         Returns:
             PPO: Initialized SAC agent.
         """
-        return SAC(env = environment, **{k:v for k,v in self.__dict__.items() if k is not 'type'})
+        return SAC(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
 
 
 

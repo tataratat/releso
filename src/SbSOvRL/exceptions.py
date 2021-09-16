@@ -1,6 +1,6 @@
+import logging
 import sys, os, platform, enum
 from typing import List
-from SbSOvRL.util.logger import parser_logger
 
 class Stylings(enum.Enum):
     """Possible stylings supported by this Tool.
@@ -64,5 +64,5 @@ class SbSOvRLParserException(Exception):
     """Parser Exception for the SbSOvRL package. Shows the context of the error. Also colors the output if colouring is available.
     """
     def __init__(self, parent: str, item: str, message: str) -> None:
-        parser_logger.exception(f"In {parent} object while parsing {item} the following error has occurred: {message}")
+        logging.getLogger("SbSOVRL_parser").exception(f"In {parent} object while parsing {item} the following error has occurred: {message}")
         super().__init__(f"In {underline(parent)} object while parsing {underline(item)} the following error has occurred: {red(message)}")

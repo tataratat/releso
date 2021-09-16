@@ -1,13 +1,14 @@
 from typing import Optional, Union, List, Dict, Any
+import uuid
 from pydantic import BaseModel
 from pydantic.class_validators import validator
-from pydantic.fields import Field
-from pydantic.types import DirectoryPath, FilePath
+from pydantic.fields import Field, PrivateAttr
+from pydantic.types import UUID4, DirectoryPath, FilePath
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.util.util_funcs import call_commandline, which
 import sys
 from ast import literal_eval
-from SbSOvRL.util.logger import parser_logger, environment_logger
+import logging
 
 
 
@@ -15,6 +16,8 @@ class PythonRewardFunction(BaseModel):
     working_directory: DirectoryPath = Field(description="Directory in which the reward function script should be called.")
     reward_script: FilePath
     calling_function: Optional[str] = "python"
+
+    _reward_communication_id: UUID4 = PrivateAttr(default_factory=uuid.uuid4)
 
     @validator("reward_script")
     @classmethod
@@ -37,13 +40,13 @@ class PythonRewardFunction(BaseModel):
             Optional[str]: string of the calling function
         """
         if which(v) is None:
-            if v is "python":
+            if v == "python":
                 if which("python3") is not None:
-                    parser_logger.warning("Exchanging calling function \"python\" with \"python3\"")
+                    logging.getLogger("SbSOvRL_parser").warning("Exchanging calling function \"python\" with \"python3\"")
                     return "python3"
-            if v is "python3":
+            if v == "python3":
                 if which("python") is not None:
-                    parser_logger.warning("Exchanging calling function \"python3\" with \"python\"")
+                    logging.getLogger("SbSOvRL_parser").warning("Exchanging calling function \"python3\" with \"python\"")
                     return "python"
             raise SbSOvRLParserException("PythonRewardFunction", "calling_function", "The calling_function could not be found, please validate that it is a real program.")
         return v
@@ -61,8 +64,14 @@ class PythonRewardFunction(BaseModel):
                 "observations": List[float]
             }
         """
-        additional_function_parameter = " " + " ".join(additional_parameter)
-        exit_code, output = call_commandline(self.calling_function + " " + str(self.reward_script) + additional_function_parameter, self.working_directory, environment_logger)
+        additional_function_parameter = " " + " ".join(additional_parameter) + f" --run_id {self._reward_communication_id} "
+        exit_code, output = call_commandline(self.calling_function + " " + str(self.reward_script) + additional_function_parameter, self.working_directory, logging.getLogger("SbSOvRL_environment"))
         return literal_eval(output.decode(sys.getdefaultencoding()))
+
+
+    def __init__(__pydantic_self__, **data: Any) -> None:
+        super().__init__(**data)
+
+        logging.getLogger("environment_logger").debug(f"The uuid of the reward function is {__pydantic_self__._reward_communication_id}.")
 
 RewardFunctionTypes = Union[PythonRewardFunction]

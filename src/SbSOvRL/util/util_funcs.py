@@ -38,7 +38,7 @@ def call_commandline(command, folder, logger=None):
     """
 
     if logger is not None:
-        logger.debug('-- Executing command {} in {}'.format(command, os.getcwd()))
+        logger.debug(f'Executing command {command} in {folder}')
     try:
         # try to execute the provided command in the shell
         output = subprocess.check_output(command, shell=True,cwd=folder)
@@ -48,6 +48,6 @@ def call_commandline(command, folder, logger=None):
         # if anything went wrong, catch the error, report to the user and abort
         output = None
         if logger is not None:
-            logger.error('-- Execution failed with return code {}'.format(exc.returncode))
+            logger.error(f'Execution failed with return code {exc.returncode}')
         exitcode=exc.returncode
     return exitcode, output

@@ -1,6 +1,6 @@
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.util.logger import parser_logger, environment_logger
+import logging
 from gustav import BSpline, NURBS
 from pydantic import BaseModel
 from typing import List, Union, Optional, Dict, Any
@@ -79,16 +79,14 @@ class VariableLocation(BaseModel):
         Returns:
             Dict[str, Any]: Validated variables but if steps was not given before now it has a value.
         """
-        discrete = values.get("discrete")
-        if discrete:
-            step, n_steps, min_value, max_value = values.get("step"), values.get("n_steps"), values.get("min_value"), values.get("max_value")
-            value_range = max_value - min_value
-            if step is not None:
-                return values # if step length is defined ignore n_steps
-            elif n_steps is None:
-                n_steps = 10 # if discrete but neither step nor n_steps is defined a default 10 steps are assumed.
-            step = value_range/n_steps
-            values["step"] = step
+        step, n_steps, min_value, max_value = values.get("step"), values.get("n_steps"), values.get("min_value"), values.get("max_value")
+        value_range = max_value - min_value
+        if step is not None:
+            return values # if step length is defined ignore n_steps
+        elif n_steps is None:
+            n_steps = 10 # if discrete but neither step nor n_steps is defined a default 10 steps are assumed.
+        step = value_range/n_steps
+        values["step"] = step
         return values
 
     def is_action(self) -> bool:
@@ -112,7 +110,8 @@ class VariableLocation(BaseModel):
         """
         if self._original_position is None:
             self._original_position = self.current_position
-        step = self.step if increasing else - self.step
+        step = self.step if increasing else -self.step
+        # logging.getLogger("SbSOvRL_environment").debug(f"Current step is {step} while increasing: {increasing}")
         self.current_position = np.clip(self.current_position + step, self.min_value, self.max_value)
         return self.current_position
 
@@ -164,20 +163,19 @@ class SplineSpaceDimension(BaseModel):
         else:
             raise SbSOvRLParserException("SplineSpaceDimension", "knot_vector", "During validation the prerequisite variables number_of_points and degree were not present.")
         if type(v) is list:
-            parser_logger.debug(f"The knot_vector for dimension {values['name']} is given.")
+            logging.getLogger("SbSOVRL_parser").debug(f"The knot_vector for dimension {values['name']} is given.")
             if len(v) == n_knots:
                 return v
             else:
-                parser_logger.warning(f"The knot vector does not contain the correct number of items for an open knot vector definition. (is: {len(v)}, should_be: {n_knots}).")
+                logging.getLogger("SbSOVRL_parser").warning(f"The knot vector does not contain the correct number of items for an open knot vector definition. (is: {len(v)}, should_be: {n_knots}).")
         elif v is None:
-            parser_logger.debug(f"The knot_vector for dimension {values['name']} is not given, trying to generate one in the open format.")
-            parser_logger
+            logging.getLogger("SbSOVRL_parser").debug(f"The knot_vector for dimension {values['name']} is not given, trying to generate one in the open format.")
             starting_ending = values["degree"] + 1
             middle = n_knots - (2 * starting_ending)
             if middle >= 0:
                 knot_vec = list(np.array([np.zeros(starting_ending-1), np.linspace(0, 1, middle+2), np.ones(starting_ending-1)]).flatten())
             else:
-                parser_logger.warning(f"The knot vector is shorter {n_knots} than the length given by the open format {starting_ending*2}. Knot vector is created by adding the starting and ending parts. The knot vector might be to long.")
+                logging.getLogger("SbSOVRL_parser").warning(f"The knot vector is shorter {n_knots} than the length given by the open format {starting_ending*2}. Knot vector is created by adding the starting and ending parts. The knot vector might be to long.")
                 knot_vec = list(np.array([np.zeros(starting_ending), np.ones(starting_ending)]).flatten())
             return knot_vec
 
@@ -196,7 +194,7 @@ class SplineDefinition(BaseModel):
 
     @validator("control_point_variables", always=True)
     @classmethod
-    def make_default_default_controll_point_grid(cls, v, values) -> List[List[Union[VariableLocation]]]:
+    def make_default_controll_point_grid(cls, v, values) -> List[List[Union[VariableLocation]]]:
         """If value is None a equidistant grid of controll points will be given with variability of half the space between the each control point.
 
         Args:
@@ -210,10 +208,11 @@ class SplineDefinition(BaseModel):
         Returns:
             List[List[VariableLocation]]: Definition of the controll_points
         """
+        # raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "asdasdasd.")
         if v is None:
-            if "space_dimension" not in values.keys():
-                raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "During validation the prerequisite variable space_dimension was not present.")
-            spline_dimensions = values["spline_dimension"]
+            if "space_dimensions" not in values.keys():
+                raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "During validation the prerequisite variable space_dimensions was not present.")
+            spline_dimensions = values["space_dimensions"]
             n_points_in_dim = [dim.number_of_points for dim in spline_dimensions]
             # this can be done in a smaller and faster footprint but for readability and understanding 
             dimension_lists = []
@@ -240,11 +239,11 @@ class SplineDefinition(BaseModel):
                         for element in inner_dim:
                             elem = copy.deepcopy(current_list if type(current_list) is list else [current_list])
                             if element == 0.:
-                                temp_v.append(elem + [VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing)])
+                                temp_v.append([VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing)] + elem)
                             elif element == 1.:
-                                temp_v.append(elem + [VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element)])
+                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element)] + elem)
                             else:
-                                temp_v.append(elem + [VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing)])
+                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing)] + elem)
                     v = temp_v
         return v
 
@@ -282,7 +281,7 @@ class SplineDefinition(BaseModel):
         Returns:
             List[VariableLocation]: See above
         """
-        environment_logger.debug("Collecting all actions for BSpline.")
+        logging.getLogger("SbSOvRL_environment").debug("Collecting all actions for Spline.")
         return [variable for sub_dim in self.control_point_variables for variable in sub_dim if variable.is_action()]
 
     @abstractmethod
@@ -312,10 +311,10 @@ class BSplineDefinition(SplineDefinition):
         Returns:
             BSpline: given by the #degrees and knot_vector in each space_dimension and the current controll points.
         """
-        environment_logger.debug("Creating Gustav BSpline.")
-        environment_logger.debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
-        environment_logger.debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
-        environment_logger.debug(f"controll_points: {self.get_controll_points()}")
+        logging.getLogger("SbSOvRL_environment").debug("Creating Gustav BSpline.")
+        # logging.getLogger("SbSOvRL_environment").debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
+        # logging.getLogger("SbSOvRL_environment").debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
+        logging.getLogger("SbSOvRL_environment").debug(f"With controll_points: {self.get_controll_points()}")
         
         return BSpline(
             [space_dim.degree for space_dim in self.space_dimensions],
@@ -324,9 +323,9 @@ class BSplineDefinition(SplineDefinition):
             )
 
 class NURBSDefinition(SplineDefinition):
-    weights: Optional[List[float]] = [] # TODO check if correct number of weights are given
+    weights: List[float] # TODO should weights also be changable?
 
-    @validator("weights", always=True)
+    @validator("weights")
     @classmethod
     def validate_weights(cls, v: Optional[List[float]], values: Dict[str, Any]) -> List[float]:
         """Validate if the correct number of weights are present in the weight vector. If weight vector is not given weight vector should be all ones.
@@ -346,9 +345,9 @@ class NURBSDefinition(SplineDefinition):
         n_cp = np.prod([space_dim.number_of_points for space_dim in values["space_dimensions"]])
         if type(v) is list:
             if len(v) == n_cp:
-                parser_logger.debug("Found correct number of weights in SplineDefinition.")
+                logging.getLogger("SbSOVRL_parser").debug("Found correct number of weights in SplineDefinition.")
             else:
-                raise SbSOvRLParserException("SplineDefinition", "weights", f"The length of the weight vector {len(v)} is not the same as the number of control_points {n_cp}.")
+                raise SbSOvRLParserException("SplineDefinition NURBS", "weights", f"The length of the weight vector {len(v)} is not the same as the number of control_points {n_cp}.")
         elif v is None:
             v = list(np.ones(n_cp))
         return v
@@ -359,10 +358,10 @@ class NURBSDefinition(SplineDefinition):
         Returns:
             NURBS: NURBSSpline
         """
-        environment_logger.debug("Creating Gustav NURBS.")
-        # environment_logger.debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
-        # environment_logger.debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
-        # environment_logger.debug(f"controll_points: {self.get_controll_points()}")
+        logging.getLogger("SbSOvRL_environment").debug("Creating Gustav NURBS.")
+        # logging.getLogger("SbSOvRL_environment").debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
+        # logging.getLogger("SbSOvRL_environment").debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
+        # logging.getLogger("SbSOvRL_environment").debug(f"controll_points: {self.get_controll_points()}")
         
         return NURBS(
             [space_dim.degree for space_dim in self.space_dimensions],
@@ -371,18 +370,17 @@ class NURBSDefinition(SplineDefinition):
             self.weights
             )
 
-SplineTypes = Union[BSplineDefinition, NURBSDefinition] # should always be a derivate of SplineDefinition #TODO add NURBS
+SplineTypes = Union[NURBSDefinition, BSplineDefinition] # should always be a derivate of SplineDefinition
 
 class Spline(BaseModel):
     spline_definition: SplineTypes
 
-    def get_spline(self) -> Union[BSpline]:
+    def get_spline(self) -> Union[BSpline, NURBS]:
         """Creates the current spline.
 
         Returns:
             Union[BSpline]: [description]
         """
-        environment_logger.debug("Getting Gustav Spline.")
         return self.spline_definition.get_spline()
 
     def get_actions(self) -> List[VariableLocation]:

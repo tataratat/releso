@@ -4,7 +4,7 @@ from pydantic.main import BaseModel
 from pydantic.types import DirectoryPath, conint
 from SbSOvRL.util.util_funcs import call_commandline
 from SbSOvRL.reward_parser import RewardFunctionTypes
-from SbSOvRL.util.logger import parser_logger, environment_logger
+import logging
 
 
 class MultiProcessor(BaseModel):
@@ -20,7 +20,7 @@ class MultiProcessor(BaseModel):
         Returns:
             str: string representing the command line call
         """
-        return self.command + " " + max(1, min(core_count, self.max_core_count))
+        return self.command + " " + str(max(1, min(core_count, self.max_core_count)))
 
 
 class Solver(BaseModel):
@@ -56,17 +56,15 @@ class CommandLineSolver(Solver):
 
     def start_solver(self, core_count: int = 0, reset: bool = False) -> Tuple[Dict[str, Any], bool]:
         done = False
-        parser_logger.error(f"The working directory is: {self.working_directory}")
         command_str = self.get_multiprocessor_command_prefix(
             core_count)
-
         command_str += self.execution_command + \
             " " + " ".join(self.command_options)
         
         self._exit_code, self._output = call_commandline(
-            command_str, self.working_directory, environment_logger)
+            command_str, self.working_directory, logging.getLogger("SbSOvRL_environment"))
         if self._exit_code != 0:  # TODO should be also use the output somehow?
-            environment_logger.info("Solver thrown error, episode will end now...")
+            logging.getLogger("SbSOvRL_environment").info("Solver thrown error, episode will end now...")
             reward_observation_obj = {
                 "reward": -5,
                 "observation": []
@@ -79,6 +77,7 @@ class CommandLineSolver(Solver):
                 additional_parameter.append("-i")
             reward_observation_obj = self.get_reward_solver_observations(
                 additional_parameter)
+            done = done or reward_observation_obj["done"]
         return reward_observation_obj, done
 
 
