@@ -1,6 +1,6 @@
 from typing import Optional, Union, List, Dict, Any
 import uuid
-from pydantic import BaseModel
+from SbSOvRL.base_model import SbSOvRL_BaseModel
 from pydantic.class_validators import validator
 from pydantic.fields import Field, PrivateAttr
 from pydantic.types import UUID4, DirectoryPath, FilePath
@@ -12,12 +12,12 @@ import logging
 
 
 
-class PythonRewardFunction(BaseModel):
+class PythonRewardFunction(SbSOvRL_BaseModel):
     working_directory: DirectoryPath = Field(description="Directory in which the reward function script should be called.")
     reward_script: FilePath
     calling_function: Optional[str] = "python"
 
-    _reward_communication_id: UUID4 = PrivateAttr(default_factory=uuid.uuid4)
+    _reward_communication_id: UUID4 = PrivateAttr(default=None)
 
     @validator("reward_script")
     @classmethod
@@ -64,6 +64,8 @@ class PythonRewardFunction(BaseModel):
                 "observations": List[float]
             }
         """
+        if not self._reward_communication_id:
+            self._reward_communication_id = uuid.uuid4()
         additional_function_parameter = " " + " ".join(additional_parameter) + f" --run_id {self._reward_communication_id} "
         exit_code, output = call_commandline(self.calling_function + " " + str(self.reward_script) + additional_function_parameter, self.working_directory, logging.getLogger("SbSOvRL_environment"))
         return literal_eval(output.decode(sys.getdefaultencoding()))

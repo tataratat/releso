@@ -1,12 +1,13 @@
 import pathlib, logging
-from pydantic import BaseModel, Field
+from pydantic import Field
 from typing import Optional, Dict, Any, Tuple
 from SbSOvRL.exceptions import SbSOvRLParserException
 from gustav import Mesh, load_mixd, load_volume_mixd
 from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
+from SbSOvRL.base_model import SbSOvRL_BaseModel
 
-class Mesh(BaseModel):
+class Mesh(SbSOvRL_BaseModel):
     mxyz_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think.")
     mien_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.")
 

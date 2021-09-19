@@ -1,13 +1,14 @@
 from typing import Optional, List, Union, Any, Dict, Tuple
+import uuid
 from pydantic.fields import PrivateAttr
-from pydantic.main import BaseModel
-from pydantic.types import DirectoryPath, conint
+from pydantic.types import UUID4, DirectoryPath, conint
 from SbSOvRL.util.util_funcs import call_commandline
 from SbSOvRL.reward_parser import RewardFunctionTypes
 import logging
+from SbSOvRL.base_model import SbSOvRL_BaseModel
 
 
-class MultiProcessor(BaseModel):
+class MultiProcessor(SbSOvRL_BaseModel):
     command: str = "mpiexec -np"
     max_core_count: conint(ge=1)
 
@@ -23,7 +24,7 @@ class MultiProcessor(BaseModel):
         return self.command + " " + str(max(1, min(core_count, self.max_core_count)))
 
 
-class Solver(BaseModel):
+class Solver(SbSOvRL_BaseModel):
     multi_processor: Optional[MultiProcessor] = None
     working_directory: DirectoryPath
     reward_output: RewardFunctionTypes
@@ -54,7 +55,9 @@ class CommandLineSolver(Solver):
     execution_command: str
     command_options: List[str] = []
 
-    def start_solver(self, core_count: int = 0, reset: bool = False) -> Tuple[Dict[str, Any], bool]:
+    def start_solver(self, core_count: int = 0, reset: bool = False, new_goal_value: Optional[float] = None) -> Tuple[Dict[str, Any], bool]:
+        # setup uuid the first time this function gets called.
+        
         done = False
         command_str = self.get_multiprocessor_command_prefix(
             core_count)
@@ -71,10 +74,13 @@ class CommandLineSolver(Solver):
             }
             done = True
         else:
-            # return value of reward function
             additional_parameter = []
+            # return value of reward function
             if reset:
                 additional_parameter.append("-i")
+                if new_goal_value:
+                    additional_parameter.append("-g")
+                    additional_parameter.append(str(new_goal_value))
             reward_observation_obj = self.get_reward_solver_observations(
                 additional_parameter)
             done = done or reward_observation_obj["done"]

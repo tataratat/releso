@@ -1,13 +1,14 @@
 from pathlib import Path
-from pydantic import BaseModel, confloat, validator
+from pydantic import confloat, validator
 from typing import Literal, Optional, Union, Dict, Any
 # import numpy as np
 # from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.gym_environment import GymEnvironment
 from stable_baselines3 import PPO, DDPG, SAC
 import datetime
+from SbSOvRL.base_model import SbSOvRL_BaseModel
 
-# class Schedule(BaseModel):
+# class Schedule(SbSOvRL_BaseModel):
 #     """Exponential Scheduler function is as follows:
 
 #     end_value + (start_value-end_value) * e^(exponent * 5 * value) 
@@ -35,7 +36,8 @@ import datetime
 
 #     def __call__(self, value: float) -> float:
 #         return np.clip(np.exp(self.exponent * value) * (self.start_value - self.end_value) + self.end_value, self.end_value, self.start_value)
-class BaseAgent(BaseModel):
+
+class BaseAgent(SbSOvRL_BaseModel):
     tensorboard_log: Optional[str]
 
     def get_next_tensorboard_experiment_name(self) -> str:
@@ -91,14 +93,14 @@ class DDPGAgent(BaseAgent):
     device: str = "auto" # Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
     policy_kwargs: Optional[Dict[str, Any]] = None # additional arguments to be passed to the policy on creation
 
-    def get_agent(self, environment: GymEnvironment) -> PPO:
+    def get_agent(self, environment: GymEnvironment) -> DDPG:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
 
         Args:
             environment (GymEnvironment): The environment the agent uses to train.
 
         Returns:
-            PPO: Initialized DDPG agent.
+            DDPG: Initialized DDPG agent.
         """
         return DDPG(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
 
@@ -124,14 +126,14 @@ class SACAgent(BaseAgent):
     device: str = "auto" # Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
     policy_kwargs: Optional[Dict[str, Any]] = None # additional arguments to be passed to the policy on creation
 
-    def get_agent(self, environment: GymEnvironment) -> PPO:
+    def get_agent(self, environment: GymEnvironment) -> SAC:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
 
         Args:
             environment (GymEnvironment): The environment the agent uses to train.
 
         Returns:
-            PPO: Initialized SAC agent.
+            SAC: Initialized SAC agent.
         """
         return SAC(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
 

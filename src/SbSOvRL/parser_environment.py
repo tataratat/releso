@@ -1,4 +1,4 @@
-from pydantic import BaseModel, conint
+from pydantic import conint
 from typing import Optional, Any, List, Dict, Tuple, Union
 from SbSOvRL.spline import Spline, VariableLocation
 from SbSOvRL.mesh import Mesh
@@ -10,16 +10,17 @@ from gym import spaces
 from SbSOvRL.gym_environment import GymEnvironment
 import logging
 import numpy as np
-from copy import deepcopy
+from copy import copy
 from stable_baselines3.common.monitor import Monitor
+from SbSOvRL.base_model import SbSOvRL_BaseModel
 
-class MultiProcessing(BaseModel):
+class MultiProcessing(SbSOvRL_BaseModel):
     """Defines if the Problem should use Multiprocessing and with how many cores the solver can work. Does not force Multiprocessing for example if the solver does not support it.
     """
     number_of_cores: conint(ge=1)
 
 
-class Environment(BaseModel):
+class Environment(SbSOvRL_BaseModel):
     """
     Parser Environment object is created by pydantic during the parsing of the json object defining the Spline base Shape optimization. Each object can create a gym environment that represents the given problem.
     """
@@ -32,6 +33,8 @@ class Environment(BaseModel):
 
     # object variables
     _actions: List[VariableLocation] = PrivateAttr()
+    _validation: Optional[List[float]] = PrivateAttr(default=None)
+    _validation_idx: Optional[int] = PrivateAttr(default=0)
     _last_observation: np.ndarray = PrivateAttr()
     _FFD: FreeFormDeformation = PrivateAttr(
         default_factory=FreeFormDeformation)
@@ -88,12 +91,15 @@ class Environment(BaseModel):
         observations = self._get_spline_observations()
         done_from_observation = False
         
-        if self._last_observation == observations:
-            logging.getLogger("SbSOvRL_environment").info("The Spline observation have not changed will exit episode.")
-            done_from_observation = True
         
-        if reset or done:
-            self._last_observation = deepcopy(observations)
+        if reset or done or not self._last_observation:
+            # no need to compare during reset, done or during first step
+            pass
+        else:
+            if np.allclose(self._last_observation, observations):
+                logging.getLogger("SbSOvRL_environment").info("The Spline observation have not changed will exit episode.")
+                done_from_observation = True
+        self._last_observation = copy(observations)
         # add solver observations
         if done: # if solver failed use 0 solver observations
             observations.extend([0 for _ in range(self.additional_observations)])
@@ -181,12 +187,30 @@ class Environment(BaseModel):
         # apply Free Form Deformation should now just recreate the non deformed mesh
         self._apply_FFD()
 
+        new_goal_value = None
+
+        if self._validation:
+            if self._validation_idx == len(self._validation):
+                logging.getLogger("SbSOvRL_environment").info("The validation callback resets the environment one time to often. Next goal state will again be the correct one.")
+            new_goal_value = self._validation[self._validation_idx%len(self._validation)]
+            self._validation_idx += 1
+            if self._validation_idx>len(self._validation):
+                self._validation_idx = 0
+
         # run solver and reset reward and get new solver observations
         reward_solver_output, done = self.solver.start_solver(
-            reset=True, core_count=self.is_multiprocessing())
+            reset=True, core_count=self.is_multiprocessing(), new_goal_value=new_goal_value)
 
         obs, _ = self._get_observations(reward_solver_output=reward_solver_output, done=done, reset=True)
         return obs
+
+    def set_validation(self, validation_values: List[float]):
+        """Converts the environment to a validation environment. This environment now only sets the goal states to the predifined values.
+
+        Args:
+            validation_values (List[float]): List of predifiened goal states.
+        """
+        self._validation = validation_values
 
     def get_gym_environment(self) -> gym.Env:
         """Creates and configures the gym environment so it can be used for training.

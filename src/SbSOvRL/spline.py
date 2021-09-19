@@ -2,7 +2,7 @@ from abc import abstractmethod
 from SbSOvRL.exceptions import SbSOvRLParserException
 import logging
 from gustav import BSpline, NURBS
-from pydantic import BaseModel
+from SbSOvRL.base_model import SbSOvRL_BaseModel
 from typing import List, Union, Optional, Dict, Any
 import numpy as np
 from pydantic.class_validators import root_validator, validator
@@ -10,7 +10,7 @@ from pydantic.fields import PrivateAttr
 from pydantic.types import confloat, conint
 import copy
  
-class VariableLocation(BaseModel):
+class VariableLocation(SbSOvRL_BaseModel):
     current_position: confloat(le=1, ge=0)
     min_value: Optional[confloat(le=1, ge=0)] = None
     max_value: Optional[confloat(le=1, ge=0)] = None
@@ -136,7 +136,7 @@ class VariableLocation(BaseModel):
         if self._original_position is not None:
             self.current_position = self._original_position
 
-class SplineSpaceDimension(BaseModel):
+class SplineSpaceDimension(SbSOvRL_BaseModel):
     name: str
     number_of_points: conint(ge=1)
     degree: conint(ge=1)
@@ -187,7 +187,7 @@ class SplineSpaceDimension(BaseModel):
         """
         return self.knot_vector
 
-class SplineDefinition(BaseModel):
+class SplineDefinition(SbSOvRL_BaseModel):
     space_dimensions: List[SplineSpaceDimension]
     spline_dimension: conint(ge=1)
     control_point_variables: Optional[List[List[Union[VariableLocation, confloat(ge=0, le=1)]]]]
@@ -372,7 +372,7 @@ class NURBSDefinition(SplineDefinition):
 
 SplineTypes = Union[NURBSDefinition, BSplineDefinition] # should always be a derivate of SplineDefinition
 
-class Spline(BaseModel):
+class Spline(SbSOvRL_BaseModel):
     spline_definition: SplineTypes
 
     def get_spline(self) -> Union[BSpline, NURBS]:
