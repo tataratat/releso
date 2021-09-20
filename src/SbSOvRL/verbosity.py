@@ -48,6 +48,7 @@ class Verbosity(SbSOvRL_BaseModel):
 
         # create environment logger
         set_up_logger("SbSOvRL_environment", self.SbSOvRL_logfile_location, self.environment, self.console_logging)
+        set_up_logger("SbSOvRL_validation_environment", self.SbSOvRL_logfile_location, self.environment, self.console_logging)
 
         parser_logger.info(f"Setup logger. Parser logger has logging level: {self.parser}; Environment logger has logging level: {self.environment}")
 

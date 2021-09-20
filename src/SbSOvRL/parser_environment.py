@@ -36,6 +36,7 @@ class Environment(SbSOvRL_BaseModel):
     _validation: Optional[List[float]] = PrivateAttr(default=None)
     _validation_idx: Optional[int] = PrivateAttr(default=0)
     _last_observation: np.ndarray = PrivateAttr()
+    _logger_name: str = PrivateAttr(default="SbSOvRL_environment")
     _FFD: FreeFormDeformation = PrivateAttr(
         default_factory=FreeFormDeformation)
 
@@ -75,7 +76,7 @@ class Environment(SbSOvRL_BaseModel):
         """
         return [variable.current_position for variable in self._actions]
 
-    def _get_observations(self, reward_solver_output: Dict[str, Any], done: bool, reset: bool = False) -> List[float]:
+    def _get_observations(self, reward_solver_output: Dict[str, Any], done: bool) -> List[float]:
         """Collects all observations (Spline observations and solver observations) into a single observation vector.
 
         Note: This tool is currently setup to only work with and MLP policy since otherwise a multidimensional observation vector needs to be created.
@@ -89,17 +90,7 @@ class Environment(SbSOvRL_BaseModel):
         """
         # get spline observations
         observations = self._get_spline_observations()
-        done_from_observation = False
-        
-        
-        if reset or done or not self._last_observation:
-            # no need to compare during reset, done or during first step
-            pass
-        else:
-            if np.allclose(self._last_observation, observations):
-                logging.getLogger("SbSOvRL_environment").info("The Spline observation have not changed will exit episode.")
-                done_from_observation = True
-        self._last_observation = copy(observations)
+
         # add solver observations
         if done: # if solver failed use 0 solver observations
             observations.extend([0 for _ in range(self.additional_observations)])
@@ -107,7 +98,7 @@ class Environment(SbSOvRL_BaseModel):
             observations.extend(
                 [item for item in reward_solver_output["observations"]])
         obs = np.array(observations)
-        return obs, done_from_observation
+        return obs
 
     def _apply_FFD(self, path: Optional[str] = None) -> None:
         """Apply the Free Form Deformation using the current spline to the mesh and export the resulting mesh to the path given.
@@ -125,7 +116,7 @@ class Environment(SbSOvRL_BaseModel):
         Args:
             action ([type]):  Action value depends on if the ActionSpace is discrete (int - Signifier of the action) or Continuous (List[float] - Value for each continuous variable.)
         """
-        # logging.getLogger("SbSOvRL_environment").debug(f"Applying action {action}")
+        # logging.getLogger(self._logger_name).debug(f"Applying action {action}")
         if self.discrete_actions:
             increasing = (action%2 == 0)
             action_index = int(action/2)
@@ -155,7 +146,7 @@ class Environment(SbSOvRL_BaseModel):
             Tuple[Any, float, bool, Dict[str, Any]]: [description]
         """
         # apply new action
-        logging.getLogger("SbSOvRL_environment").debug(f"Action {action}")
+        logging.getLogger(self._logger_name).debug(f"Action {action}")
         self.apply_action(action)
 
         # apply Free Form Deformation
@@ -166,12 +157,22 @@ class Environment(SbSOvRL_BaseModel):
 
         info = {}
 
-        observations, done_from_obs = self._get_observations(reward_solver_output=reward_solver_output, done=done)
+        observations = self._get_observations(reward_solver_output=reward_solver_output, done=done)
 
-        # check if done from observations
-        done = done or done_from_obs
+        # check if spline has not changed. But only in validation phase to exit episodes that are always repeating the same action without breaking.
+        if self._validation:
+            if done or self._last_observation is None:
+                # no need to compare during reset, done or during first step
+                pass
+            else:
+                print(self._last_observation, observations)
+                print(type(self._last_observation), type(observations))
+                if np.allclose(np.array(self._last_observation), np.array(observations)):
+                    logging.getLogger(self._logger_name).info("The Spline observation have not changed will exit episode.")
+                    done = True
+            self._last_observation = copy(observations)
 
-        logging.getLogger("SbSOvRL_environment").info(f"Current reward {reward_solver_output['reward']} and episode is done: {done}.")
+        logging.getLogger(self._logger_name).info(f"Current reward {reward_solver_output['reward']} and episode is done: {done}.")
         return observations, reward_solver_output["reward"], done, info
 
     def reset(self) -> Tuple[Any]:
@@ -180,7 +181,7 @@ class Environment(SbSOvRL_BaseModel):
         Returns:
             Tuple[Any]: Reward of the newly resetted environment.
         """
-        logging.getLogger("SbSOvRL_environment").info("Resetting the Environment.")
+        logging.getLogger(self._logger_name).info("Resetting the Environment.")
         # reset spline
         self.spline.reset()
 
@@ -191,7 +192,7 @@ class Environment(SbSOvRL_BaseModel):
 
         if self._validation:
             if self._validation_idx == len(self._validation):
-                logging.getLogger("SbSOvRL_environment").info("The validation callback resets the environment one time to often. Next goal state will again be the correct one.")
+                logging.getLogger(self._logger_name).info("The validation callback resets the environment one time to often. Next goal state will again be the correct one.")
             new_goal_value = self._validation[self._validation_idx%len(self._validation)]
             self._validation_idx += 1
             if self._validation_idx>len(self._validation):
@@ -201,7 +202,7 @@ class Environment(SbSOvRL_BaseModel):
         reward_solver_output, done = self.solver.start_solver(
             reset=True, core_count=self.is_multiprocessing(), new_goal_value=new_goal_value)
 
-        obs, _ = self._get_observations(reward_solver_output=reward_solver_output, done=done, reset=True)
+        obs = self._get_observations(reward_solver_output=reward_solver_output, done=done)
         return obs
 
     def set_validation(self, validation_values: List[float]):
@@ -211,6 +212,8 @@ class Environment(SbSOvRL_BaseModel):
             validation_values (List[float]): List of predifiened goal states.
         """
         self._validation = validation_values
+        self._logger_name = "SbSOvRL_validation_environment"
+
 
     def get_gym_environment(self) -> gym.Env:
         """Creates and configures the gym environment so it can be used for training.
@@ -218,7 +221,7 @@ class Environment(SbSOvRL_BaseModel):
         Returns:
             gym.Env: openai gym environment that can be used to train with [stable_]baselines[3] agents.
         """
-        logging.getLogger("SbSOvRL_environment").info("Setting up Gym environment.")
+        logging.getLogger(self._logger_name).info("Setting up Gym environment.")
         env = GymEnvironment(self._set_up_actions(),
                              self._define_observation_space()) 
         env.step = self.step
