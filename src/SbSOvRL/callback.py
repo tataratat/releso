@@ -46,4 +46,4 @@ class EpisodeLogCallback(BaseCallback):
 
     def _on_training_end(self) -> None:
         self._export()
-        print(self.locals)
+        # print(self.locals)

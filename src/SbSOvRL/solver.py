@@ -43,7 +43,7 @@ class Solver(SbSOvRL_BaseModel):
         """
         return "" if (self.multi_processor is None or core_count == 0) else (self.multi_processor.get_command(core_count) + " ")
 
-    def start_solver(self, core_count: int = 0, reset: bool = False) -> Tuple[Dict[str, Any], bool]:
+    def start_solver(self, core_count: int = 0, reset: bool = False) -> Tuple[Dict[str, Any], Dict[str, Any], bool]:
         raise NotImplementedError(
             "This function needst to be overloaded to work.")
 
@@ -55,10 +55,11 @@ class CommandLineSolver(Solver):
     execution_command: str
     command_options: List[str] = []
 
-    def start_solver(self, core_count: int = 0, reset: bool = False, new_goal_value: Optional[float] = None) -> Tuple[Dict[str, Any], bool]:
+    def start_solver(self, core_count: int = 0, reset: bool = False, new_goal_value: Optional[float] = None) -> Tuple[Dict[str, Any], Dict[str, Any], bool]:
         # setup uuid the first time this function gets called.
         
         done = False
+        info = {}
         command_str = self.get_multiprocessor_command_prefix(
             core_count)
         command_str += self.execution_command + \
@@ -72,6 +73,7 @@ class CommandLineSolver(Solver):
                 "reward": -5,
                 "observation": []
             }
+            info["reset_reason"] = "solver_error"
             done = True
         else:
             additional_parameter = []
@@ -84,7 +86,7 @@ class CommandLineSolver(Solver):
             reward_observation_obj = self.get_reward_solver_observations(
                 additional_parameter)
             done = done or reward_observation_obj["done"]
-        return reward_observation_obj, done
+        return reward_observation_obj, info, done
 
 
 SolverTypeDefinition = Union[CommandLineSolver]

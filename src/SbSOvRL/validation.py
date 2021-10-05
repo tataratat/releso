@@ -15,6 +15,7 @@ class Validation(SbSOvRL_BaseModel):
     validation_values: conlist(float, min_items=1)
     save_best_agent: bool
     validate_on_training_end: bool
+    mesh_base_path_extension: Optional[str] = None
 
     @validator("validation_values")
     @classmethod
@@ -59,3 +60,14 @@ class Validation(SbSOvRL_BaseModel):
             "n_eval_episodes": len(self.validation_values)
         }
         return evaluate_policy(**variable_dict)
+
+    def get_mesh_base_path(self, base_save_location: pathlib.Path) -> str:
+        """Appends the read in base_mesh_path to the save_location path given as input parameter. This makes it so that the validaiton results are stored inside the results storage of the experiment.
+
+        Args:
+            base_save_location (pathlib.Path): Experiment/Trainingsrun save location.
+
+        Returns:
+            str: str of path pointing to the location where the meshes from the validation are supposed to be stored
+        """
+        return str(base_save_location/self.mesh_base_path_extension) if self.mesh_base_path_extension else None

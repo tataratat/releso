@@ -3,6 +3,7 @@ from typing import Optional, Any, List, Dict, Tuple, Union
 from SbSOvRL.spline import Spline, VariableLocation
 from SbSOvRL.mesh import Mesh
 from SbSOvRL.solver import SolverTypeDefinition
+from SbSOvRL.util import ffd_vis_for_rl
 from gustav import FreeFormDeformation
 from pydantic.fields import PrivateAttr
 import gym
@@ -13,6 +14,7 @@ import numpy as np
 from copy import copy
 from stable_baselines3.common.monitor import Monitor
 from SbSOvRL.base_model import SbSOvRL_BaseModel
+import pathlib
 
 class MultiProcessing(SbSOvRL_BaseModel):
     """Defines if the Problem should use Multiprocessing and with how many cores the solver can work. Does not force Multiprocessing for example if the solver does not support it.
@@ -39,7 +41,9 @@ class Environment(SbSOvRL_BaseModel):
     _logger_name: str = PrivateAttr(default="SbSOvRL_environment")
     _FFD: FreeFormDeformation = PrivateAttr(
         default_factory=FreeFormDeformation)
-
+    _last_step_results: Dict[str, Any] = PrivateAttr(default={})
+    _validation_base_mesh_path: Optional[str] = PrivateAttr(default=None)
+    _validation_itteration: Optional[int] = PrivateAttr(default=0)
     # object functions
 
     def __init__(self, **data: Any) -> None:
@@ -152,10 +156,8 @@ class Environment(SbSOvRL_BaseModel):
         # apply Free Form Deformation
         self._apply_FFD()
         # run solver
-        reward_solver_output, done = self.solver.start_solver(
+        reward_solver_output, info, done = self.solver.start_solver(
             core_count=self.is_multiprocessing())
-
-        info = {}
 
         observations = self._get_observations(reward_solver_output=reward_solver_output, done=done)
 
@@ -165,14 +167,22 @@ class Environment(SbSOvRL_BaseModel):
                 # no need to compare during reset, done or during first step
                 pass
             else:
-                print(self._last_observation, observations)
-                print(type(self._last_observation), type(observations))
+                # print(self._last_observation, observations)
+                # print(type(self._last_observation), type(observations))
                 if np.allclose(np.array(self._last_observation), np.array(observations)):
                     logging.getLogger(self._logger_name).info("The Spline observation have not changed will exit episode.")
                     done = True
+                    info["reset_reason"] = "SplineNotChanged" 
             self._last_observation = copy(observations)
 
         logging.getLogger(self._logger_name).info(f"Current reward {reward_solver_output['reward']} and episode is done: {done}.")
+
+        self._last_step_results = {
+            "observations": observations,
+            "reward": reward_solver_output["reward"],
+            "done": done,
+            "info": info
+        }
         return observations, reward_solver_output["reward"], done, info
 
     def reset(self) -> Tuple[Any]:
@@ -191,21 +201,35 @@ class Environment(SbSOvRL_BaseModel):
         new_goal_value = None
 
         if self._validation:
+            # export mesh at end of validation
+            if self._validation_idx > 0 and self._validation_base_mesh_path:
+                base_path = pathlib.Path(self._validation_base_mesh_path).parents[0] / str(self._validation_itteration) / str(self._validation_idx)
+                file_name = pathlib.Path(self._validation_base_mesh_path).name
+                if "_." in self._validation_base_mesh_path:
+                    validation_mesh_path = base_path / str(file_name).replace("_.", f"{'' if not self._last_step_results['info'].get('reset_reason') else (str(self._last_step_results['info'].get('reset_reason'))+'_')}.")
+                else:
+                    validation_mesh_path = self._validation_base_mesh_path
+                self.export_mesh(validation_mesh_path)
+                self.export_spline(str(validation_mesh_path).replace("xns","xml"))
+                # ffd_vis_for_rl.plot_deformed_unit_mesh(self._FFD, base_path/"deformed_unit_mesh.svg")
+                # ffd_vis_for_rl.plot_deformed_spline(self._FFD, base_path/"deformed_spline.svg")
             if self._validation_idx == len(self._validation):
                 logging.getLogger(self._logger_name).info("The validation callback resets the environment one time to often. Next goal state will again be the correct one.")
             new_goal_value = self._validation[self._validation_idx%len(self._validation)]
             self._validation_idx += 1
             if self._validation_idx>len(self._validation):
                 self._validation_idx = 0
+                self._validation_itteration += 1
+
 
         # run solver and reset reward and get new solver observations
-        reward_solver_output, done = self.solver.start_solver(
+        reward_solver_output, info, done = self.solver.start_solver(
             reset=True, core_count=self.is_multiprocessing(), new_goal_value=new_goal_value)
 
         obs = self._get_observations(reward_solver_output=reward_solver_output, done=done)
         return obs
 
-    def set_validation(self, validation_values: List[float]):
+    def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None):
         """Converts the environment to a validation environment. This environment now only sets the goal states to the predifined values.
 
         Args:
@@ -213,6 +237,7 @@ class Environment(SbSOvRL_BaseModel):
         """
         self._validation = validation_values
         self._logger_name = "SbSOvRL_validation_environment"
+        self._validation_base_mesh_path = base_mesh_path
 
 
     def get_gym_environment(self) -> gym.Env:

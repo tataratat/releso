@@ -1,9 +1,10 @@
-import sys
+#!/usr/bin/env python
+
 from SbSOvRL.base_parser import BaseParser
 import argparse
-from argparse import Action
 import pathlib
 import hjson
+import datetime
 
 
 def main(args) -> None:
@@ -30,29 +31,29 @@ def main(args) -> None:
     ###########################
     optimization_object.learn()
 
-    ###########################
-    #                         #
-    #    exporting spline     #
-    #                         #
-    ###########################
-    if args.export_spline is not None:
-        optimization_object.export_spline(args.export_spline)
+    # ###########################
+    # #                         #
+    # #    exporting spline     #
+    # #                         #
+    # ###########################
+    # if args.export_spline is not None:
+    #     optimization_object.export_spline(args.export_spline)
 
-    ###########################
-    #                         #
-    #     exporting mesh      #
-    #                         #
-    ###########################
-    if args.export_mesh is not None:
-        optimization_object.export_mesh(args.export_mesh)
+    # ###########################
+    # #                         #
+    # #     exporting mesh      #
+    # #                         #
+    # ###########################
+    # if args.export_mesh is not None:
+    #     optimization_object.export_mesh(args.export_mesh)
 
-    ###########################
-    #                         #
-    #      saving model       #
-    #                         #
-    ###########################
-    if args.save_model is not None:
-        optimization_object.export_mesh(args.export_mesh)
+    # ###########################
+    # #                         #
+    # #      saving model       #
+    # #                         #
+    # ###########################
+    # if args.save_model is not None:
+    #     optimization_object.export_mesh(args.export_mesh)
 
 if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser(description="Spline base Shape Optimization via Reinforcement Learning Toolbox. This python program loads a problem definition and trains the resulting problem. Futher the model can be evaluated")
@@ -65,4 +66,5 @@ if __name__ == '__main__':  # pragma: no cover
     # parser.add_argument("-m", "--model_load_path", action="store", help="Path to the location a previously trained model. If this is given no training will be performed. Currently there is no way to continue training of a model.")
 
     args = parser.parse_args()
+    print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     main(args)

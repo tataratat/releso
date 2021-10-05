@@ -4,7 +4,7 @@ from typing import Dict, Any, Tuple
 
 
 class GymEnvironment(gym.Env):
-    metadata = {'render.modes': ['console']}
+    metadata = {'render.modes': ['mesh']}
 
     def __init__(self, action_space, observation_space) -> None:
         super().__init__()
@@ -17,7 +17,7 @@ class GymEnvironment(gym.Env):
     def reset(self) -> Any:
         pass
 
-    def render(self, mode: str = "console") -> None:
+    def render(self, mode: str = "mesh") -> None:
         pass
 
     def close(self) -> None:

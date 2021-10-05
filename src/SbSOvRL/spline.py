@@ -11,11 +11,11 @@ from pydantic.types import confloat, conint
 import copy
  
 class VariableLocation(SbSOvRL_BaseModel):
-    current_position: confloat(le=1, ge=0)
-    min_value: Optional[confloat(le=1, ge=0)] = None
-    max_value: Optional[confloat(le=1, ge=0)] = None
+    current_position: float
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
     n_steps: Optional[conint(ge=1)] = 10
-    step: Optional[confloat(le=1, ge=0)] = None
+    step: Optional[float] = None
     
     # non json variables
     _is_action: Optional[bool] = PrivateAttr(default=None)
@@ -262,6 +262,8 @@ class SplineDefinition(SbSOvRL_BaseModel):
         new_list = []
         for element in v:
             new_list.append(VariableLocation(current_position=element) if type(element) is float else element)
+            if not 0. <= element.current_position <= 1.:
+                raise SbSOvRLParserException("SplineDefinition", "controll_point_variables", "The controll_point_variables need to be inside an unit hypercube. Found a values outside this unit hypercube.")
         return new_list
 
     def get_number_of_points(self) -> int:
@@ -281,7 +283,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
         Returns:
             List[VariableLocation]: See above
         """
-        logging.getLogger("SbSOvRL_environment").debug("Collecting all actions for Spline.")
+        logging.getLogger("SbSOvRL_environment").debug("Collecting all actions for BSpline.")
         return [variable for sub_dim in self.control_point_variables for variable in sub_dim if variable.is_action()]
 
     @abstractmethod
@@ -323,22 +325,22 @@ class BSplineDefinition(SplineDefinition):
             )
 
 class NURBSDefinition(SplineDefinition):
-    weights: List[float] # TODO should weights also be changable?
+    weights: List[Union[float, VariableLocation]] # TODO should weights also be changable?
 
     @validator("weights")
     @classmethod
-    def validate_weights(cls, v: Optional[List[float]], values: Dict[str, Any]) -> List[float]:
+    def validate_weights(cls, v: Optional[List[Union[float, VariableLocation]]], values: Dict[str, Any]) -> List[Union[float, VariableLocation]]:
         """Validate if the correct number of weights are present in the weight vector. If weight vector is not given weight vector should be all ones.
 
         Args:
-            v (Optional[List[float]]): Value to validate
+            v (List[Union[float, VariableLocation]]): Value to validate
             values (Dict[str, Any]): Previously validated variables
 
         Raises:
             SbSOvRLParserException: Parser Error
 
         Returns:
-            List[float]: Filled weight vector.
+            List[Union[float, VariableLocation]]: Filled weight vector.
         """
         if "space_dimensions" not in values.keys():
             raise SbSOvRLParserException("SplineDefinition", "weights", "During validation the prerequisite variable space_dimensions were not present.")
@@ -350,6 +352,21 @@ class NURBSDefinition(SplineDefinition):
                 raise SbSOvRLParserException("SplineDefinition NURBS", "weights", f"The length of the weight vector {len(v)} is not the same as the number of control_points {n_cp}.")
         elif v is None:
             v = list(np.ones(n_cp))
+        return v
+
+    @validator("weights", each_item=True)
+    @classmethod
+    def convert_weights_into_variable_location(cls, v: List[Union[float, VariableLocation]]) -> List[VariableLocation]:
+        """Convert all float values in the weight vector into VariableLocations. So that these can also be used as actions.
+
+        Args:
+            v (List[Union[float, VariableLocation]]): Value to validate
+
+        Returns:
+            List[VariableLocation]: Filled weight vector.
+        """
+        if type(v) is float:
+            return VariableLocation(current_position=v)
         return v
 
     def get_spline(self) -> NURBS:
@@ -369,6 +386,21 @@ class NURBSDefinition(SplineDefinition):
             self.get_controll_points(),
             self.weights
             )
+    
+    def get_actions(self) -> List[VariableLocation]:
+        """Extends the controll point actions with the weight actions.
+
+        Returns:
+            List[VariableLocation]: List of possible actions for this NURB spline.
+        """
+        actions = super().get_actions()
+        actions.extend([variable for variable in self.weights if variable.is_action()])
+        return actions
+
+    def reset(self) -> None:
+        super().reset()
+        for weight in self.weights:
+            weight.reset()
 
 SplineTypes = Union[NURBSDefinition, BSplineDefinition] # should always be a derivate of SplineDefinition
 
@@ -379,7 +411,7 @@ class Spline(SbSOvRL_BaseModel):
         """Creates the current spline.
 
         Returns:
-            Union[BSpline]: [description]
+            Union[BSpline, NURBS]: [description]
         """
         return self.spline_definition.get_spline()
 
@@ -387,7 +419,7 @@ class Spline(SbSOvRL_BaseModel):
         """Returns a list of VariableLocations that actually have a defined variability and can therefor be an action.
 
         Returns:
-            List[VariableLocation]: VariableLocations that have wriggle room.
+            List[VariableLocation]: VariableLocations that have 'wriggle' room.
         """
         return self.spline_definition.get_actions()
 

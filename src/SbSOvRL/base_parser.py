@@ -51,11 +51,12 @@ class BaseParser(SbSOvRL_BaseModel):
         validation_environment = None
         if self.validation is not None:
             validation_environment = deepcopy(self.environment)
-            validation_environment.set_validation(self.validation.validation_values)
+            validation_environment.set_validation(self.validation.validation_values, self.validation.get_mesh_base_path(self.save_location))
             if self.validation.should_add_callback():
                 callbacks.append(self.validation.get_callback(validation_environment.get_gym_environment(), save_location=self.save_location))
         
 
+        print(self.number_of_timesteps)
         self._agent.learn(self.number_of_timesteps, callback=callbacks, tb_log_name=self.agent.get_next_tensorboard_experiment_name())
         self.save_model()
         if self.validation:
