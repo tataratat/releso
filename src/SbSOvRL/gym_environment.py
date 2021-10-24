@@ -1,6 +1,6 @@
 import gym
 from gym import spaces
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Union, List
 
 
 class GymEnvironment(gym.Env):
@@ -11,7 +11,7 @@ class GymEnvironment(gym.Env):
         self.action_space = action_space
         self.observation_space = observation_space
 
-    def step(self, action: Any) -> Tuple[Any, float, bool, Dict[str, Any]]:
+    def step(self, action: Union[int,List[float]]) -> Tuple[Any, float, bool, Dict[str, Any]]:
         pass
 
     def reset(self) -> Any:

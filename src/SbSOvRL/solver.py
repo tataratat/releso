@@ -86,6 +86,7 @@ class CommandLineSolver(Solver):
             reward_observation_obj = self.get_reward_solver_observations(
                 additional_parameter)
             done = done or reward_observation_obj["done"]
+            info.update(reward_observation_obj["info"])
         return reward_observation_obj, info, done
 
 

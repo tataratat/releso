@@ -23,6 +23,16 @@ def main(args) -> None:
         raise ValueError(f"Could not find the given file: {file_path}.")
 
     optimization_object = BaseParser(**json_content)
+    
+    ###########################
+    #                         #
+    #    Only validation      #
+    #                         #
+    ###########################
+    if args.validate_only:
+        optimization_object.evaluate_model(throw_error_if_None=True)
+        return
+
 
     ###########################
     #                         #
@@ -64,6 +74,7 @@ if __name__ == '__main__':  # pragma: no cover
     # # parser.add_argument("--evaluate_values", action="extend", nargs="+", type=float, help="Will either be run after training or for the model defined in model_path.")
     # # parser.add_argument("-p", "--path", action="store", help="Base path for the results of the evaluation")
     # parser.add_argument("-m", "--model_load_path", action="store", help="Path to the location a previously trained model. If this is given no training will be performed. Currently there is no way to continue training of a model.")
+    parser.add_argument("-v", "--validate_only", action="store_true", help="If this is set only validation on this configuration is run. Please configure the validation object in the json file so that this option can be correctly executed.")
 
     args = parser.parse_args()
     print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))

@@ -4,6 +4,10 @@ from SbSOvRL.agent import AgentTypeDefinition
 from SbSOvRL.parser_environment import Environment
 from SbSOvRL.validation import Validation
 from SbSOvRL.callback import EpisodeLogCallback
+from SbSOvRL.verbosity import Verbosity
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.exceptions import SbSOvRLValidationNotSet
+from SbSOvRL.parser_environment import Environment
 from pydantic import validator
 from typing import Union, Optional
 from pydantic.fields import Field, PrivateAttr
@@ -12,8 +16,7 @@ from stable_baselines3.common.callbacks import StopTrainingOnMaxEpisodes
 from stable_baselines3.common.base_class import BaseAlgorithm
 import pathlib
 import datetime
-from SbSOvRL.verbosity import Verbosity
-from SbSOvRL.base_model import SbSOvRL_BaseModel
+import numpy as np
 
 class BaseParser(SbSOvRL_BaseModel):
     verbosity: Verbosity = Field(default_factory=Verbosity)
@@ -37,7 +40,6 @@ class BaseParser(SbSOvRL_BaseModel):
         path = pathlib.Path(v).expanduser().resolve()
         return path
         
-
     def learn(self) -> None:
         """
         Starts the training that is specified in the loaded json file.
@@ -48,22 +50,18 @@ class BaseParser(SbSOvRL_BaseModel):
             StopTrainingOnMaxEpisodes(max_episodes=self.number_of_episodes),
             EpisodeLogCallback(episode_log_location=self.save_location/"episode_log.csv", verbose=1)
         ]
-        validation_environment = None
-        if self.validation is not None:
-            validation_environment = deepcopy(self.environment)
-            validation_environment.set_validation(self.validation.validation_values, self.validation.get_mesh_base_path(self.save_location))
+        validation_environment = self._create_validation_environment()
+
+        if self.validation:
             if self.validation.should_add_callback():
                 callbacks.append(self.validation.get_callback(validation_environment.get_gym_environment(), save_location=self.save_location))
         
 
         print(self.number_of_timesteps)
-        self._agent.learn(self.number_of_timesteps, callback=callbacks, tb_log_name=self.agent.get_next_tensorboard_experiment_name())
+        self._agent.env.reset()
+        self._agent.learn(self.number_of_timesteps, callback=callbacks, tb_log_name=self.agent.get_next_tensorboard_experiment_name(), reset_num_timesteps=False)
         self.save_model()
-        if self.validation:
-            mean_reward, reward_std = self.validation.end_validation(agent=self._agent, environment=validation_environment.get_gym_environment())
-            log_str = f"The end validation had the following results: mean_reward = {mean_reward}; reward_std = {reward_std}"
-            logging.getLogger("SbSOvRL_environment").info(log_str)
-            print(log_str)
+        self.evaluate_model(validation_environment)
 
     def export_spline(self, file_name: str) -> None:
         """Exports the current spline to the specified location.
@@ -96,4 +94,48 @@ class BaseParser(SbSOvRL_BaseModel):
         path.parent.mkdir(parents=True, exist_ok=True)
         self._agent.save(path/"model_end.save")
             
+    def evaluate_model(self, validation_env: Union[None, Environment] = None, throw_error_if_None: bool = False) -> None:
+        """Evaluate the model with the parameters defined in the validation variable. If an agent is already loaded use this agent, else get the agent from the agent variable. Validation will be done inside the 
 
+        Args:
+            validation_env (Union[None, Environment], optional): If validation environment already exists it will be used else a new validation evironment will be created. Defaults to None.
+            throw_error_if_None (bool, optional): If this is set and the validation variable is None an error is thrown. Defaults to False.
+
+        Raises:
+            SbSOvRLValidationNotSet: Thrown if validation is absolutly needed. If not absolutly needed the validation will not be done but no error will be thrown.
+        """
+        if self.validation:
+            if validation_env is None:
+                validation_env = self._create_validation_environment(True)
+            if self._agent is None:
+                self._agent = self.agent.get_agent(validation_env.get_gym_environment())
+            reward, episode_length = self.validation.end_validation(agent=self._agent, environment=validation_env.get_gym_environment())
+            reward_array = np.array(reward)
+            mean_reward = reward_array.mean()
+            reward_std = reward_array.std()
+            log_str = f"The end validation had the following results: mean_reward = {mean_reward}; reward_std = {reward_std}"
+            logging.getLogger("SbSOvRL_environment").info(log_str)
+            print("The reward per episode was:", reward)
+            print("The length per episode was:", episode_length)
+        elif throw_error_if_None:
+            raise SbSOvRLValidationNotSet()
+
+    def _create_validation_environment(self, throw_error_if_None: bool = False) -> Environment:
+        """Creates a validation environment.
+
+        Args:
+            throw_error_if_None (bool, optional): If this is set and the validation variable is None an error is thrown. Defaults to False.
+
+        Raises:
+            SbSOvRLValidationNotSet: Thrown if validation is absolutly needed. If not absolutly needed the validation will not be done but no error will be thrown.
+
+        Returns:
+            Environment: Validation environment. Is not a 'gym' environment but and SbSOvRL.parser_environment.Environment. Create the gym environment by calling the function env.get_gym_environment()
+        """
+        if self.validation is None:
+            if throw_error_if_None:
+                raise SbSOvRLValidationNotSet()
+            return None
+        validation_environment = deepcopy(self.environment)
+        validation_environment.set_validation(**self.validation.get_environment_validation_parameters(self.save_location))
+        return validation_environment

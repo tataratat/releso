@@ -37,6 +37,8 @@ class Environment(SbSOvRL_BaseModel):
     _actions: List[VariableLocation] = PrivateAttr()
     _validation: Optional[List[float]] = PrivateAttr(default=None)
     _validation_idx: Optional[int] = PrivateAttr(default=0)
+    _max_timesteps_in_validation: Optional[int] = PrivateAttr(default=0)
+    _timesteps_in_validation: Optional[int] = PrivateAttr(default=0)
     _last_observation: np.ndarray = PrivateAttr()
     _logger_name: str = PrivateAttr(default="SbSOvRL_environment")
     _FFD: FreeFormDeformation = PrivateAttr(
@@ -44,6 +46,7 @@ class Environment(SbSOvRL_BaseModel):
     _last_step_results: Dict[str, Any] = PrivateAttr(default={})
     _validation_base_mesh_path: Optional[str] = PrivateAttr(default=None)
     _validation_itteration: Optional[int] = PrivateAttr(default=0)
+    _end_episode_on_spline_not_changed: Optional[bool] = PrivateAttr(default=False)
     # object functions
 
     def __init__(self, **data: Any) -> None:
@@ -162,14 +165,17 @@ class Environment(SbSOvRL_BaseModel):
         observations = self._get_observations(reward_solver_output=reward_solver_output, done=done)
 
         # check if spline has not changed. But only in validation phase to exit episodes that are always repeating the same action without breaking.
-        if self._validation:
-            if done or self._last_observation is None:
-                # no need to compare during reset, done or during first step
+        if self._validation and not done:
+            self._timesteps_in_validation += 1
+            if self._max_timesteps_in_validation > 0 and self._timesteps_in_validation >= self._max_timesteps_in_validation:
+                done = True
+                info["reset_reason"] = "max_timesteps"
+            # logging.getLogger(self._logger_name).info(f"Checked if max timestep was reached: {self._max_timesteps_in_validation > 0 and self._timesteps_in_validation > self._max_timesteps_in_validation}.")
+            if done or self._last_observation is None or not self._end_episode_on_spline_not_changed:
+                # no need to compare during reset, done, during first step or if option for spline not changed is not wanted
                 pass
             else:
-                # print(self._last_observation, observations)
-                # print(type(self._last_observation), type(observations))
-                if np.allclose(np.array(self._last_observation), np.array(observations)):
+                if np.allclose(np.array(self._last_observation), np.array(observations)): # check
                     logging.getLogger(self._logger_name).info("The Spline observation have not changed will exit episode.")
                     done = True
                     info["reset_reason"] = "SplineNotChanged" 
@@ -199,7 +205,7 @@ class Environment(SbSOvRL_BaseModel):
         self._apply_FFD()
 
         new_goal_value = None
-
+        self._timesteps_in_validation = 0
         if self._validation:
             # export mesh at end of validation
             if self._validation_idx > 0 and self._validation_base_mesh_path:
@@ -210,7 +216,10 @@ class Environment(SbSOvRL_BaseModel):
                 else:
                     validation_mesh_path = self._validation_base_mesh_path
                 self.export_mesh(validation_mesh_path)
-                self.export_spline(str(validation_mesh_path).replace("xns","xml"))
+                try:
+                    self.export_spline(validation_mesh_path.with_suffix(".xml"))
+                except:
+                    print(validation_mesh_path.with_suffix(".xml"))
                 # ffd_vis_for_rl.plot_deformed_unit_mesh(self._FFD, base_path/"deformed_unit_mesh.svg")
                 # ffd_vis_for_rl.plot_deformed_spline(self._FFD, base_path/"deformed_spline.svg")
             if self._validation_idx == len(self._validation):
@@ -229,16 +238,21 @@ class Environment(SbSOvRL_BaseModel):
         obs = self._get_observations(reward_solver_output=reward_solver_output, done=done)
         return obs
 
-    def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None):
+    def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None, end_episode_on_spline_not_change: bool = False, max_timesteps_per_epidsode: int = 0):
         """Converts the environment to a validation environment. This environment now only sets the goal states to the predifined values.
 
         Args:
             validation_values (List[float]): List of predifiened goal states.
+            base_mesh_path (Optional[str], optional): [description]. Defaults to None.
+            end_episode_on_spline_not_change (bool, optional): [description]. Defaults to False.
+            max_timesteps_per_epidsode (int, optional): [description]. Defaults to 0.
         """
         self._validation = validation_values
         self._logger_name = "SbSOvRL_validation_environment"
         self._validation_base_mesh_path = base_mesh_path
-
+        self._max_timesteps_in_validation = max_timesteps_per_epidsode
+        self._end_episode_on_spline_not_changed = end_episode_on_spline_not_change
+        logging.getLogger(self._logger_name).info(f"Setting environment to validation. max_timesteps {self._max_timesteps_in_validation}, spine_not_changed {self._end_episode_on_spline_not_changed}")
 
     def get_gym_environment(self) -> gym.Env:
         """Creates and configures the gym environment so it can be used for training.

@@ -224,7 +224,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
 
             # create each controll point for by concatenating each value in each list with each value of all other lists
             for inner_dim, dim_spacing in zip(dimension_lists, dim_spacings):
-                if v is None: # first iteration the v vector must be initialized with the first dimesion vector
+                if v is None: # first iteration the v vector must be initialized with the first dimension vector
                     v = []
                     for element in inner_dim:
                         if element == 0.:
@@ -245,7 +245,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
                             else:
                                 temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing)] + elem)
                     v = temp_v
-        return v
+        return v 
 
 
     @validator("control_point_variables", each_item=True)
@@ -262,7 +262,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
         new_list = []
         for element in v:
             new_list.append(VariableLocation(current_position=element) if type(element) is float else element)
-            if not 0. <= element.current_position <= 1.:
+            if not 0. <= new_list[-1].current_position <= 1.:
                 raise SbSOvRLParserException("SplineDefinition", "controll_point_variables", "The controll_point_variables need to be inside an unit hypercube. Found a values outside this unit hypercube.")
         return new_list
 
@@ -407,11 +407,11 @@ SplineTypes = Union[NURBSDefinition, BSplineDefinition] # should always be a der
 class Spline(SbSOvRL_BaseModel):
     spline_definition: SplineTypes
 
-    def get_spline(self) -> Union[BSpline, NURBS]:
+    def get_spline(self) -> Union[SplineTypes]:
         """Creates the current spline.
 
         Returns:
-            Union[BSpline, NURBS]: [description]
+            Union[SplineTypes]: [description]
         """
         return self.spline_definition.get_spline()
 

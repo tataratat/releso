@@ -1,8 +1,9 @@
 import pathlib
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from pydantic.class_validators import validator
+from pydantic.fields import Field
 from pydantic.types import conint, conlist
-from typing import Optional, List, Tuple
+from typing import Any, Optional, List, Tuple, Dict
 from SbSOvRL.exceptions import SbSOvRLParserException
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.type_aliases import GymEnv
@@ -16,6 +17,8 @@ class Validation(SbSOvRL_BaseModel):
     save_best_agent: bool
     validate_on_training_end: bool
     mesh_base_path_extension: Optional[str] = None
+    max_timesteps_per_episode: int = Field(description="Maximum number of steps in an episode during validation. If zero no maximum number of steps.", default=0)
+    end_episode_on_spline_not_changed: bool = Field(description="End episode if spline has not changed from one step to the next.", default=False)
 
     @validator("validation_values")
     @classmethod
@@ -57,7 +60,9 @@ class Validation(SbSOvRL_BaseModel):
         variable_dict = {
             "model": agent,
             "env": environment,
-            "n_eval_episodes": len(self.validation_values)
+            "n_eval_episodes": len(self.validation_values),
+            "deterministic": True,
+            "return_episode_rewards": True
         }
         return evaluate_policy(**variable_dict)
 
@@ -71,3 +76,14 @@ class Validation(SbSOvRL_BaseModel):
             str: str of path pointing to the location where the meshes from the validation are supposed to be stored
         """
         return str(base_save_location/self.mesh_base_path_extension) if self.mesh_base_path_extension else None
+
+    def get_environment_validation_parameters(self, base_save_location: pathlib.Path) -> Dict[str, Any]:
+        """Gets the validation parameters that need to be send to the environment if it gets converted to be a validation environment.
+
+        Args:
+            base_save_location (pathlib.Path): Experiment/Trainingsrun save location.
+
+        Returns:
+            Dict[str, Any]: dict with all the necessary parameters. Should mirror the parameters in parser_environment.Environment.set_validation
+        """
+        return {"validation_values": self.validation_values, "base_mesh_path": self.get_mesh_base_path(base_save_location), "end_episode_on_spline_not_change": self.end_episode_on_spline_not_changed, "max_timesteps_per_epidsode": self.max_timesteps_per_episode}

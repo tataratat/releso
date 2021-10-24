@@ -66,3 +66,26 @@ class SbSOvRLParserException(Exception):
     def __init__(self, parent: str, item: str, message: str) -> None:
         logging.getLogger("SbSOVRL_parser").exception(f"In {parent} object while parsing {item} the following error has occurred: {message}")
         super().__init__(f"In {underline(parent)} object while parsing {underline(item)} the following error has occurred: {red(message)}")
+
+class SbSOvRLAgentUnknownException(Exception):
+    """Parser Exception for the SbSOvRL package. Thrown when an agent is unknown. Configurable logger.
+
+    Args:
+        agent (str): Name of the unknown agent.
+        logger (str): Name of the logger where the exception should be logged over. (Defaults to: 'SbSOvRL_environment')
+    """
+    def __init__(self, agent: str, logger: str = "SbSOvRL_environment") -> None:
+        mes_str: str = f"The {agent} is unknown. Check the spelling or put in a request to add this agent."
+        logging.getLogger(logger).exception(mes_str)
+        super().__init__(mes_str)
+
+class SbSOvRLValidationNotSet(Exception):
+    """Parser Exception for the SbSOvRL package. Thrown when a validation environment is needed but can not be created due to uncofigured validation settings. Configurable logger.
+
+    Args:
+        logger (str): Name of the logger where the exception should be logged over. (Defaults to: 'SbSOvRL_environment')
+    """
+    def __init__(self, logger: str = "SbSOvRL_validation_environment") -> None:
+        mes_str: str = f"Could not create a validation environment due to inavailability of validation parameters. Please add the validation parameters to the json file."
+        logging.getLogger(logger).exception(type(self).__name__ + ": " + mes_str)
+        super().__init__(mes_str)
