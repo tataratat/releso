@@ -21,7 +21,10 @@ For guidance on the installation process see :doc:`installation`.
 
 .. toctree::
    installation
+   usage
+   json_schema
    SbSOvRL
+
 
 
 
