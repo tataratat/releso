@@ -31,10 +31,24 @@ The first two/three packages can be installed via pip and/or conda with the foll
 The next step is to install the ``gustav`` package which is a python interface for the c++ library SplineLib.
 To install ``gustav`` the following repository must be downloaded into an external folder and installed into the venv or conda environment as before. The installation process for the gustav package is documented in the README file of the repository.
 
+
+**Development**
+
+To develop the framework further the sphinx package should also be installed and the 
+
 Framework
 ---------
 
 After installing all prerequisites the framework itself can be installed by running the command below in the repository folder 05-Code/SORL/ 
+
+**Non-development**
+
+.. code-block:: console
+  
+   (SbSOvRL) $ pip install .
+
+
+**Development**
 
 .. code-block:: console
    

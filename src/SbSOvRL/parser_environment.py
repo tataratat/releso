@@ -258,7 +258,7 @@ class Environment(SbSOvRL_BaseModel):
         """Creates and configures the gym environment so it can be used for training.
 
         Returns:
-            gym.Env: openai gym environment that can be used to train with [stable_]baselines[3] agents.
+            gym.Env: openai gym environment that can be used to train with stable_baselines[3] agents.
         """
         logging.getLogger(self._logger_name).info("Setting up Gym environment.")
         env = GymEnvironment(self._set_up_actions(),

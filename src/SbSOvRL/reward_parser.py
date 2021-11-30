@@ -76,4 +76,4 @@ class PythonRewardFunction(SbSOvRL_BaseModel):
 
         logging.getLogger("environment_logger").debug(f"The uuid of the reward function is {__pydantic_self__._reward_communication_id}.")
 
-RewardFunctionTypes = Union[PythonRewardFunction]
+RewardFunctionTypes = PythonRewardFunction

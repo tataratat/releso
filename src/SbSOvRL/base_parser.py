@@ -19,21 +19,29 @@ import datetime
 import numpy as np
 
 class BaseParser(SbSOvRL_BaseModel):
-    verbosity: Verbosity = Field(default_factory=Verbosity)
-    agent: AgentTypeDefinition
-    environment: Union[Environment]
-    number_of_timesteps: conint(ge=1)
-    number_of_episodes: conint(ge=1)
-    save_location: Optional[str]
-    validation: Optional[Validation]
+    verbosity: Verbosity = Field(default_factory=Verbosity) #: Defining the verbosity of the training process and environment loading
+    agent: AgentTypeDefinition  #: Definition of the agent to be used during training and/or validation of the RL use case
+    environment: Union[Environment] #: Definition of the environment which encodes the parameters of the RL use case
+    number_of_timesteps: conint(ge=1)   #: Number of timesteps the training process should run for (supperseeded by the SbSOvRL.base_parser.BaseParser.number_of_episodes)
+    number_of_episodes: conint(ge=1)    #: Number of episodes the training prcess should run for 
+    save_location: Optional[str]    #: Definition of the save location of the logs and validation results
+    validation: Optional[Validation]    #: Definition of the validation parameters
 
 
     # internal objects
-    _agent: Optional[BaseAlgorithm] = PrivateAttr(default=None)
+    _agent: Optional[BaseAlgorithm] = PrivateAttr(default=None) #: Holds the trainable agent for the RL use case. The SbSOvRL.base_parser.BaseParser.agent defines the type and parameters of the agent this is the actual trainable agent.
 
     @validator("save_location")
     @classmethod
     def add_datetime_to_save_location(cls, v) -> str:
+        """Adds time and date informations to the save location of the current training run helps to differentiate runs with the same parameter definition. save_location string must include {} else no time and date information are added.
+
+        Args:
+            v ([type]): save_location optionally without time and date information.
+
+        Returns:
+            str: String where time and date information are added (only if {} is included !once! inside the original string)
+        """
         if '{}' in v:
             v = v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 
