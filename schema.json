@@ -2,52 +2,106 @@
   "title": "BaseParser",
   "type": "object",
   "properties": {
+    "verbosity": {
+      "$ref": "#/definitions/Verbosity"
+    },
     "agent": {
-      "$ref": "#/definitions/PPOAgent"
+      "title": "Agent",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PPOAgent"
+        },
+        {
+          "$ref": "#/definitions/DDPGAgent"
+        },
+        {
+          "$ref": "#/definitions/SACAgent"
+        },
+        {
+          "$ref": "#/definitions/PretrainedAgent"
+        },
+        {
+          "$ref": "#/definitions/DQNAgent"
+        }
+      ]
     },
     "environment": {
       "$ref": "#/definitions/Environment"
+    },
+    "number_of_timesteps": {
+      "title": "Number Of Timesteps",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "number_of_episodes": {
+      "title": "Number Of Episodes",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "save_location": {
+      "title": "Save Location",
+      "type": "string"
+    },
+    "validation": {
+      "$ref": "#/definitions/Validation"
     }
   },
   "required": [
     "agent",
-    "environment"
+    "environment",
+    "number_of_timesteps",
+    "number_of_episodes"
   ],
+  "additionalProperties": false,
   "definitions": {
-    "Schedule": {
-      "title": "Schedule",
-      "description": "Exponential Scheduler function is as follows:\n\nend_value + (start_value-end_value) * e^(exponent*value) \n\nThere is an extra clipping step to absolutely ensure that the end value is in between upper and lower bound.",
+    "Verbosity": {
+      "title": "Verbosity",
       "type": "object",
       "properties": {
-        "exponent": {
-          "title": "Exponent",
-          "exclusiveMaximum": 0.0,
-          "type": "number"
+        "parser": {
+          "title": "Parser",
+          "default": "INFO",
+          "enum": [
+            "ERROR",
+            "WARNING",
+            "DEBUG",
+            "INFO"
+          ],
+          "type": "string"
         },
-        "start_value": {
-          "title": "Start Value",
-          "exclusiveMinimum": 0.0,
-          "maximum": 1.0,
-          "type": "number"
+        "environment": {
+          "title": "Environment",
+          "default": "INFO",
+          "enum": [
+            "ERROR",
+            "WARNING",
+            "DEBUG",
+            "INFO"
+          ],
+          "type": "string"
         },
-        "end_value": {
-          "title": "End Value",
-          "default": 0,
-          "exclusiveMinimum": 0.0,
-          "maximum": 1.0,
-          "type": "number"
+        "SbSOvRL_logfile_location": {
+          "title": "Sbsovrl Logfile Location",
+          "default": "training_{}/logging/",
+          "type": "string"
+        },
+        "console_logging": {
+          "title": "Console Logging",
+          "default": false,
+          "type": "boolean"
         }
       },
-      "required": [
-        "exponent",
-        "start_value"
-      ]
+      "additionalProperties": false
     },
     "PPOAgent": {
       "title": "PPOAgent",
-      "description": "PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.\n\nArgs:\n    BaseModel ([type]): [description]",
+      "description": "PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.\n    ",
       "type": "object",
       "properties": {
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
+          "type": "string"
+        },
         "type": {
           "title": "Type",
           "enum": [
@@ -55,17 +109,17 @@
           ],
           "type": "string"
         },
+        "policy": {
+          "title": "Policy",
+          "enum": [
+            "MlpPolicy"
+          ],
+          "type": "string"
+        },
         "learning_rate": {
           "title": "Learning Rate",
           "default": 0.0003,
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "$ref": "#/definitions/Schedule"
-            }
-          ]
+          "type": "number"
         },
         "n_steps": {
           "title": "N Steps",
@@ -95,14 +149,7 @@
         "clip_range": {
           "title": "Clip Range",
           "default": 0.2,
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "$ref": "#/definitions/Schedule"
-            }
-          ]
+          "type": "number"
         },
         "ent_coef": {
           "title": "Ent Coef",
@@ -117,14 +164,372 @@
         "seed": {
           "title": "Seed",
           "type": "integer"
+        },
+        "device": {
+          "title": "Device",
+          "default": "auto",
+          "type": "string"
+        },
+        "policy_kwargs": {
+          "title": "Policy Kwargs",
+          "type": "object"
         }
       },
       "required": [
-        "type"
-      ]
+        "type",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "DDPGAgent": {
+      "title": "DDPGAgent",
+      "description": "DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.\n    ",
+      "type": "object",
+      "properties": {
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "enum": [
+            "DDPG"
+          ],
+          "type": "string"
+        },
+        "policy": {
+          "title": "Policy",
+          "enum": [
+            "MlpPolicy"
+          ],
+          "type": "string"
+        },
+        "learning_rate": {
+          "title": "Learning Rate",
+          "default": 0.001,
+          "type": "number"
+        },
+        "buffer_size": {
+          "title": "Buffer Size",
+          "default": 1000000,
+          "type": "integer"
+        },
+        "learning_starts": {
+          "title": "Learning Starts",
+          "default": 100,
+          "type": "integer"
+        },
+        "batch_size": {
+          "title": "Batch Size",
+          "default": 64,
+          "type": "integer"
+        },
+        "tau": {
+          "title": "Tau",
+          "default": 0.005,
+          "type": "number"
+        },
+        "gamma": {
+          "title": "Gamma",
+          "default": 0.99,
+          "type": "number"
+        },
+        "optimize_memory_usage": {
+          "title": "Optimize Memory Usage",
+          "default": 0.95,
+          "type": "number"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "device": {
+          "title": "Device",
+          "default": "auto",
+          "type": "string"
+        },
+        "policy_kwargs": {
+          "title": "Policy Kwargs",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "SACAgent": {
+      "title": "SACAgent",
+      "description": "SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.\n    ",
+      "type": "object",
+      "properties": {
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "enum": [
+            "SAC"
+          ],
+          "type": "string"
+        },
+        "policy": {
+          "title": "Policy",
+          "enum": [
+            "MlpPolicy"
+          ],
+          "type": "string"
+        },
+        "learning_rate": {
+          "title": "Learning Rate",
+          "default": 0.001,
+          "type": "number"
+        },
+        "buffer_size": {
+          "title": "Buffer Size",
+          "default": 1000000,
+          "type": "integer"
+        },
+        "learning_starts": {
+          "title": "Learning Starts",
+          "default": 100,
+          "type": "integer"
+        },
+        "batch_size": {
+          "title": "Batch Size",
+          "default": 64,
+          "type": "integer"
+        },
+        "tau": {
+          "title": "Tau",
+          "default": 0.005,
+          "type": "number"
+        },
+        "gamma": {
+          "title": "Gamma",
+          "default": 0.99,
+          "type": "number"
+        },
+        "optimize_memory_usage": {
+          "title": "Optimize Memory Usage",
+          "default": false,
+          "type": "boolean"
+        },
+        "ent_coef": {
+          "title": "Ent Coef",
+          "default": "auto",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "target_update_interval": {
+          "title": "Target Update Interval",
+          "default": 1,
+          "type": "integer"
+        },
+        "target_entropy": {
+          "title": "Target Entropy",
+          "default": "auto",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "use_sde": {
+          "title": "Use Sde",
+          "default": false,
+          "type": "boolean"
+        },
+        "sde_sample_freq": {
+          "title": "Sde Sample Freq",
+          "default": -1,
+          "type": "integer"
+        },
+        "use_sde_at_warmup": {
+          "title": "Use Sde At Warmup",
+          "default": false,
+          "type": "boolean"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "device": {
+          "title": "Device",
+          "default": "auto",
+          "type": "string"
+        },
+        "policy_kwargs": {
+          "title": "Policy Kwargs",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "PretrainedAgent": {
+      "title": "PretrainedAgent",
+      "type": "object",
+      "properties": {
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "enum": [
+            "PPO",
+            "SAC",
+            "DDPG"
+          ],
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "format": "file-path",
+          "type": "string"
+        },
+        "tesorboard_run_directory": {
+          "title": "Tesorboard Run Directory",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "DQNAgent": {
+      "title": "DQNAgent",
+      "description": "DQN definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.\n    ",
+      "type": "object",
+      "properties": {
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "enum": [
+            "DQN"
+          ],
+          "type": "string"
+        },
+        "policy": {
+          "title": "Policy",
+          "enum": [
+            "MlpPolicy"
+          ],
+          "type": "string"
+        },
+        "learning_rate": {
+          "title": "Learning Rate",
+          "default": 0.0001,
+          "type": "number"
+        },
+        "buffer_size": {
+          "title": "Buffer Size",
+          "default": 1000000,
+          "type": "integer"
+        },
+        "learning_starts": {
+          "title": "Learning Starts",
+          "default": 256,
+          "type": "integer"
+        },
+        "batch_size": {
+          "title": "Batch Size",
+          "default": 32,
+          "type": "integer"
+        },
+        "tau": {
+          "title": "Tau",
+          "default": 1.0,
+          "type": "number"
+        },
+        "gamma": {
+          "title": "Gamma",
+          "default": 0.99,
+          "type": "number"
+        },
+        "train_freq": {
+          "title": "Train Freq",
+          "default": 4,
+          "type": "integer"
+        },
+        "gradient_steps": {
+          "title": "Gradient Steps",
+          "default": 1,
+          "type": "integer"
+        },
+        "optimize_memory_usage": {
+          "title": "Optimize Memory Usage",
+          "default": false,
+          "type": "boolean"
+        },
+        "target_update_interval": {
+          "title": "Target Update Interval",
+          "default": 256,
+          "type": "integer"
+        },
+        "exploration_fraction": {
+          "title": "Exploration Fraction",
+          "default": 0.1,
+          "type": "number"
+        },
+        "exploration_initial_eps": {
+          "title": "Exploration Initial Eps",
+          "default": 1.0,
+          "type": "number"
+        },
+        "exploration_final_eps": {
+          "title": "Exploration Final Eps",
+          "default": 0.05,
+          "type": "number"
+        },
+        "max_grad_norm": {
+          "title": "Max Grad Norm",
+          "default": 10,
+          "type": "number"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "device": {
+          "title": "Device",
+          "default": "auto",
+          "type": "string"
+        },
+        "policy_kwargs": {
+          "title": "Policy Kwargs",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "policy"
+      ],
+      "additionalProperties": false
     },
     "MultiProcessing": {
       "title": "MultiProcessing",
+      "description": "Defines if the Problem should use Multiprocessing and with how many cores the solver can work. Does not force Multiprocessing for example if the solver does not support it.\n    ",
       "type": "object",
       "properties": {
         "number_of_cores": {
@@ -135,7 +540,8 @@
       },
       "required": [
         "number_of_cores"
-      ]
+      ],
+      "additionalProperties": false
     },
     "SplineSpaceDimension": {
       "title": "SplineSpaceDimension",
@@ -166,9 +572,9 @@
       "required": [
         "name",
         "number_of_points",
-        "degree",
-        "knot_vector"
-      ]
+        "degree"
+      ],
+      "additionalProperties": false
     },
     "VariableLocation": {
       "title": "VariableLocation",
@@ -176,26 +582,15 @@
       "properties": {
         "current_position": {
           "title": "Current Position",
-          "minimum": 0,
-          "maximum": 1,
           "type": "number"
         },
         "min_value": {
           "title": "Min Value",
-          "minimum": 0,
-          "maximum": 1,
           "type": "number"
         },
         "max_value": {
           "title": "Max Value",
-          "minimum": 0,
-          "maximum": 1,
           "type": "number"
-        },
-        "discrete": {
-          "title": "Discrete",
-          "default": false,
-          "type": "boolean"
         },
         "n_steps": {
           "title": "N Steps",
@@ -205,17 +600,16 @@
         },
         "step": {
           "title": "Step",
-          "minimum": 0,
-          "maximum": 1,
           "type": "number"
         }
       },
       "required": [
         "current_position"
-      ]
+      ],
+      "additionalProperties": false
     },
-    "SplineDefinition": {
-      "title": "SplineDefinition",
+    "NURBSDefinition": {
+      "title": "NURBSDefinition",
       "type": "object",
       "properties": {
         "space_dimensions": {
@@ -230,91 +624,152 @@
           "minimum": 1,
           "type": "integer"
         },
-        "number_of_element_variables": {
-          "title": "Number Of Element Variables",
-          "minimum": 0,
-          "type": "integer"
-        },
         "control_point_variables": {
           "title": "Control Point Variables",
           "type": "array",
           "items": {
-            "anyOf": [
-              {
-                "type": "array",
-                "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/VariableLocation"
+                },
+                {
                   "type": "number",
                   "minimum": 0,
                   "maximum": 1
                 }
-              },
-              {
-                "type": "array",
-                "items": {
-                  "$ref": "#/definitions/VariableLocation"
-                }
-              }
-            ]
+              ]
+            }
           }
         },
         "weights": {
           "title": "Weights",
-          "default": [],
           "type": "array",
           "items": {
-            "type": "number"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/definitions/VariableLocation"
+              }
+            ]
           }
         }
       },
       "required": [
         "space_dimensions",
         "spline_dimension",
-        "number_of_element_variables",
-        "control_point_variables"
-      ]
+        "weights"
+      ],
+      "additionalProperties": false
+    },
+    "BSplineDefinition": {
+      "title": "BSplineDefinition",
+      "type": "object",
+      "properties": {
+        "space_dimensions": {
+          "title": "Space Dimensions",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SplineSpaceDimension"
+          }
+        },
+        "spline_dimension": {
+          "title": "Spline Dimension",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "control_point_variables": {
+          "title": "Control Point Variables",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/VariableLocation"
+                },
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "space_dimensions",
+        "spline_dimension"
+      ],
+      "additionalProperties": false
     },
     "Spline": {
       "title": "Spline",
       "type": "object",
       "properties": {
-        "spline_type": {
-          "title": "Spline Type",
-          "enum": [
-            1
-          ],
-          "type": "integer"
-        },
         "spline_definition": {
-          "$ref": "#/definitions/SplineDefinition"
+          "title": "Spline Definition",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/NURBSDefinition"
+            },
+            {
+              "$ref": "#/definitions/BSplineDefinition"
+            }
+          ]
         }
       },
       "required": [
-        "spline_type",
         "spline_definition"
-      ]
+      ],
+      "additionalProperties": false
     },
     "Mesh": {
       "title": "Mesh",
       "type": "object",
       "properties": {
-        "location": {
-          "title": "Location",
-          "default": "local",
-          "enum": [
-            "local",
-            "remote"
-          ],
+        "mxyz_path": {
+          "title": "Mxyz Path",
+          "description": "Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think.",
+          "format": "file-path",
+          "type": "string"
+        },
+        "mien_path": {
+          "title": "Mien Path",
+          "description": "Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.",
+          "format": "file-path",
           "type": "string"
         },
         "path": {
           "title": "Path",
-          "format": "file-path",
           "type": "string"
+        },
+        "export_path": {
+          "title": "Export Path",
+          "type": "string"
+        },
+        "hypercube": {
+          "title": "Hypercube",
+          "description": "If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).",
+          "default": true,
+          "type": "boolean"
+        },
+        "dimensions": {
+          "title": "Dimensions",
+          "minimum": 1,
+          "type": "integer"
         }
       },
       "required": [
-        "path"
-      ]
+        "path",
+        "export_path",
+        "dimensions"
+      ],
+      "additionalProperties": false
     },
     "MultiProcessor": {
       "title": "MultiProcessor",
@@ -333,19 +788,91 @@
       },
       "required": [
         "max_core_count"
-      ]
+      ],
+      "additionalProperties": false
+    },
+    "MPIClusterMultiProcessor": {
+      "title": "MPIClusterMultiProcessor",
+      "type": "object",
+      "properties": {
+        "command": {
+          "title": "Command",
+          "default": "$MPIEXEC",
+          "type": "string"
+        },
+        "max_core_count": {
+          "title": "Max Core Count",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "location": {
+          "title": "Location",
+          "enum": [
+            "cluster"
+          ],
+          "type": "string"
+        },
+        "mpi_flags_variable": {
+          "title": "Mpi Flags Variable",
+          "default": "$FLAGS_MPI_BATCH",
+          "type": "string"
+        }
+      },
+      "required": [
+        "max_core_count",
+        "location"
+      ],
+      "additionalProperties": false
+    },
+    "PythonRewardFunction": {
+      "title": "PythonRewardFunction",
+      "type": "object",
+      "properties": {
+        "working_directory": {
+          "title": "Working Directory",
+          "description": "Directory in which the reward function script should be called.",
+          "format": "directory-path",
+          "type": "string"
+        },
+        "reward_script": {
+          "title": "Reward Script",
+          "format": "file-path",
+          "type": "string"
+        },
+        "calling_function": {
+          "title": "Calling Function",
+          "default": "python",
+          "type": "string"
+        }
+      },
+      "required": [
+        "working_directory",
+        "reward_script"
+      ],
+      "additionalProperties": false
     },
     "CommandLineSolver": {
       "title": "CommandLineSolver",
       "type": "object",
       "properties": {
         "multi_processor": {
-          "$ref": "#/definitions/MultiProcessor"
+          "title": "Multi Processor",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MultiProcessor"
+            },
+            {
+              "$ref": "#/definitions/MPIClusterMultiProcessor"
+            }
+          ]
         },
         "working_directory": {
           "title": "Working Directory",
           "format": "directory-path",
           "type": "string"
+        },
+        "reward_output": {
+          "$ref": "#/definitions/PythonRewardFunction"
         },
         "execution_command": {
           "title": "Execution Command",
@@ -362,11 +889,14 @@
       },
       "required": [
         "working_directory",
+        "reward_output",
         "execution_command"
-      ]
+      ],
+      "additionalProperties": false
     },
     "Environment": {
       "title": "Environment",
+      "description": "Parser Environment object is created by pydantic during the parsing of the json object defining the Spline base Shape optimization. Each object can create a gym environment that represents the given problem.",
       "type": "object",
       "properties": {
         "multi_processing": {
@@ -380,13 +910,74 @@
         },
         "solver": {
           "$ref": "#/definitions/CommandLineSolver"
+        },
+        "discrete_actions": {
+          "title": "Discrete Actions",
+          "default": true,
+          "type": "boolean"
+        },
+        "additional_observations": {
+          "title": "Additional Observations",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [
         "spline",
         "mesh",
-        "solver"
-      ]
+        "solver",
+        "additional_observations"
+      ],
+      "additionalProperties": false
+    },
+    "Validation": {
+      "title": "Validation",
+      "type": "object",
+      "properties": {
+        "validation_freq": {
+          "title": "Validation Freq",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "validation_values": {
+          "title": "Validation Values",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "save_best_agent": {
+          "title": "Save Best Agent",
+          "type": "boolean"
+        },
+        "validate_on_training_end": {
+          "title": "Validate On Training End",
+          "type": "boolean"
+        },
+        "mesh_base_path_extension": {
+          "title": "Mesh Base Path Extension",
+          "type": "string"
+        },
+        "max_timesteps_per_episode": {
+          "title": "Max Timesteps Per Episode",
+          "description": "Maximum number of steps in an episode during validation. If zero no maximum number of steps.",
+          "default": 0,
+          "type": "integer"
+        },
+        "end_episode_on_spline_not_changed": {
+          "title": "End Episode On Spline Not Changed",
+          "description": "End episode if spline has not changed from one step to the next.",
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "validation_values",
+        "save_best_agent",
+        "validate_on_training_end"
+      ],
+      "additionalProperties": false
     }
   }
 }

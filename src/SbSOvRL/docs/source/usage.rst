@@ -8,7 +8,7 @@ This framework can be used in two modes:
 The first mode is the intended use case. The usage of this mode is shown below.
 
 Command line based program
-==========================
+--------------------------
 
 The package can be called via command line, after installing it (:doc:`installation`), with the following command.
 
@@ -29,11 +29,23 @@ The base json object has the following attributes:
 
 .. list-table:: base json object
     :widths: 25 75
-    :header-rows: 1
+    :header-rows: 0
     :stub-columns: 1
 
     * - agent
       - Defining the agent that is supposed to be used. The python class definition of the agents can be found at :doc:`_autosummary/SbSOvRL.agent`
     * - environment
-      - Defining the environment of the task. This is the most complicated definition the class definition of the object can be found at
+      - Defining the environment of the task. This is the most complicated definition the class definition of the object can be found at :doc:`_autosummary/SbSOvRL.parser_environment`
+    * - verbosity
+      - Defining the verbosity of the training process and environment loading. The object can be found at :doc:`_autosummary/SbSOvRL.verbosity.Verbosity`
+    * - validation
+      - Definition of the validation parameters. The object can be found at :doc:`_autosummary/SbSOvRL.validation.Validation`
+    * - number_of_timesteps
+      - Number of time steps the agent should be trained for is superseded by the number of episodes the agent is trained for. Must be of type (int).
+    * - number_of_episodes
+      - Number of episodes the agent should be trained it supersedes by the number of time steps the agent is trained for. Must be of type (int).
+    * - save_location
+      - Path to the directory where the log and validation results are to be stored. If {} is inside the string a timestamp is added to distinguish different training runs. Must be of type (str).
   
+
+The package uses the Python library ``pydantic`` to parse the json file into Python classes. It tries to match the json attributes in each object to the Python attributes of the corresponding class. So when looking at the Python class :doc:`_autosummary/SbSOvRL.base_parser.BaseParser` the listed attributes of this class are also the attributes of the base json object. This also holds recursively for all referenced types.
