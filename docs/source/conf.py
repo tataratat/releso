@@ -10,9 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../src/'))
 
 
 # -- Project information -----------------------------------------------------
@@ -38,7 +38,7 @@ extensions = [
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym", "stable_baselines3", "pandas", "gustav"]
+autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym", "stable_baselines3", "pandas", "gustav", "numpy"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
