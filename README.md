@@ -28,4 +28,4 @@ The documentation is build by executing the following command inside the folder 
 3. Fix Gustav. Currently Gustav has still a little bug the prevents me from using it correctly. in load.py in line ~88 the check if the path is absolute must be commented. (actually should be fix be the time you read this)
 
 If developing this package one can use ```pip install -e .``` in the 05-Code/SORL folder to install a development version where you can use  ```import SbSOvRL``` where ever you are (as long as the python environment is correctly set). You only have to do this once since it will link to the development folder and not to ``site-packages``. 
-<\div>
+</div>

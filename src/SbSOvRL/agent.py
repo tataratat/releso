@@ -1,3 +1,26 @@
+"""
+Out of the box the SbSOvRL package uses agents implemented in the Python package
+stable-baselines3. Currently the agents Deep Q-Network (DQN), Proximal Policy Optimization (PPO), Soft Actor-Critic (SAC) and Deep Deterministic Policy Gradient (DDPG)
+can be used directly but the others can be added easily. 
+
+The following table shows which agent can be used for which shape optimization approach:
+
++-------+---------------------------+-----------------------------+
+| Agent | Direct shape optimization | Indirect shape optimization |
++=======+===========================+=============================+
+| PPO   | YES                       | YES                         |
++-------+---------------------------+-----------------------------+
+| DQN   | NO                        | YES                         |
++-------+---------------------------+-----------------------------+
+| SAC   | NO                        | YES                         |
++-------+---------------------------+-----------------------------+
+| DDPG  | NO                        | YES                         |
++-------+---------------------------+-----------------------------+
+
+Author:
+    Clemens Fricke (clemens.fricke@rwth-aachen.de)
+
+"""
 from pathlib import Path
 from pydantic import confloat, validator
 from typing import Literal, Optional, Union, Dict, Any
@@ -30,9 +53,12 @@ class BaseAgent(SbSOvRL_BaseModel):
         return None
 
 class PretrainedAgent(BaseAgent):
-    type: Literal["PPO", "SAC", "DDPG"]
-    path: FilePath
-    tesorboard_run_directory: Union[str, None] = None
+    """
+    This class can be used to load pretrained agents, instead of using untrained agents. Can also be used to only validate this agent without training it further. Please see validation section for this use-case.
+    """
+    type: Literal["PPO", "SAC", "DDPG"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
+    path: FilePath  #: Path to the save files of the pretrained agent.
+    tesorboard_run_directory: Union[str, None] = None   #: If the agent is to be trained further the results can be added to the existing tensorboard experiment. This is the path to the existing tenorboard experiment
 
     def get_agent(self, environment: GymEnvironment) -> BaseAlgorithm:
         """Tries to locate the agent defined and to load it correctly.
