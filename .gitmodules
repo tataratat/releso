@@ -1,0 +1,3 @@
+[submodule "examples/Examples"]
+	path = examples/Examples
+	url = git@git.rwth-aachen.de:student-theses/software/SbSOvRL/Examples.git
