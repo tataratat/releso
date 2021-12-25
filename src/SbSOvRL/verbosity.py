@@ -1,20 +1,38 @@
 from pydantic import validator, root_validator
+from pydantic.fields import PrivateAttr
 from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
+from SbSOvRL.util.logger import VerbosityLevel, set_up_logger, logging
 import pathlib
 from typing import Any, Literal
 import datetime
 
 
 class Verbosity(SbSOvRL_BaseModel): 
-    parser: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"
-    environment: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"
-    SbSOvRL_logfile_location: str = "training_{}/logging/"
-    console_logging: bool = False
+    """
+        Defines the settings for the different loggers used in the current experiment. This class is the only class which is copied to all children. (this happens outside of the the standard channels and will hopefully not break with multiprocessing)
+    """
+    parser: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"   #: VerbosityLevel of the parser logger. This logger should only generate messages during the setup of the experiment.
+    environment: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"  #: VerbosityLevel of the environment parsers. These loggers will generate messages during the execution of the experiments. (Training and Validation)
+    SbSOvRL_logfile_location: str = "logging/"  #: Path where the log files should be saved to. Will be inside the base_save_location.
+    console_logging: bool = False   #: Whether or not to also print the log messages to the console.
+    base_logger_name: str = "SbSOvRL"   #: Base name of all logger. Defaults to "SbSOvRL"
+    environment_extension: str = "rl"   #: Name extensions for all environment logger. Defaults to "rl"
+    parser_extension: str = "parser"    #: Name extension for the parser logger. Defaults to "parser"
+
+    # private fields
+    _environment_parser: str = PrivateAttr(default="SbSOvRL_rl")
     
     @validator("parser", "environment", always=True)
     @classmethod
     def convert_literal_str_to_verbosityLevel(cls, v):
+        """ Validation function converting the string representation of the enum to the correct enum item.
+
+        Args:
+            v (str)): String representation of the VerbosityLevel
+
+        Returns:
+            VerbosityLevel: Enum object of the wanted value
+        """
         if v == "ERROR":
             return VerbosityLevel.ERROR
         elif v == "WARNING":
@@ -26,29 +44,46 @@ class Verbosity(SbSOvRL_BaseModel):
 
     @validator("SbSOvRL_logfile_location", always=True)
     @classmethod
-    def make_logfile_location_absolute(cls, v):
-        return pathlib.Path(v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))).expanduser().resolve()
-    
-    # @root_validator()
-    # @classmethod
-    # def add(cls, values):
-    #     """Adds a timestamp to the log file location so that multiple runs can be more easily be distinguished.
-    #     """
-    #     add_time_stamp = values["add_time_stamp"]
-    #     if add_time_stamp:
-    #         path = values["SbSOvRL_logfile_location"]
-    #         path = path / 
-    #         values["SbSOvRL_logfile_location"] = path
-    #     return values
+    def make_logfile_location_absolute(cls, v, values):
+        """ Validation function resolves and makes the logpath absolute. Also adds the current timestamp to the logpath if a {} is present in the given path.
+
+        Args:
+            v (str): [description]
+            values ([type]): [description]
+
+        Returns:
+            pathlib.Path: pathlib representation of the path with if applicable the current timestamp
+        """
+        path = pathlib.Path(v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))).expanduser().resolve()
+        if "save_location" in values:
+            path: pathlib.Path = values["save_location"] / path
+            path.mkdir(parents=True, exist_ok=True)
+        return path
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
         # create parser logger
-        parser_logger = set_up_logger("SbSOvRL_parser", self.SbSOvRL_logfile_location, self.parser, self.console_logging)
+        parser_name = "_".join([self.base_logger_name, self.parser_extension])
+        if not logging.getLogger(parser_name).hasHandlers():
+            parser_logger = set_up_logger(parser_name, self.SbSOvRL_logfile_location, self.parser, self.console_logging)
 
-        # create environment logger
-        set_up_logger("SbSOvRL_environment", self.SbSOvRL_logfile_location, self.environment, self.console_logging)
-        set_up_logger("SbSOvRL_validation_environment", self.SbSOvRL_logfile_location, self.environment, self.console_logging)
+        # create base rl logger
+        self.add_environment_logger_with_name_extension("")
+        self.add_environment_logger_with_name_extension("validation")
 
         parser_logger.info(f"Setup logger. Parser logger has logging level: {self.parser}; Environment logger has logging level: {self.environment}")
 
+    def add_environment_logger_with_name_extension(self, extension: str) -> logging.Logger:
+        """ Initializes a logger with the settings for the environment logger. The name of the base environment logger is extended by the :attr:`extension`. The name if the created logger is found by joining the strings of the following variables by an underscore. :attr:`Verbosity.base_logger_name`, :attr:`Verbosity.environment_extension`, :attr:`extension` Any empty strings are ignored. 
+        Args:
+            extension (str): Used to differentiate between different environment loggers. If empty the base logger is created/returned.
+
+        Returns:
+            logging.Logger: Logger of the name defined name. The name definition is explained in the main documentation of the function.
+        """
+        logger_name = "_".join(filter(("").__ne__, [self.base_logger_name, self.environment_extension, extension]))
+        if not logging.getLogger(logger_name).hasHandlers():
+            logger = set_up_logger(logger_name, self.SbSOvRL_logfile_location, self.environment, self.console_logging)
+        else:
+            logger = logging.getLogger(logger_name)
+        return logger

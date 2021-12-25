@@ -7,41 +7,6 @@ from SbSOvRL.reward_parser import RewardFunctionTypes
 import logging
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 
-
-class MultiProcessor(SbSOvRL_BaseModel):
-    command: str = "mpiexec -np"
-    max_core_count: conint(ge=1)
-
-    def get_command(self, core_count: int) -> str:
-        """Returns the string that represents the call for multiprocessing.
-
-        Args:
-            core_count (int): Number of wanted cores.
-
-        Returns:
-            str: string representing the command line call
-        """
-
-        return f"{self.command} {str(max(1, min(core_count, self.max_core_count)))}"
-
-class MPIClusterMultiProcessor(MultiProcessor):
-    location: Literal["cluster"]
-    command: str = "$MPIEXEC"
-    mpi_flags_variable: str = "$FLAGS_MPI_BATCH"
-
-    def get_command(self, core_count: int) -> str:
-        # logging.getLogger("SbSOvRL_environment").warning("Using Cluster mpi")
-        # check if environment variable for mpi has the correct core number.
-        environ_mpi_flags: List = str(os.environ[self.mpi_flags_variable.replace("$", '')]).split()
-        if len(environ_mpi_flags) != 2:
-            logging.getLogger("SbSOvRL_environment").error("The environment variable for mpi cluster did not look as expected. Please use standard MultiProcessor or revise the code.")
-            raise RuntimeError("Could not complete Task. Please see log for more informations.")
-        core_qualifier, set_core_count = environ_mpi_flags
-        if set_core_count != core_count:
-            os.environ[self.mpi_flags_variable.replace("$", '')] = f"{core_qualifier} {max(1, min(core_count, self.max_core_count))}"
-        logging.getLogger("SbSOvRL_environment").warning(f"Using Cluster mpi with command {os.environ[self.command.replace('$', '')]} and additional flags {os.environ[self.mpi_flags_variable.replace('$', '')]}")
-        return f"{self.command} {self.mpi_flags_variable}"
-
 class Solver(SbSOvRL_BaseModel):
     multi_processor: Optional[Union[MultiProcessor, MPIClusterMultiProcessor]] = None
     working_directory: DirectoryPath

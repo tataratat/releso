@@ -24,6 +24,7 @@ For guidance on the installation process see :doc:`installation`.
    usage
    json_schema
    SbSOvRL
+   SPOR
 
 
 

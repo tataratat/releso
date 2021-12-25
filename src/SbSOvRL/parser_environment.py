@@ -2,8 +2,7 @@ from pydantic import conint
 from typing import Optional, Any, List, Dict, Tuple, Union
 from SbSOvRL.spline import Spline, VariableLocation
 from SbSOvRL.mesh import Mesh
-from SbSOvRL.solver import SolverTypeDefinition
-from SbSOvRL.util import ffd_vis_for_rl
+from SbSOvRL.spor import SPORList
 from gustav import FreeFormDeformation
 from pydantic.fields import PrivateAttr
 import gym
@@ -29,7 +28,7 @@ class Environment(SbSOvRL_BaseModel):
     multi_processing: Optional[MultiProcessing]
     spline: Spline
     mesh: Mesh
-    solver: SolverTypeDefinition
+    spor: SPORList
     discrete_actions: bool = True
     additional_observations: conint(ge=0)
 
@@ -159,8 +158,7 @@ class Environment(SbSOvRL_BaseModel):
         # apply Free Form Deformation
         self._apply_FFD()
         # run solver
-        reward_solver_output, info, done = self.solver.start_solver(
-            core_count=self.is_multiprocessing())
+        observations_, reward_solver_output, info, done = self.spor.run_all()
 
         observations = self._get_observations(reward_solver_output=reward_solver_output, done=done)
 
@@ -238,19 +236,19 @@ class Environment(SbSOvRL_BaseModel):
         obs = self._get_observations(reward_solver_output=reward_solver_output, done=done)
         return obs
 
-    def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None, end_episode_on_spline_not_change: bool = False, max_timesteps_per_epidsode: int = 0):
+    def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None, end_episode_on_spline_not_change: bool = False, max_timesteps_per_episode: int = 0):
         """Converts the environment to a validation environment. This environment now only sets the goal states to the predifined values.
 
         Args:
-            validation_values (List[float]): List of predifiened goal states.
+            validation_values (List[float]): List of predefined goal states.
             base_mesh_path (Optional[str], optional): [description]. Defaults to None.
             end_episode_on_spline_not_change (bool, optional): [description]. Defaults to False.
-            max_timesteps_per_epidsode (int, optional): [description]. Defaults to 0.
+            max_timesteps_per_episode (int, optional): [description]. Defaults to 0.
         """
         self._validation = validation_values
         self._logger_name = "SbSOvRL_validation_environment"
         self._validation_base_mesh_path = base_mesh_path
-        self._max_timesteps_in_validation = max_timesteps_per_epidsode
+        self._max_timesteps_in_validation = max_timesteps_per_episode
         self._end_episode_on_spline_not_changed = end_episode_on_spline_not_change
         logging.getLogger(self._logger_name).info(f"Setting environment to validation. max_timesteps {self._max_timesteps_in_validation}, spine_not_changed {self._end_episode_on_spline_not_changed}")
 

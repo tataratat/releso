@@ -21,10 +21,9 @@ import numpy as np
 class BaseParser(SbSOvRL_BaseModel):
     verbosity: Verbosity = Field(default_factory=Verbosity) #: Defining the verbosity of the training process and environment loading
     agent: AgentTypeDefinition  #: Definition of the agent to be used during training and/or validation of the RL use case
-    environment: Union[Environment] #: Definition of the environment which encodes the parameters of the RL use case
+    environment: Environment    #: Definition of the environment which encodes the parameters of the RL use case
     number_of_timesteps: conint(ge=1)   #: Number of timesteps the training process should run for (supperseeded by the SbSOvRL.base_parser.BaseParser.number_of_episodes)
     number_of_episodes: conint(ge=1)    #: Number of episodes the training prcess should run for 
-    save_location: Optional[str]    #: Definition of the save location of the logs and validation results
     validation: Optional[Validation]    #: Definition of the validation parameters
 
 
@@ -34,7 +33,7 @@ class BaseParser(SbSOvRL_BaseModel):
     @validator("save_location")
     @classmethod
     def add_datetime_to_save_location(cls, v) -> str:
-        """Adds time and date informations to the save location of the current training run helps to differentiate runs with the same parameter definition. save_location string must include {} else no time and date information are added.
+        """Adds time and date information to the save location of the current training run helps to differentiate runs with the same parameter definition. save_location string must include {} else no time and date information are added.
 
         Args:
             v ([type]): save_location optionally without time and date information.

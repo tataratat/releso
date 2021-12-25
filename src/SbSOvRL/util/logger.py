@@ -18,7 +18,7 @@ def set_up_logger(loggerName: str = '', log_file_location: pathlib.Path = pathli
         loggerName (str, optional): Name of the logging instance. Defaults to ''.
         log_file_location (Path): Path to the directory into which the log file(s) will be placed into. Defaults to ".".
         verbosity (VerbosityLevel): Enum value for the verbosity of the given logger. Defaults to VerbosityLevel.INFO 
-        console_logging (bool): Toggle wheter to also log into the console. Defaults to False.
+        console_logging (bool): Toggle whether to also log into the console. Defaults to False.
 
     Returns:
         logging.Logger: Configured logger instance for simultaneously writing to file and console
