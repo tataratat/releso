@@ -1,3 +1,6 @@
+"""
+File holds the definition class for the validation.
+"""
 import pathlib
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from pydantic.class_validators import validator
@@ -12,23 +15,35 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.base_class import BaseAlgorithm
 
 class Validation(SbSOvRL_BaseModel):
-    validation_freq: Optional[conint(ge=1)]
-    validation_values: conlist(float, min_items=1)
-    save_best_agent: bool
-    validate_on_training_end: bool
-    mesh_base_path_extension: Optional[str] = None
-    max_timesteps_per_episode: int = Field(description="Maximum number of steps in an episode during validation. If zero no maximum number of steps.", default=0)
-    end_episode_on_spline_not_changed: bool = Field(description="End episode if spline has not changed from one step to the next.", default=False)
+    validation_freq: Optional[conint(ge=1)]     #: How many timesteps should pass by learning between validation runs
+    validation_values: conlist(float, min_items=1)  #: List of validation items. This will be revised later on #TODO
+    save_best_agent: bool   #: Whether or not to save the best agent. If agent is not saved only results will be reported by the agent which produced them will not be saved.
+    validate_on_training_end: bool  #: Whether or not to also run a validation when the training is terminated.
+    mesh_base_path_extension: Optional[str] = None  #: Do not know currently
+    max_timesteps_per_episode: int = Field(description="Maximum number of steps in an episode during validation. If zero no maximum number of steps.", default=0)   #: after how many timesteps inside a single episode should the episode be terminated.
+    end_episode_on_spline_not_changed: bool = Field(description="End episode if spline has not changed from one step to the next.", default=False)  #: Should the episode be terminated if the spline representation has not changed between timesteps?
 
     @validator("validation_values")
     @classmethod
     def validate_validation_values_list_not_empty(cls, value: List[float], field: str) -> List[float]:
+        """Checks that the validation_values list is not empty.
+
+        Args:
+            value (List[float]): value holding the list
+            field (str): name of the current field
+
+        Raises:
+            SbSOvRLParserException: Thrown if list is empty
+
+        Returns:
+            List[float]: validated list
+        """
         if len(value) == 0:
             raise SbSOvRLParserException("Validation", field, "You need to provide validation values")
         return value
     
     def should_add_callback(self) -> bool:
-        """Bool function wheter or not a validation callback is needed.
+        """Bool function whether or not a validation callback is needed.
 
         Returns:
             bool: Return True if a validation callback is needed else False.
@@ -42,9 +57,9 @@ class Validation(SbSOvRL_BaseModel):
 
         Args:
             eval_environment (GymEnv): Evaluation environment. Should be the same as the normal training environment only that here the goal values should be set and not random.
-            save_locaiton (Optional[pathlib.Path]): Path to where the best models should be save to.
+            save_location (Optional[pathlib.Path]): Path to where the best models should be save to.
         Returns:
-            EvalCallback: Validation callback parametriezed by this object.
+            EvalCallback: Validation callback parametrized by this object.
         """
         variable_dict = {
             "eval_env": eval_environment,

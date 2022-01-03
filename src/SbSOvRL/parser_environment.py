@@ -8,7 +8,6 @@ from pydantic.fields import PrivateAttr
 import gym
 from gym import spaces
 from SbSOvRL.gym_environment import GymEnvironment
-import logging
 import numpy as np
 from copy import copy
 from stable_baselines3.common.monitor import Monitor
@@ -122,15 +121,15 @@ class Environment(SbSOvRL_BaseModel):
         Args:
             action ([type]):  Action value depends on if the ActionSpace is discrete (int - Signifier of the action) or Continuous (List[float] - Value for each continuous variable.)
         """
-        # logging.getLogger(self._logger_name).debug(f"Applying action {action}")
+        # self.get_logger().debug(f"Applying action {action}")
         if self.discrete_actions:
             increasing = (action%2 == 0)
             action_index = int(action/2)
             self._actions[action_index].apply_discrete_action(increasing)
             # TODO check if this is correct
         else:
-            for new_value, action in zip(action, self._actions):
-                action.apply_continuos_action(new_value)
+            for new_value, action_obj in zip(action, self._actions):
+                action_obj.apply_continuos_action(new_value)
 
     def is_multiprocessing(self) -> int:
         """Function checks if the environment is setup to be used with multiprocessing Solver. Returns the number of cores the solver should use. If no multiprocessing 0 cores are returned.
@@ -152,7 +151,7 @@ class Environment(SbSOvRL_BaseModel):
             Tuple[Any, float, bool, Dict[str, Any]]: [description]
         """
         # apply new action
-        logging.getLogger(self._logger_name).debug(f"Action {action}")
+        self.get_logger().debug(f"Action {action}")
         self.apply_action(action)
 
         # apply Free Form Deformation
@@ -168,18 +167,18 @@ class Environment(SbSOvRL_BaseModel):
             if self._max_timesteps_in_validation > 0 and self._timesteps_in_validation >= self._max_timesteps_in_validation:
                 done = True
                 info["reset_reason"] = "max_timesteps"
-            # logging.getLogger(self._logger_name).info(f"Checked if max timestep was reached: {self._max_timesteps_in_validation > 0 and self._timesteps_in_validation > self._max_timesteps_in_validation}.")
+            # self.get_logger().info(f"Checked if max timestep was reached: {self._max_timesteps_in_validation > 0 and self._timesteps_in_validation > self._max_timesteps_in_validation}.")
             if done or self._last_observation is None or not self._end_episode_on_spline_not_changed:
                 # no need to compare during reset, done, during first step or if option for spline not changed is not wanted
                 pass
             else:
                 if np.allclose(np.array(self._last_observation), np.array(observations)): # check
-                    logging.getLogger(self._logger_name).info("The Spline observation have not changed will exit episode.")
+                    self.get_logger().info("The Spline observation have not changed will exit episode.")
                     done = True
                     info["reset_reason"] = "SplineNotChanged" 
             self._last_observation = copy(observations)
 
-        logging.getLogger(self._logger_name).info(f"Current reward {reward_solver_output['reward']} and episode is done: {done}.")
+        self.get_logger().info(f"Current reward {reward_solver_output['reward']} and episode is done: {done}.")
 
         self._last_step_results = {
             "observations": observations,
@@ -195,7 +194,7 @@ class Environment(SbSOvRL_BaseModel):
         Returns:
             Tuple[Any]: Reward of the newly resetted environment.
         """
-        logging.getLogger(self._logger_name).info("Resetting the Environment.")
+        self.get_logger().info("Resetting the Environment.")
         # reset spline
         self.spline.reset()
 
@@ -221,7 +220,7 @@ class Environment(SbSOvRL_BaseModel):
                 # ffd_vis_for_rl.plot_deformed_unit_mesh(self._FFD, base_path/"deformed_unit_mesh.svg")
                 # ffd_vis_for_rl.plot_deformed_spline(self._FFD, base_path/"deformed_spline.svg")
             if self._validation_idx == len(self._validation):
-                logging.getLogger(self._logger_name).info("The validation callback resets the environment one time to often. Next goal state will again be the correct one.")
+                self.get_logger().info("The validation callback resets the environment one time to often. Next goal state will again be the correct one.")
             new_goal_value = self._validation[self._validation_idx%len(self._validation)]
             self._validation_idx += 1
             if self._validation_idx>len(self._validation):
@@ -250,15 +249,15 @@ class Environment(SbSOvRL_BaseModel):
         self._validation_base_mesh_path = base_mesh_path
         self._max_timesteps_in_validation = max_timesteps_per_episode
         self._end_episode_on_spline_not_changed = end_episode_on_spline_not_change
-        logging.getLogger(self._logger_name).info(f"Setting environment to validation. max_timesteps {self._max_timesteps_in_validation}, spine_not_changed {self._end_episode_on_spline_not_changed}")
+        self.get_logger().info(f"Setting environment to validation. max_timesteps {self._max_timesteps_in_validation}, spine_not_changed {self._end_episode_on_spline_not_changed}")
 
     def get_gym_environment(self) -> gym.Env:
         """Creates and configures the gym environment so it can be used for training.
 
         Returns:
-            gym.Env: openai gym environment that can be used to train with stable_baselines[3] agents.
+            gym.Env: OpenAI gym environment that can be used to train with stable_baselines[3] agents.
         """
-        logging.getLogger(self._logger_name).info("Setting up Gym environment.")
+        self.get_logger().info("Setting up Gym environment.")
         env = GymEnvironment(self._set_up_actions(),
                              self._define_observation_space()) 
         env.step = self.step

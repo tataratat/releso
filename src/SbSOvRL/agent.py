@@ -21,13 +21,11 @@ Author:
     Clemens Fricke (clemens.fricke@rwth-aachen.de)
 
 """
-from pathlib import Path
-from pydantic import confloat, validator
 from typing import Literal, Optional, Union, Dict, Any
 # import numpy as np
 # from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.gym_environment import GymEnvironment
-from pydantic.types import DirectoryPath, FilePath
+from pydantic.types import FilePath
 from stable_baselines3 import PPO, DDPG, SAC, DQN
 from stable_baselines3.common.base_class import BaseAlgorithm
 import datetime
@@ -97,17 +95,17 @@ class PretrainedAgent(BaseAgent):
 
 
 class PPOAgent(BaseAgent):
-    """PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.
+    """PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["PPO"]
     policy: Literal["MlpPolicy"]
-    learning_rate: Union[float] = 3e-4 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
+    learning_rate: float = 3e-4 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     n_steps: int = 2048 #: The number of steps to run for each environment per update(i.e. rollout buffer size is n_steps * n_envs where n_envs is number of environment copies running in parallel) NOTE: n_steps * n_envs must be greater than 1 (because of the advantage normalization) See https://github.com/pytorch/pytorch/issues/29372
     batch_size: Optional[int] = 64 #: Minibatch size
     n_epochs: int = 10 #: Number of epoch when optimizing the surrogate loss
     gamma: float = 0.99 #: Discount factor
     gae_lambda: float = 0.95 #: Factor for trade-off of bias vs variance for Generalized Advantage Estimator
-    clip_range: Union[float] = 0.2 #: Clipping parameter, it can be a function of the current progress remaining (from 1 to 0).
+    clip_range: float = 0.2 #: Clipping parameter, it can be a function of the current progress remaining (from 1 to 0).
     ent_coef: float = 0.0 #: Entropy coefficient for the loss calculation
     vf_coef: float = 0.5 #: Value function coefficient for the loss calculation
     seed: Optional[int] = None #: Seed for the pseudo random generators
@@ -126,11 +124,11 @@ class PPOAgent(BaseAgent):
         return PPO(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
 
 class DDPGAgent(BaseAgent):
-    """DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.
+    """DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["DDPG"]
     policy: Literal["MlpPolicy"]
-    learning_rate: Union[float] = 1e-3 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
+    learning_rate: float = 1e-3 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000 #: size of the replay buffer
     learning_starts: int = 100 #: how many steps of the model to collect transitions for before learning starts
     batch_size: Optional[int] = 64 #: Minibatch size
@@ -153,11 +151,11 @@ class DDPGAgent(BaseAgent):
         return DDPG(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
 
 class SACAgent(BaseAgent):
-    """SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.
+    """SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["SAC"]
     policy: Literal["MlpPolicy"]
-    learning_rate: Union[float] = 1e-3 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
+    learning_rate: float = 1e-3 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000 #: size of the replay buffer
     learning_starts: int = 100 #: how many steps of the model to collect transitions for before learning starts
     batch_size: Optional[int] = 64 #: Minibatch size
@@ -186,7 +184,7 @@ class SACAgent(BaseAgent):
         return SAC(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
 
 class DQNAgent(BaseAgent):
-    """DQN definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.
+    """DQN definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["DQN"]
     policy: Literal["MlpPolicy"]
@@ -196,7 +194,7 @@ class DQNAgent(BaseAgent):
     batch_size: Optional[int] = 32 #: Minibatch size for each gradient update
     tau: float = 1.0 #: the soft update coefficient ("Polyak update", between 0 and 1) default 1 for hard update
     gamma: float = 0.99 #: the discount factor
-    train_freq: Union[int] = 4 #: Update the model every ``train_freq`` steps. 
+    train_freq: int = 4 #: Update the model every ``train_freq`` steps. 
     gradient_steps: int = 1 #:How many gradient steps to do after each rollout (see ``train_freq``) Set to ``-1`` means to do as many gradient steps as steps done in the environment during the rollout.
     optimize_memory_usage: bool = False #: Enable a memory efficient variant of the replay buffer at a cost of more complexity. See https://github.com/DLR-RM/stable-baselines3/issues/37#:issuecomment-637501195
     target_update_interval: int = 256 #: update the target network every ``target_update_interval``

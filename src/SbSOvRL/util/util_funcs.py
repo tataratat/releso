@@ -1,6 +1,13 @@
+"""
+This files includes multiple functions which are used in this package but can not be directly associated to a single sub module.
+"""
 from typing import Optional
 import subprocess
 import os
+import numpy as np
+from SbSOvRL.util.logger import logging
+
+from SbSOvRL.util.sbsovrl_types import InfoType, ObservationType
 
 
 def which(program: str) -> Optional[str]:
@@ -51,3 +58,31 @@ def call_commandline(command, folder, logger=None):
             logger.error(f'Execution failed with return code {exc.returncode}')
         exitcode=exc.returncode
     return exitcode, output
+
+def join_observations(old_observations: ObservationType, new_observations: ObservationType, logger_name: str):
+    """Adds the new observations to the already received observations. Currently only :py:class:`numpy.ndarrays` are permissable.
+
+    Join methods:
+        If :py:class:`numpy.ndarrays` and :py:class:`numpy.ndarrays` are joined the numpy function :py:meth:`numpy.append` is used. This will flatten all arrays and append the new array to the end of the old array. The resulting shape will be (x,) where x = prod(new_obs.shape)*prod(old_obs.shape)
+
+    Args:
+        old_observations (ObservationType): Already existing observations on which the new observations should be added to.
+        new_observations (ObservationType): Observations which should be added to the old_observation field.
+    """
+    if old_observations:
+        if type(new_observations) is np.ndarray and type(old_observations) is np.ndarray:
+            old_observations = np.append(old_observations, new_observations)
+        else:
+            # print(type(new_observations))
+            logging.getLogger(logger_name).warning(f"Conversion from {type(new_observations)} to {type(old_observations)} has currently no handler to stack observations. Please add one.")
+    else:
+        old_observations = new_observations
+
+def join_infos(old_info: InfoType, new_info: InfoType, logger_name: str):
+    """Updates the old Info field with the new info.
+
+    Args:
+        old_info (InfoType): Already existing info dictionary which should be updated with the new infos.
+        new_info (InfoType): Newly received info. Which needs to be added to the already existing infos.
+    """
+    old_info.update(new_info)

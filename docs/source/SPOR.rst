@@ -51,12 +51,13 @@ The communications interface is currently only available for command line calls.
 ::
 
   --run_id uuid4                  # The uuid is custom to this specific task and environment. So if you are in a multi environment setup the same task in different environments can be easily distinguished.
-  --additional_parameters         # This option is configurable to only send one or the other or neither.
-        {"mesh": MeshDefinition, "spline": SplineDefinition}
   --validation_run                # To distinguish between training and validation this parameter is send during validation with the id of the current validation step.
         [validation_id] 
   --reset                         # This option is only send if the current episode needs to be reset.
 
+.. This following parameter was planned but is removed due to the difficulty of correct memory/access management and the selective copying would also be pretty difficult.
+.. --additional_parameters         # This option is configurable to only send one or the other or neither.
+..       {"mesh": MeshDefinition, "spline": SplineDefinition}
 
 During the configuration if the validation the number of different episodes each validation should include. Each of these validation episodes gets validation id, which is transmitted to the external program.
 

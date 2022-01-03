@@ -1,20 +1,24 @@
-import pathlib, logging
+import pathlib
 from pydantic import Field
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 from SbSOvRL.exceptions import SbSOvRLParserException
+from SbSOvRL.util.logger import get_parser_logger
 from gustav import Mesh, load_mixd, load_volume_mixd
 from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 
 class Mesh(SbSOvRL_BaseModel):
-    mxyz_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think.")
-    mien_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.")
+    """
+    Class used to read in the correct base mesh file and load it.
+    """
+    mxyz_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think.") #: Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think. 
+    mien_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.") #: Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.
 
-    path: str # after validation Tuple["path_to_mxyz_file", "path_to_mien_file"]
-    export_path: str # Path to the default export location of the mesh during environment operations. (So that the solver can use it.)
-    hypercube: bool = Field(description="If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).", default=True)
-    dimensions: conint(ge=1)
+    path: str   #: after validation Tuple["path_to_mxyz_file", "path_to_mien_file"]
+    export_path: str    #: Path to the default export location of the mesh during environment operations. (So that the solver can use it.)
+    hypercube: bool = Field(description="If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).", default=True)    #: If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).
+    dimensions: conint(ge=1)    #: Number of dimensions of the mesh.
 
     @validator("export_path")
     @classmethod
@@ -44,24 +48,23 @@ class Mesh(SbSOvRL_BaseModel):
         """Calls the correct method to load the mesh for the gustav library.
 
         Note:
-            There is an error in Gustav
+            There is an error in a version of gustav during the loading process. Please check with the maintainer of this package if you have trouble.
 
         Returns:
-            Mesh: Mesh in gustav library format.
+            gustav.Mesh: Mesh in gustav library format.
         """
         if self.dimensions > 2:
-            logging.getLogger("SbSOvRL_environment").debug(f"Loading volume mesh with mxyz file ({self.mxyz_path}) and mien file ({self.mien_path}) ...")
+            self.get_logger().debug(f"Loading volume mesh with mxyz file ({self.mxyz_path}) and mien file ({self.mien_path}) ...")
             mesh = load_volume_mixd(dim=self.dimensions, mxyz=self.mxyz_path, mien=self.mien_path, hexa=self.hypercube)
-            logging.getLogger("SbSOvRL_environment").info("Done loading volume mesh.")
+            self.get_logger().info("Done loading volume mesh.")
         else:
-            logging.getLogger("SbSOvRL_environment").debug(f"Loading mesh with mxyz file ({self.mxyz_path}) and mien file ({self.mien_path}) ...")
+            self.get_logger().debug(f"Loading mesh with mxyz file ({self.mxyz_path}) and mien file ({self.mien_path}) ...")
             mesh = load_mixd(dim=self.dimensions, mxyz=self.mxyz_path, mien=self.mien_path, quad=self.hypercube)
-            logging.getLogger("SbSOvRL_environment").info("Done loading mesh.")
+            self.get_logger().info("Done loading mesh.")
         return mesh
 
     def get_export_path(self) -> str:
         """Direct return of object variable.
-
 
         Returns:
             str: Path to the default export location of the mesh during environment operations. (So that the solver can use it.)
@@ -86,58 +89,58 @@ class Mesh(SbSOvRL_BaseModel):
         Returns:
             Dict[str, Any]: All variables of the object. Hopefully with correct mien and mxyz paths
         """
-        logging.getLogger("SbSOvRL_parser").debug("Validating mesh file:")
+        get_parser_logger().debug("Validating mesh file:")
         if "mxyz_path" in values.keys() and values["mxyz_path"] is not None and "mien_path" in values.keys() and values["mien_path"] is not None:        
-            logging.getLogger("SbSOvRL_parser").info("Mesh files are defined by mxyz_path and mien_path.")
+            get_parser_logger().info("Mesh files are defined by mxyz_path and mien_path.")
             return values
         elif "path" in values.keys():
-            logging.getLogger("SbSOvRL_parser").debug("Trying to find mxyz_path and mien_path from path variable.")
+            get_parser_logger().debug("Trying to find mxyz_path and mien_path from path variable.")
             path = pathlib.Path(values["path"]).expanduser().resolve()
             mxyz_path = None
             mien_path = None
             if path.exists():
                 if path.is_dir():
-                    logging.getLogger("SbSOvRL_parser").debug(f"Given path is a directory, trying to find mxyz and mien files as files {path}/mxyz and {path}/mien.")
+                    get_parser_logger().debug(f"Given path is a directory, trying to find mxyz and mien files as files {path}/mxyz and {path}/mien.")
                     mxyz_path = (path / "mxyz.space")
                     mien_path = (path / "mien")
                     if mxyz_path.exists() and mxyz_path.is_file() and mien_path.exists() and mien_path.is_file():
-                        logging.getLogger("SbSOvRL_parser").debug("Mesh files located with filepath given as the root folder.")
+                        get_parser_logger().debug("Mesh files located with filepath given as the root folder.")
                 else: # path point to a files
-                    logging.getLogger("SbSOvRL_parser").debug("Given path is a file, trying to find mxyz and mien files.")
+                    get_parser_logger().debug("Given path is a file, trying to find mxyz and mien files.")
                     if path.suffix == ".mxyz":
                         mien_path = path.with_suffix(".mien")
                         mxyz_path = path
                         if mien_path.exists() and mien_path.is_file():
-                            logging.getLogger("SbSOvRL_parser").debug("Mesh files located with filepath given as .mxyz file.")
+                            get_parser_logger().debug("Mesh files located with filepath given as .mxyz file.")
                         else:
                             mien_path = None
-                            logging.getLogger("SbSOvRL_parser").warning("Could not locate corresponding mien file with path given as .mxyz file.")
+                            get_parser_logger().warning("Could not locate corresponding mien file with path given as .mxyz file.")
                     elif path.suffix == ".mien":
                         mxyz_path = path.with_suffix(".mxyz")
                         mien_path = path
                         if mxyz_path.exists() and mxyz_path.is_file():
-                            logging.getLogger("SbSOvRL_parser").debug("Mesh files located with filepath given as .mien file.")
+                            get_parser_logger().debug("Mesh files located with filepath given as .mien file.")
                         else:
                             mxyz_path = None
-                            logging.getLogger("SbSOvRL_parser").warning("Could not locate corresponding mxyz file with path given as .mien file.")
+                            get_parser_logger().warning("Could not locate corresponding mxyz file with path given as .mien file.")
                     elif path.name == "mxyz":
                         mxyz_path = path
                         mien_path = path.with_name("mien")
                         if mien_path.exists() and mien_path.is_file():
-                            logging.getLogger("SbSOvRL_parser").debug("Mesh files located with filepath given as mxyz file.")
+                            get_parser_logger().debug("Mesh files located with filepath given as mxyz file.")
                         else:
                             mien_path = None
-                            logging.getLogger("SbSOvRL_parser").warning("Could not locate corresponding mien file with path given as mxyz file.")
+                            get_parser_logger().warning("Could not locate corresponding mien file with path given as mxyz file.")
                     elif path.name == "mien":
                         mxyz_path = path.with_name("mxyz")
                         mien_path = path
                         if mxyz_path.exists() and mxyz_path.is_file():
-                            logging.getLogger("SbSOvRL_parser").debug("Mesh files located with filepath given as mien file.")
+                            get_parser_logger().debug("Mesh files located with filepath given as mien file.")
                         else:
                             mxyz_path = None
-                            logging.getLogger("SbSOvRL_parser").warning("Could not locate corresponding mxyz file with path given as mien file.")
+                            get_parser_logger().warning("Could not locate corresponding mxyz file with path given as mien file.")
                     else:
-                        logging.getLogger("SbSOvRL_parser").warning(f"Mesh file given as existing file {path} but could not find mxyz nor mien file.")
+                        get_parser_logger().warning(f"Mesh file given as existing file {path} but could not find mxyz nor mien file.")
                         SbSOvRLParserException("Mesh", "path", "Could not locate mien nor mxyz file path.")
                 # If mien or mxyz file path are not complete throw error.
                 if mxyz_path is None:

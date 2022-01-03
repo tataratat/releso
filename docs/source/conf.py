@@ -33,12 +33,13 @@ release = '1.0'
 extensions = [
     'sphinx.ext.duration',
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary'
+    'sphinx.ext.autosummary',
+    'sphinx.ext.napoleon'
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym", "stable_baselines3", "pandas", "gustav", "numpy"]
+autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym", "stable_baselines3", "pandas", "gustav", "numpy", "vedo"]
 # autodoc_typehints = 'description'  # show type hints in doc body instead of signature
 # autoclass_content = 'instance'  # get docstring from class level and init simultaneously
 

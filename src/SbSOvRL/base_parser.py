@@ -1,5 +1,7 @@
+"""
+File defines the base json object which is needed to define the problem setting for the command line based usage of the SbSOvRL toolbox/framework.
+"""
 from copy import deepcopy
-import logging
 from SbSOvRL.agent import AgentTypeDefinition
 from SbSOvRL.parser_environment import Environment
 from SbSOvRL.validation import Validation
@@ -8,8 +10,7 @@ from SbSOvRL.verbosity import Verbosity
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from SbSOvRL.exceptions import SbSOvRLValidationNotSet
 from SbSOvRL.parser_environment import Environment
-from pydantic import validator
-from typing import Union, Optional
+from typing import Union, Optional, Any
 from pydantic.fields import Field, PrivateAttr
 from pydantic.types import conint
 from stable_baselines3.common.callbacks import StopTrainingOnMaxEpisodes
@@ -19,6 +20,9 @@ import datetime
 import numpy as np
 
 class BaseParser(SbSOvRL_BaseModel):
+    """
+    This class can be used to initialize the SbSOvRL Framework from the command line by reading in a json representation of the Spline based Shape Optimization problem which is to be solved via Reinforcement Learning.
+    """
     verbosity: Verbosity = Field(default_factory=Verbosity) #: Defining the verbosity of the training process and environment loading
     agent: AgentTypeDefinition  #: Definition of the agent to be used during training and/or validation of the RL use case
     environment: Environment    #: Definition of the environment which encodes the parameters of the RL use case
@@ -30,22 +34,28 @@ class BaseParser(SbSOvRL_BaseModel):
     # internal objects
     _agent: Optional[BaseAlgorithm] = PrivateAttr(default=None) #: Holds the trainable agent for the RL use case. The SbSOvRL.base_parser.BaseParser.agent defines the type and parameters of the agent this is the actual trainable agent.
 
-    @validator("save_location")
-    @classmethod
-    def add_datetime_to_save_location(cls, v) -> str:
-        """Adds time and date information to the save location of the current training run helps to differentiate runs with the same parameter definition. save_location string must include {} else no time and date information are added.
-
-        Args:
-            v ([type]): save_location optionally without time and date information.
-
-        Returns:
-            str: String where time and date information are added (only if {} is included !once! inside the original string)
+    def __init__(__pydantic_self__, **data: Any) -> None:
+        """Initializes the class correctly and also adds the correct logger to all subclasses.
         """
-        if '{}' in v:
-            v = v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        super().__init__(**data)
+        __pydantic_self__.set_logger_name_recursively(__pydantic_self__.verbosity._environment_logger)
 
-        path = pathlib.Path(v).expanduser().resolve()
-        return path
+    # @validator("save_location")
+    # @classmethod
+    # def add_datetime_to_save_location(cls, v) -> str:
+    #     """Adds time and date information to the save location of the current training run helps to differentiate runs with the same parameter definition. save_location string must include {} else no time and date information are added.
+
+    #     Args:
+    #         v ([type]): save_location optionally without time and date information.
+
+    #     Returns:
+    #         str: String where time and date information are added (only if {} is included !once! inside the original string)
+    #     """
+    #     if '{}' in v:
+    #         v = v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+
+    #     path = pathlib.Path(v).expanduser().resolve()
+    #     return path
         
     def learn(self) -> None:
         """
@@ -58,13 +68,14 @@ class BaseParser(SbSOvRL_BaseModel):
             EpisodeLogCallback(episode_log_location=self.save_location/"episode_log.csv", verbose=1)
         ]
         validation_environment = self._create_validation_environment()
+        validation_environment.set_logger_name_recursively(self.verbosity._environment_validation_logger)
 
         if self.validation:
             if self.validation.should_add_callback():
                 callbacks.append(self.validation.get_callback(validation_environment.get_gym_environment(), save_location=self.save_location))
         
 
-        print(self.number_of_timesteps)
+        self.get_logger().info(f"The environment is now trained for {self.number_of_timesteps} episodes. If the maximum number of episode callback is set this value might not mean much.")
         self._agent.env.reset()
         self._agent.learn(self.number_of_timesteps, callback=callbacks, tb_log_name=self.agent.get_next_tensorboard_experiment_name(), reset_num_timesteps=False)
         self.save_model()
@@ -92,7 +103,7 @@ class BaseParser(SbSOvRL_BaseModel):
         Args:
             file_name (Optional[str]): Path where the agent is saved to. If None will see if json had a save location if also not given will use a default location. Defaults to None.
         """
-        if file_name is None and self.save_location is not None:
+        if file_name is None:
             path = pathlib.Path(self.save_location)
         elif file_name is not None:
             path = pathlib.Path(file_name)
@@ -121,9 +132,9 @@ class BaseParser(SbSOvRL_BaseModel):
             mean_reward = reward_array.mean()
             reward_std = reward_array.std()
             log_str = f"The end validation had the following results: mean_reward = {mean_reward}; reward_std = {reward_std}"
-            logging.getLogger("SbSOvRL_environment").info(log_str)
-            print("The reward per episode was:", reward)
-            print("The length per episode was:", episode_length)
+            self.get_logger().info(log_str)
+            self.get_logger().info(f"The reward per episode was: {reward}.")
+            self.get_logger().info(f"The length per episode was: {episode_length}")
         elif throw_error_if_None:
             raise SbSOvRLValidationNotSet()
 
@@ -134,13 +145,13 @@ class BaseParser(SbSOvRL_BaseModel):
             throw_error_if_None (bool, optional): If this is set and the validation variable is None an error is thrown. Defaults to False.
 
         Raises:
-            SbSOvRLValidationNotSet: Thrown if validation is absolutly needed. If not absolutly needed the validation will not be done but no error will be thrown.
+            SbSOvRLValidationNotSet: Thrown if validation is absolutely needed. If not absolutly needed the validation will not be done but no error will be thrown.
 
         Returns:
             Environment: Validation environment. Is not a 'gym' environment but and SbSOvRL.parser_environment.Environment. Create the gym environment by calling the function env.get_gym_environment()
         """
         if self.validation is None:
-            if throw_error_if_None:
+            if throw_error_if_None: # ok i have no idea why i made this thingy here but i will keep it for posterity
                 raise SbSOvRLValidationNotSet()
             return None
         validation_environment = deepcopy(self.environment)

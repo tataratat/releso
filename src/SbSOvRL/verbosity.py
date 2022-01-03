@@ -1,4 +1,7 @@
-from pydantic import validator, root_validator
+"""
+File holding the class defining the verbosity of the problem and defining the loggers.
+"""
+from pydantic import validator
 from pydantic.fields import PrivateAttr
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from SbSOvRL.util.logger import VerbosityLevel, set_up_logger, logging
@@ -10,6 +13,8 @@ import datetime
 class Verbosity(SbSOvRL_BaseModel): 
     """
         Defines the settings for the different loggers used in the current experiment. This class is the only class which is copied to all children. (this happens outside of the the standard channels and will hopefully not break with multiprocessing)
+
+        Please note, the parser logger only ever can have the following name ``SbSOvRL
     """
     parser: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"   #: VerbosityLevel of the parser logger. This logger should only generate messages during the setup of the experiment.
     environment: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"  #: VerbosityLevel of the environment parsers. These loggers will generate messages during the execution of the experiments. (Training and Validation)
@@ -17,10 +22,11 @@ class Verbosity(SbSOvRL_BaseModel):
     console_logging: bool = False   #: Whether or not to also print the log messages to the console.
     base_logger_name: str = "SbSOvRL"   #: Base name of all logger. Defaults to "SbSOvRL"
     environment_extension: str = "rl"   #: Name extensions for all environment logger. Defaults to "rl"
-    parser_extension: str = "parser"    #: Name extension for the parser logger. Defaults to "parser"
+    
 
     # private fields
-    _environment_parser: str = PrivateAttr(default="SbSOvRL_rl")
+    _environment_logger: str = PrivateAttr(default="")
+    _environment_validation_logger: str = PrivateAttr(default="")
     
     @validator("parser", "environment", always=True)
     @classmethod
@@ -63,15 +69,17 @@ class Verbosity(SbSOvRL_BaseModel):
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
         # create parser logger
-        parser_name = "_".join([self.base_logger_name, self.parser_extension])
+        parser_name = "SbSOvRL_parser"
         if not logging.getLogger(parser_name).hasHandlers():
             parser_logger = set_up_logger(parser_name, self.SbSOvRL_logfile_location, self.parser, self.console_logging)
 
         # create base rl logger
+        self._environment_logger = "_".join(filter(("").__ne__, [self.base_logger_name, self.environment_extension]))
         self.add_environment_logger_with_name_extension("")
+        self._environment_validation_logger = "_".join(filter(("").__ne__, [self.base_logger_name, self.environment_extension, "validation"]))
         self.add_environment_logger_with_name_extension("validation")
 
-        parser_logger.info(f"Setup logger. Parser logger has logging level: {self.parser}; Environment logger has logging level: {self.environment}")
+        parser_logger.debug(f"Setup logger. Parser logger has logging level: {self.parser}; Environment logger has logging level: {self.environment}")
 
     def add_environment_logger_with_name_extension(self, extension: str) -> logging.Logger:
         """ Initializes a logger with the settings for the environment logger. The name of the base environment logger is extended by the :attr:`extension`. The name if the created logger is found by joining the strings of the following variables by an underscore. :attr:`Verbosity.base_logger_name`, :attr:`Verbosity.environment_extension`, :attr:`extension` Any empty strings are ignored. 
