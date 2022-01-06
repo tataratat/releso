@@ -62,8 +62,10 @@ def underline(message):
     """
     return output_styling(message=message, stylings=[Stylings.Underline, Stylings.Bold])
 
-class SbSOvRLParserException(Exception):
+class SbSOvRLParserException(ValueError):
     """Parser Exception for the SbSOvRL package. Shows the context of the error. Also colors the output if colouring is available.
+
+    Uses the ValueError base class for compatibility with the pydantic validation engine.
     """
     def __init__(self, parent: str, item: str, message: str) -> None:
         get_parser_logger().exception(f"In {parent} object while parsing {item} the following error has occurred: {message}")

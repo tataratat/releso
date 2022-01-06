@@ -26,6 +26,16 @@ def main(args) -> None:
     
     ###########################
     #                         #
+    #   Only json validation  #
+    #                         #
+    ###########################
+    
+    if args.json_validate:
+        print(optimization_object.dict())
+        return
+
+    ###########################
+    #                         #
     #    Only validation      #
     #                         #
     ###########################
@@ -75,7 +85,7 @@ if __name__ == '__main__':  # pragma: no cover
     # # parser.add_argument("-p", "--path", action="store", help="Base path for the results of the evaluation")
     # parser.add_argument("-m", "--model_load_path", action="store", help="Path to the location a previously trained model. If this is given no training will be performed. Currently there is no way to continue training of a model.")
     parser.add_argument("-v", "--validate_only", action="store_true", help="If this is set only validation on this configuration is run. Please configure the validation object in the json file so that this option can be correctly executed.")
-
+    parser.add_argument("-j", "--json_only", dest="json_validate", action="store_true", help="If this is set only the json validation is performed, nothing else.")
     args = parser.parse_args()
     print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     main(args)

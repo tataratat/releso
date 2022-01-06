@@ -59,7 +59,7 @@ def call_commandline(command, folder, logger=None):
         exitcode=exc.returncode
     return exitcode, output
 
-def join_observations(old_observations: ObservationType, new_observations: ObservationType, logger_name: str):
+def join_observations(old_observations: ObservationType, new_observations: ObservationType, logger_name: str, number_of_observations: Optional[int] = None):
     """Adds the new observations to the already received observations. Currently only :py:class:`numpy.ndarrays` are permissable.
 
     Join methods:
@@ -68,12 +68,15 @@ def join_observations(old_observations: ObservationType, new_observations: Obser
     Args:
         old_observations (ObservationType): Already existing observations on which the new observations should be added to.
         new_observations (ObservationType): Observations which should be added to the old_observation field.
+        logger_name (str): LoggerName so that if necessary the log message is sent into the correct logging cue.
+        number_of_observations (Optional[int]): The number of observations the new observation array should generate  
     """
     if old_observations:
         if type(new_observations) is np.ndarray and type(old_observations) is np.ndarray:
+            if number_of_observations is not None and new_observations.size is not number_of_observations:
+                logging.getLogger(logger_name).error(f"The given observations have a size of {new_observations.size} but should have the {number_of_observations}.")
             old_observations = np.append(old_observations, new_observations)
         else:
-            # print(type(new_observations))
             logging.getLogger(logger_name).warning(f"Conversion from {type(new_observations)} to {type(old_observations)} has currently no handler to stack observations. Please add one.")
     else:
         old_observations = new_observations
@@ -84,5 +87,6 @@ def join_infos(old_info: InfoType, new_info: InfoType, logger_name: str):
     Args:
         old_info (InfoType): Already existing info dictionary which should be updated with the new infos.
         new_info (InfoType): Newly received info. Which needs to be added to the already existing infos.
+        logger_name (str): LoggerName so that if necessary the log message is sent into the correct logging cue.
     """
     old_info.update(new_info)

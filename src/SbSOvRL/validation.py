@@ -101,4 +101,4 @@ class Validation(SbSOvRL_BaseModel):
         Returns:
             Dict[str, Any]: dict with all the necessary parameters. Should mirror the parameters in parser_environment.Environment.set_validation
         """
-        return {"validation_values": self.validation_values, "base_mesh_path": self.get_mesh_base_path(base_save_location), "end_episode_on_spline_not_change": self.end_episode_on_spline_not_changed, "max_timesteps_per_epidsode": self.max_timesteps_per_episode}
+        return {"validation_values": self.validation_values, "base_mesh_path": self.get_mesh_base_path(base_save_location), "end_episode_on_spline_not_change": self.end_episode_on_spline_not_changed, "max_timesteps_per_episode": self.max_timesteps_per_episode}

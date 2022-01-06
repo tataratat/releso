@@ -19,44 +19,38 @@ import pathlib
 import datetime
 import numpy as np
 
+
 class BaseParser(SbSOvRL_BaseModel):
     """
     This class can be used to initialize the SbSOvRL Framework from the command line by reading in a json representation of the Spline based Shape Optimization problem which is to be solved via Reinforcement Learning.
     """
-    verbosity: Verbosity = Field(default_factory=Verbosity) #: Defining the verbosity of the training process and environment loading
-    agent: AgentTypeDefinition  #: Definition of the agent to be used during training and/or validation of the RL use case
-    environment: Environment    #: Definition of the environment which encodes the parameters of the RL use case
-    number_of_timesteps: conint(ge=1)   #: Number of timesteps the training process should run for (supperseeded by the SbSOvRL.base_parser.BaseParser.number_of_episodes)
-    number_of_episodes: conint(ge=1)    #: Number of episodes the training prcess should run for 
-    validation: Optional[Validation]    #: Definition of the validation parameters
 
+    verbosity: Verbosity = Field(
+        default_factory=Verbosity
+    )  #: Defining the verbosity of the training process and environment loading
+    agent: AgentTypeDefinition  #: Definition of the agent to be used during training and/or validation of the RL use case
+    environment: Environment  #: Definition of the environment which encodes the parameters of the RL use case
+    number_of_timesteps: conint(
+        ge=1
+    )  #: Number of timesteps the training process should run for (supperseeded by the SbSOvRL.base_parser.BaseParser.number_of_episodes)
+    number_of_episodes: conint(
+        ge=1
+    )  #: Number of episodes the training prcess should run for
+    validation: Optional[Validation]  #: Definition of the validation parameters
 
     # internal objects
-    _agent: Optional[BaseAlgorithm] = PrivateAttr(default=None) #: Holds the trainable agent for the RL use case. The SbSOvRL.base_parser.BaseParser.agent defines the type and parameters of the agent this is the actual trainable agent.
+    _agent: Optional[BaseAlgorithm] = PrivateAttr(
+        default=None
+    )  #: Holds the trainable agent for the RL use case. The SbSOvRL.base_parser.BaseParser.agent defines the type and parameters of the agent this is the actual trainable agent.
 
     def __init__(__pydantic_self__, **data: Any) -> None:
         """Initializes the class correctly and also adds the correct logger to all subclasses.
         """
         super().__init__(**data)
-        __pydantic_self__.set_logger_name_recursively(__pydantic_self__.verbosity._environment_logger)
+        __pydantic_self__.set_logger_name_recursively(
+            __pydantic_self__.verbosity._environment_logger
+        )
 
-    # @validator("save_location")
-    # @classmethod
-    # def add_datetime_to_save_location(cls, v) -> str:
-    #     """Adds time and date information to the save location of the current training run helps to differentiate runs with the same parameter definition. save_location string must include {} else no time and date information are added.
-
-    #     Args:
-    #         v ([type]): save_location optionally without time and date information.
-
-    #     Returns:
-    #         str: String where time and date information are added (only if {} is included !once! inside the original string)
-    #     """
-    #     if '{}' in v:
-    #         v = v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-
-    #     path = pathlib.Path(v).expanduser().resolve()
-    #     return path
-        
     def learn(self) -> None:
         """
         Starts the training that is specified in the loaded json file.
@@ -65,19 +59,34 @@ class BaseParser(SbSOvRL_BaseModel):
 
         callbacks = [
             StopTrainingOnMaxEpisodes(max_episodes=self.number_of_episodes),
-            EpisodeLogCallback(episode_log_location=self.save_location/"episode_log.csv", verbose=1)
+            EpisodeLogCallback(
+                episode_log_location=self.save_location / "episode_log.csv", verbose=1
+            ),
         ]
         validation_environment = self._create_validation_environment()
-        validation_environment.set_logger_name_recursively(self.verbosity._environment_validation_logger)
+        validation_environment.set_logger_name_recursively(
+            self.verbosity._environment_validation_logger
+        )
 
         if self.validation:
             if self.validation.should_add_callback():
-                callbacks.append(self.validation.get_callback(validation_environment.get_gym_environment(), save_location=self.save_location))
-        
+                callbacks.append(
+                    self.validation.get_callback(
+                        validation_environment.get_gym_environment(),
+                        save_location=self.save_location,
+                    )
+                )
 
-        self.get_logger().info(f"The environment is now trained for {self.number_of_timesteps} episodes. If the maximum number of episode callback is set this value might not mean much.")
+        self.get_logger().info(
+            f"The environment is now trained for {self.number_of_timesteps} episodes. If the maximum number of episode callback is set this value might not mean much."
+        )
         self._agent.env.reset()
-        self._agent.learn(self.number_of_timesteps, callback=callbacks, tb_log_name=self.agent.get_next_tensorboard_experiment_name(), reset_num_timesteps=False)
+        self._agent.learn(
+            self.number_of_timesteps,
+            callback=callbacks,
+            tb_log_name=self.agent.get_next_tensorboard_experiment_name(),
+            reset_num_timesteps=False,
+        )
         self.save_model()
         self.evaluate_model(validation_environment)
 
@@ -89,7 +98,7 @@ class BaseParser(SbSOvRL_BaseModel):
         """
         self.environment.export_spline(file_name)
 
-    def export_mesh(self, file_name:str) -> None:
+    def export_mesh(self, file_name: str) -> None:
         """Exports the current mesh to the specified location.
 
         Args:
@@ -108,11 +117,17 @@ class BaseParser(SbSOvRL_BaseModel):
         elif file_name is not None:
             path = pathlib.Path(file_name)
         else:
-            path = pathlib.Path(f"default_model_safe_location/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}")
+            path = pathlib.Path(
+                f"default_model_safe_location/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+            )
         path.parent.mkdir(parents=True, exist_ok=True)
-        self._agent.save(path/"model_end.save")
-            
-    def evaluate_model(self, validation_env: Union[None, Environment] = None, throw_error_if_None: bool = False) -> None:
+        self._agent.save(path / "model_end.save")
+
+    def evaluate_model(
+        self,
+        validation_env: Union[None, Environment] = None,
+        throw_error_if_None: bool = False,
+    ) -> None:
         """Evaluate the model with the parameters defined in the validation variable. If an agent is already loaded use this agent, else get the agent from the agent variable. Validation will be done inside the 
 
         Args:
@@ -127,7 +142,9 @@ class BaseParser(SbSOvRL_BaseModel):
                 validation_env = self._create_validation_environment(True)
             if self._agent is None:
                 self._agent = self.agent.get_agent(validation_env.get_gym_environment())
-            reward, episode_length = self.validation.end_validation(agent=self._agent, environment=validation_env.get_gym_environment())
+            reward, episode_length = self.validation.end_validation(
+                agent=self._agent, environment=validation_env.get_gym_environment()
+            )
             reward_array = np.array(reward)
             mean_reward = reward_array.mean()
             reward_std = reward_array.std()
@@ -138,7 +155,9 @@ class BaseParser(SbSOvRL_BaseModel):
         elif throw_error_if_None:
             raise SbSOvRLValidationNotSet()
 
-    def _create_validation_environment(self, throw_error_if_None: bool = False) -> Environment:
+    def _create_validation_environment(
+        self, throw_error_if_None: bool = False
+    ) -> Environment:
         """Creates a validation environment.
 
         Args:
@@ -151,9 +170,13 @@ class BaseParser(SbSOvRL_BaseModel):
             Environment: Validation environment. Is not a 'gym' environment but and SbSOvRL.parser_environment.Environment. Create the gym environment by calling the function env.get_gym_environment()
         """
         if self.validation is None:
-            if throw_error_if_None: # ok i have no idea why i made this thingy here but i will keep it for posterity
+            if (
+                throw_error_if_None
+            ):  # ok i have no idea why i made this thingy here but i will keep it for posterity
                 raise SbSOvRLValidationNotSet()
             return None
         validation_environment = deepcopy(self.environment)
-        validation_environment.set_validation(**self.validation.get_environment_validation_parameters(self.save_location))
+        validation_environment.set_validation(
+            **self.validation.get_environment_validation_parameters(self.save_location)
+        )
         return validation_environment

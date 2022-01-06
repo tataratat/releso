@@ -4,33 +4,50 @@ File holding the base class for all SbSOvRL classes which are needed for the com
 import pathlib
 from typing import Optional
 from pydantic import BaseModel, Extra
-from pydantic.class_validators import validator
 from typing import Any
 from SbSOvRL.util.logger import logging
 import datetime
+from collections import OrderedDict
+
+def add_save_location_if_elem_is_o_dict(possible_value: Any, save_location: pathlib.Path):
+    """This function adds the save_location to all ordered dicts in possible_value if it is not already present. This function is used to forward the save_location variable to all child objects so that all objects can access it.
+
+    Also handles adding the save_location to objects inside of lists (these can even be multiple lists deep)
+
+    Args:
+        possible_value (Any): Variable holding potential objects which need the save_location. 
+        save_location (str): string that defines the location
+    """
+    if type(possible_value) is OrderedDict:
+        if "save_location" not in possible_value:
+            possible_value["save_location"] = save_location
+    elif type(possible_value) is list:
+        for item in possible_value:
+            add_save_location_if_elem_is_o_dict(item, save_location)
 
 class SbSOvRL_BaseModel(BaseModel):
     """
     Base class for all SbSOvRL classes which are needed for the command line based application of this toolbox.
     """
-    save_location: str    #: Definition of the save location of the logs and validation results
+    save_location: pathlib.Path #: Definition of the save location of the logs and validation results. Should be given as a standard string will be preconverted into a pathlib.Path. If {} are present in the string the current timestamp is added.
     logger_name: Optional[str] = None   #: name of the logger. If this variable gives you trouble, the framework is at least a little bit buggy. Does not need to be set. And might be changed if set by user, if multi-environment training is utilized.
 
     # private fields
     # _verbosity: Any = PrivateAttr(default=None) #: Defining the verbosity of the training process and environment loading
 
-    def __init__(__pydantic_self__, **data: Any) -> None:
+    def __init__(self, **data: Any) -> None:
         if "save_location" in data:
+            if type(data["save_location"]) is str:  # This is so that the save location always gets the same 
+                data["save_location"] = SbSOvRL_BaseModel.convert_path_to_pathlib_and_add_datetime_if_applicable(data["save_location"])
             # if a save_location is present in the current object definition add this save_location also to all object definition which are direct dependends
             for _, value in data.items():
-                if type(value) is dict and "save_location" not in value:
-                    value["save_location"] = data["save_location"]
+                add_save_location_if_elem_is_o_dict(value, data["save_location"])
         super().__init__(**data)
 
-    @validator("save_location")
+
     @classmethod
-    def convert_path_to_pathlib_and_add_datetime_if_applicable(cls, v):
-        """Adds a datetime timestamp to the save_location if \{\} present. This is done to make it easier to differentiate different runs without the need to change the base name with every run.
+    def convert_path_to_pathlib_and_add_datetime_if_applicable(cls, v:str):
+        """Adds a datetime timestamp to the save_location if {} present. This is done to make it easier to differentiate different runs without the need to change the base name with every run.
 
         This function also ensures that the directory is created.
 

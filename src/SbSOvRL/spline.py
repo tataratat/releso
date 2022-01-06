@@ -10,7 +10,8 @@ from pydantic.class_validators import root_validator, validator
 from pydantic.fields import PrivateAttr
 from pydantic.types import confloat, conint
 import copy
- 
+import datetime
+
 class VariableLocation(SbSOvRL_BaseModel):
     current_position: float
     min_value: Optional[float] = None
@@ -21,6 +22,9 @@ class VariableLocation(SbSOvRL_BaseModel):
     # non json variables
     _is_action: Optional[bool] = PrivateAttr(default=None)
     _original_position: Optional[float] = PrivateAttr(default=None)
+
+    def __init__(__pydantic_self__, **data: Any) -> None:
+        super().__init__(**data)
 
     @validator("min_value", "max_value", always=True)
     @classmethod
@@ -211,7 +215,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
         """
         if v is None:
             if "space_dimensions" not in values.keys():
-                raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "During validation the prerequisite variable space_dimensions was not present.")
+                raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "During validation the prerequisite variable space_dimensions was not present."+str(values))
             spline_dimensions = values["space_dimensions"]
             n_points_in_dim = [dim.number_of_points for dim in spline_dimensions]
             # this can be done in a smaller and faster footprint but for readability and understanding 
@@ -221,36 +225,36 @@ class SplineDefinition(SbSOvRL_BaseModel):
             for n_p in n_points_in_dim:
                 dimension_lists.append(list(np.linspace(0.,1.,n_p)))
                 dim_spacings.append(1./((n_p-1)*2))
-
             # create each controll point for by concatenating each value in each list with each value of all other lists
+            save_location = str(values["save_location"])
             for inner_dim, dim_spacing in zip(dimension_lists, dim_spacings):
                 if v is None: # first iteration the v vector must be initialized with the first dimension vector
                     v = []
                     for element in inner_dim:
                         if element == 0.:
-                            v.append(VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing))
+                            v.append(VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing, save_location=save_location))
                         elif element == 1.:
-                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element))
+                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element, save_location=save_location))
                         else:
-                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing))
+                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing, save_location=save_location))
                 else: # for each successive dimension for each existing element in v each value in the new dimesion must be added
                     temp_v = []
                     for current_list in v:
                         for element in inner_dim:
                             elem = copy.deepcopy(current_list if type(current_list) is list else [current_list])
                             if element == 0.:
-                                temp_v.append([VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing)] + elem)
+                                temp_v.append([VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing, save_location=save_location)] + elem)
                             elif element == 1.:
-                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element)] + elem)
+                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element, save_location=save_location)] + elem)
                             else:
-                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing)] + elem)
+                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing, save_location=save_location)] + elem)
                     v = temp_v
         return v 
 
 
     @validator("control_point_variables", each_item=True)
     @classmethod
-    def convert_all_control_point_locations_to_variable_locations(cls, v):
+    def convert_all_control_point_locations_to_variable_locations(cls, v, values):
         """ Converts all controll points values into VariabelLocations if the value is given as a simple float. Simple float will be converted into VariableLocation with current_position=value and no variability.
 
         Args:
@@ -261,7 +265,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
         """
         new_list = []
         for element in v:
-            new_list.append(VariableLocation(current_position=element) if type(element) is float else element)
+            new_list.append(VariableLocation(current_position=element, save_location=values["save_location"]) if type(element) is float else element)
             if not 0. <= new_list[-1].current_position <= 1.:
                 raise SbSOvRLParserException("SplineDefinition", "controll_point_variables", "The controll_point_variables need to be inside an unit hypercube. Found a values outside this unit hypercube.")
         return new_list

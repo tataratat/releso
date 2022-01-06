@@ -50,6 +50,9 @@ class BaseAgent(SbSOvRL_BaseModel):
             return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         return None
 
+    def get_additional_kwargs(self) -> Dict[str, Any]:
+        return {k:v for k,v in self.__dict__.items() if not k in ['type', 'logger_name', 'save_location']}
+
 class PretrainedAgent(BaseAgent):
     """
     This class can be used to load pretrained agents, instead of using untrained agents. Can also be used to only validate this agent without training it further. Please see validation section for this use-case.
@@ -121,7 +124,7 @@ class PPOAgent(BaseAgent):
         Returns:
             PPO: Initialized PPO agent.
         """
-        return PPO(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
+        return PPO(env = environment, **self.get_additional_kwargs())
 
 class DDPGAgent(BaseAgent):
     """DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
@@ -148,7 +151,7 @@ class DDPGAgent(BaseAgent):
         Returns:
             DDPG: Initialized DDPG agent.
         """
-        return DDPG(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
+        return DDPG(env = environment, **self.get_additional_kwargs())
 
 class SACAgent(BaseAgent):
     """SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
@@ -181,7 +184,7 @@ class SACAgent(BaseAgent):
         Returns:
             SAC: Initialized SAC agent.
         """
-        return SAC(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
+        return SAC(env = environment, **self.get_additional_kwargs())
 
 class DQNAgent(BaseAgent):
     """DQN definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
@@ -215,6 +218,6 @@ class DQNAgent(BaseAgent):
         Returns:
             DQN: Initialized DQN agent.
         """
-        return DQN(env = environment, **{k:v for k,v in self.__dict__.items() if not k == 'type'})
+        return DQN(env = environment, **self.get_additional_kwargs())
 
 AgentTypeDefinition = Union[PPOAgent, DDPGAgent, SACAgent, PretrainedAgent, DQNAgent]
