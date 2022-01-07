@@ -4,7 +4,7 @@ File holding the class defining the verbosity of the problem and defining the lo
 from pydantic import validator
 from pydantic.fields import PrivateAttr
 from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.logger import VerbosityLevel, set_up_logger, logging
+from SbSOvRL.util.logger import VerbosityLevel, get_parser_logger, set_up_logger, logging
 import pathlib
 from typing import Any, Literal
 import datetime
@@ -60,10 +60,12 @@ class Verbosity(SbSOvRL_BaseModel):
         Returns:
             pathlib.Path: pathlib representation of the path with if applicable the current timestamp
         """
-        path = pathlib.Path(v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))).expanduser().resolve()
+        path: pathlib.Path = None
         if "save_location" in values:
-            path: pathlib.Path = values["save_location"] / path
-            path.mkdir(parents=True, exist_ok=True)
+            path = values["save_location"]/v
+        else:
+            path = pathlib.Path(v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))).expanduser().resolve()
+        path.mkdir(parents=True, exist_ok=True)
         return path
 
     def __init__(self, **data: Any) -> None:
