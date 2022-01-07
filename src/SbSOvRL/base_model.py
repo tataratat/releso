@@ -2,9 +2,8 @@
 File holding the base class for all SbSOvRL classes which are needed for the command line based application of this toolbox.
 """
 import pathlib
-from typing import Optional
+from typing import Optional, List, Any
 from pydantic import BaseModel, Extra
-from typing import Any
 from SbSOvRL.util.logger import logging
 import datetime
 from collections import OrderedDict
@@ -18,10 +17,10 @@ def add_save_location_if_elem_is_o_dict(possible_value: Any, save_location: path
         possible_value (Any): Variable holding potential objects which need the save_location. 
         save_location (str): string that defines the location
     """
-    if type(possible_value) is OrderedDict:
+    if isinstance(possible_value, OrderedDict):
         if "save_location" not in possible_value:
             possible_value["save_location"] = save_location
-    elif type(possible_value) is list:
+    elif isinstance(possible_value, list):
         for item in possible_value:
             add_save_location_if_elem_is_o_dict(item, save_location)
 
@@ -61,6 +60,19 @@ class SbSOvRL_BaseModel(BaseModel):
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    def _check_list(self, list_item: List[Any], logger_name: str):
+        """Recursivly goes through lists and add the logger_name where applicable.
+
+        Args:
+            list_item (List[Any]): list in which to check if items reside which need checking for logger names
+            logger_name (str): logger name to add to all applicable objects
+        """
+        for item in list_item:
+            if isinstance(item, list):
+                self._check_list(item, logger_name)
+            elif isinstance(item, SbSOvRL_BaseModel):
+                item.set_logger_name_recursively(logger_name)
+
     def set_logger_name_recursively(self, logger_name: str):
         """Sets the given logger_name for the current object and all attributes which have the ``set_logger_recursively`` method.
 
@@ -72,9 +84,12 @@ class SbSOvRL_BaseModel(BaseModel):
         """
         self.logger_name = logger_name
         for _, value in self.__dict__.items():
-            attr = getattr(value, "set_logger_name_recursively", None)
-            if callable(attr):
-                attr(logger_name)
+            if isinstance(value, list):
+                self._check_list(value, logger_name)
+            else:
+                attr = getattr(value, "set_logger_name_recursively", None)
+                if callable(attr):
+                    attr(logger_name)
 
     def get_logger(self) -> logging.Logger:
         """Gets the currently defined environment logger.

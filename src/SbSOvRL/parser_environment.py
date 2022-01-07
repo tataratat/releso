@@ -215,7 +215,7 @@ class Environment(SbSOvRL_BaseModel):
                     info["reset_reason"] = "SplineNotChanged" 
             self._last_observation = copy(observations)
 
-        self.get_logger().info(f"Current reward {reward} and episode is done: {type(done)}.")
+        self.get_logger().info(f"Current reward {reward} and episode is done: {done}.")
 
         self._last_step_results = {
             "observations": observations,

@@ -5,7 +5,6 @@ This part of the SbSOvRL environment definition is a list of steps the environme
 
 A more in depth documentation of the SPOR concept is given here :ref:`SPOR Communication Interface <sporcominterface>`
 """
-
 from pydantic.fields import PrivateAttr
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from SbSOvRL.util.sbsovrl_types import InfoType, RewardType, StepReturnType
@@ -66,7 +65,7 @@ class MPIClusterMultiProcessor(MultiProcessor):
         """
         # self.get_logger().warning("Using Cluster mpi")
         # check if environment variable for mpi has the correct core number.
-        if core_count is 1:
+        if core_count == 1:
             return ""
         environ_mpi_flags: List = str(os.environ[self.mpi_flags_variable.replace("$", '')]).split()
         local_mpi_flags = self.mpi_flags_variable
@@ -181,7 +180,7 @@ class SPORObjectCommandLine(SPORObject):
             List[str]: List of additional command line options.
         """
         # return empty list if the com interface is not used
-        if not self.spor_com_interface:
+        if not self.use_communication_interface:
             return []
         # initialize run id if not already existing
         if not self._run_id:
@@ -210,7 +209,7 @@ class SPORObjectCommandLine(SPORObject):
         join_observations(step_dict["observation"], returned_step_dict["observations"], self.logger_name, self.additional_observations)
         join_infos(step_dict["info"][self.name], returned_step_dict["info"], self.logger_name)
         step_dict["done"] = step_dict["done"] or returned_step_dict["done"]
-        step_dict["reward"] = step_dict["reward"]
+        step_dict["reward"] = returned_step_dict["reward"]
 
 
     def run(self, validation_id: Optional[int] = None, core_count: int = 1, reset: bool = False) -> StepReturnType:
@@ -236,7 +235,7 @@ class SPORObjectCommandLine(SPORObject):
         else:   # executes the step
             multi_proc_prefix = self.get_multiprocessing_prefix(core_count=core_count)
             command = " ".join([multi_proc_prefix, self.execution_command, *self.command_options, *self.spor_com_interface(reset, validation_id)])
-
+            self.get_logger().debug(f"Calling the steps command with the following string {command} in the working directory {self.working_directory}.")
             exit_code, output = call_commandline(command, self.working_directory, env_logger)
             step_return["info"][self.name] = {
                 "output": output,
@@ -341,7 +340,6 @@ class SPORList(SbSOvRL_BaseModel):
                     break
             except Exception as exp:
                 self.get_logger().warning(f"The current step with name {step.name} has thrown an error {exp}.")
-                raise Exception("asda")
                 if step.stop_after_error:
                     done = True
                     self.get_logger().warning(f"Due to the error in the step {step.name} this episode will now be terminated.")
