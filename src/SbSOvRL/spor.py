@@ -5,6 +5,7 @@ This part of the SbSOvRL environment definition is a list of steps the environme
 
 A more in depth documentation of the SPOR concept is given here :ref:`SPOR Communication Interface <sporcominterface>`
 """
+import json
 from pydantic.fields import PrivateAttr
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from SbSOvRL.util.sbsovrl_types import InfoType, RewardType, StepReturnType
@@ -16,7 +17,7 @@ from pydantic import conint, validator, UUID4
 from uuid import uuid4
 import sys
 from ast import literal_eval
-from SbSOvRL.util.util_funcs import call_commandline, join_infos, join_observations
+from SbSOvRL.util.util_funcs import call_commandline, join_infos, join_observations, SbSOvRL_JSONEncoder
 
 class MultiProcessor(SbSOvRL_BaseModel):
     """
@@ -75,7 +76,7 @@ class MPIClusterMultiProcessor(MultiProcessor):
         core_qualifier, set_core_count = environ_mpi_flags
         if set_core_count != core_count:
             local_mpi_flags = f"{core_qualifier} {max(1, min(core_count, self.max_core_count))}"
-        self.get_logger().info(f"Using Cluster mpi with command {os.environ[self.command.replace('$', '')]} and additional flags {local_mpi_flags}")
+        self.get_logger().debug(f"Using Cluster mpi with command {os.environ[self.command.replace('$', '')]} and additional flags {local_mpi_flags}")
         return f"{self.command} {local_mpi_flags}"
 
 class SPORObject(SbSOvRL_BaseModel):
@@ -99,16 +100,18 @@ class SPORObject(SbSOvRL_BaseModel):
         """
         return self.additional_observations
 
-    def run(self, validation_id: Optional[int] = None, core_count: int = 1, reset: bool = False) -> StepReturnType:
+    def run(self, step_informations: StepReturnType, validation_id: Optional[int] = None, core_count: int = 1, reset: bool = False) -> StepReturnType:
         """This function is called to complete the defined step of the current SPORObject. This functions needs to be overloaded by all child classes.
 
         Note:
             Please use these default values for the return values: observation = None, reward = 0, done = False, info = dict()
 
         Args:
+            step_informations (StepReturnType): Previously collected step values. Should be up-to-date.
             validation_id (Optional[int], optional): During validation the validation id signifies the validation episode. If none the current episode is not a validation episode. Defaults to None.
             core_count (int, optional): Wanted core_count of the task to run. Defaults to 1.
             reset (bool, optional): Boolean on whether or not this object is called because of a reset. Defaults to False.
+
 
         Returns:
             StepReturnType: The full compliment of the step information are returned. The include observation, reward, done, info. 
@@ -128,6 +131,7 @@ class SPORObjectCommandLine(SPORObject):
     """
     multi_processor: Optional[Union[MultiProcessor, MPIClusterMultiProcessor]] = None   #: Definition of the multi-processor. Defaults to *None*.
     use_communication_interface: bool = False   #: whether or not to use the SPOR communication interface. Defaults to *False*.
+    add_step_informations: bool = False #: whether or not to add the step informations to the SPOR communications interface commandline options
     working_directory: str  #: Path to the directory in which the program should run in helpful for programs using relative paths. When {} appear in the string a UUID will be inserted for multiprocessing purposes.
     execution_command: str  #: Command which calls the program/script for this SPOR step.  
     command_options: List[str] = [] #: Command line options to add to the execution command. These do not include those from the communication interface these will be, if applicable, added separately.
@@ -154,6 +158,27 @@ class SPORObjectCommandLine(SPORObject):
             raise SbSOvRLParserException("SPORObjectCommandline", "unknown", f"The work_directory path {v} is a valid directory. When using multiprocessing placeholder please make sure that the directory before the placeholder is valid.")
         return v
 
+    @validator("add_step_informations")
+    def validate_add_step_informations_only_true_if_also_spor_com_is_true(cls, v: str, values: Dict[str, Any]):
+        """Check that if the validated variable is true the value of the variable ``use_communication_interface`` is also true.
+
+        Args:
+            v (str): Object to validate
+            v (str): Already validated values
+
+        Raises:
+            SbSOvRLParserException: If path is not correct, this error is thrown.
+
+        Returns:
+            str: value
+        """
+        if v:
+            if "use_communication_interface" in values and values["use_communication_interface"]:
+                pass
+            else:
+                raise SbSOvRLParserException("SPORObjectCommandline", "add_step_informations", f"Please only set the add_step_informations variable to True if the variable use_communication_interface is also True.")
+        return v
+
     def get_multiprocessing_prefix(self, core_count: int) -> str:
         """Function which tries to get the correct multiprocessing command if available else an empty string is returned.
 
@@ -169,12 +194,13 @@ class SPORObjectCommandLine(SPORObject):
         return ret_str
 
 
-    def spor_com_interface(self, reset: bool, validation_id: Optional[int]) -> List[str]:
+    def spor_com_interface(self, reset: bool, validation_id: Optional[int], step_informations: StepReturnType) -> List[str]:
         """Generates the additional command line argument options used for the spor com interface.
 
         Args:
             reset (bool): Boolean on whether or not this object is called because of a reset.
             validation_id (Optional[int]): During validation the validation id signifies the validation episode. If none the current episode is not a validation episode.
+            step_informations (StepReturnType): Previously collected step values. Should be up-to-date.
 
         Returns:
             List[str]: List of additional command line options.
@@ -191,7 +217,16 @@ class SPORObjectCommandLine(SPORObject):
         if reset:
             interface_options.append("--reset")
         if validation_id is not None:
-            interface_options.extend(["--validation_run", str(validation_id)])
+            interface_options.extend(["--validation_value", str(validation_id)])
+        if self.add_step_informations:
+            json_step_informations = {
+                "observations": step_informations[0],
+                "reward": step_informations[1],
+                "done": step_informations[2],
+                "info": step_informations[3]
+            }
+            # print(json_step_informations)
+            interface_options.extend(["--json_object", "'"+json.dumps(json_step_informations, cls=SbSOvRL_JSONEncoder)+"'"])
         return interface_options
     
     def spor_com_interface_read(self, output: bytes, step_dict: Dict):
@@ -206,16 +241,19 @@ class SPORObjectCommandLine(SPORObject):
         except SyntaxError as err:
             self.get_logger().warning(f"An error was thrown while reading in the spor_com_interface return values of the step {self.name}. Please check that only the dictionary holding the correct information is printed during the execution of the external program.", exc_info=True)
             raise err
-        join_observations(step_dict["observation"], returned_step_dict["observations"], self.logger_name, self.additional_observations)
+        step_dict["observation"] = join_observations(step_dict["observation"], returned_step_dict["observations"], self.logger_name, self.additional_observations)
+        
+        # print(step_dict["observation"], step_dict["observation"].shape)
         join_infos(step_dict["info"][self.name], returned_step_dict["info"], self.logger_name)
         step_dict["done"] = step_dict["done"] or returned_step_dict["done"]
         step_dict["reward"] = returned_step_dict["reward"]
 
 
-    def run(self, validation_id: Optional[int] = None, core_count: int = 1, reset: bool = False) -> StepReturnType:
+    def run(self, step_informations: StepReturnType, validation_id: Optional[int] = None, core_count: int = 1, reset: bool = False) -> StepReturnType:
         """This function runs the defined command line command with the defined arguments adding if necessary multi-processing flags and the spor communication interface.
         
         Args:
+            step_informations (StepReturnType): Previously collected step values. Should be up-to-date.
             validation_id (Optional[int], optional): During validation the validation id signifies the validation episode. If none the current episode is not a validation episode. Defaults to None.
             core_count (int, optional): Wanted core_count of the task to run. Defaults to 1.
             reset (bool, optional): Boolean on whether or not this object is called because of a reset. Defaults to False.
@@ -225,21 +263,20 @@ class SPORObjectCommandLine(SPORObject):
         """
         env_logger = self.get_logger()
         step_return: Dict = {
-            "observation": None, 
-            "reward": 0.0,
-            "done": False,
-            "info": {}
+            "observation": step_informations[0], 
+            "reward": step_informations[1],
+            "done": step_informations[2],
+            "info": step_informations[3]
             }
         if reset and not self.run_on_reset: # skips the step without doing anything if reset and not run_on_reset
             pass
         else:   # executes the step
             multi_proc_prefix = self.get_multiprocessing_prefix(core_count=core_count)
-            command = " ".join([multi_proc_prefix, self.execution_command, *self.command_options, *self.spor_com_interface(reset, validation_id)])
-            self.get_logger().debug(f"Calling the steps command with the following string {command} in the working directory {self.working_directory}.")
+            command = " ".join([multi_proc_prefix, self.execution_command, *self.command_options, *self.spor_com_interface(reset, validation_id, step_informations)])
             exit_code, output = call_commandline(command, self.working_directory, env_logger)
             step_return["info"][self.name] = {
-                "output": output,
-                "exit_code": exit_code
+               "output": output,
+               "exit_code": int(exit_code)
             }
             if exit_code != 0:
                 env_logger.info("SPOR Step thrown error.")
@@ -247,6 +284,8 @@ class SPORObjectCommandLine(SPORObject):
                     env_logger.info("Will episode now, due to thrown error.")
                     step_return["done"] = True
                 step_return["reward"] = self.reward_on_error
+                if self.additional_observations:    # adding zero observations for the ones that got missed due to thrown error
+                    step_return["observation"] = np.zeros((self.additional_observations,))
             else:
                 if self.use_communication_interface:
                     self.spor_com_interface_read(output, step_return)
@@ -270,8 +309,8 @@ class SPORList(SbSOvRL_BaseModel):
     reward_aggregation: Literal["sum", "min", "max", "mean", "minmax"]   #: Definition on how the reward should be aggregated. Definition for each option is given :doc:`here <spor>`.
 
     _rewards: List[RewardType] = PrivateAttr(default_factory=list)
-    _observations: Any = PrivateAttr(default=None)
-    _info: InfoType = PrivateAttr(default_factory=dict)
+    # _observations: Any = PrivateAttr(default=None)
+    # _info: InfoType = PrivateAttr(default_factory=dict)
 
     def get_number_of_observations(self) -> int:
         """Aggregates the number of observations of all steps and returns the number of observations that are generated via SPORSteps.
@@ -312,10 +351,13 @@ class SPORList(SbSOvRL_BaseModel):
             self.get_logger().warning("No rewards given. Setting reward to zero (0). Please check if reward should be given but did not register.")
             return 0
 
-    def run(self, validation_id: Optional[int] = None, core_count: int = 1, reset: bool = False) -> StepReturnType:
+    def run(self, step_informations: StepReturnType, validation_id: Optional[int] = None, core_count: int = 1, reset: bool = False) -> StepReturnType:
         """Runs through all steps of the list and handles each output. When done all received observations and infos are jointly returned with the reward and the indicator whether or not the episode should be terminated.
 
+        The values are added in-place to the step_informations variable but is also returned.
+
         Args:
+            step_informations (StepReturnType): Previously collected step values. Should be up-to-date.
             validation_id (Optional[int], optional): If currently in validation the validation needs to be supplied for steps which need this. If none given no validation is currently performed. Defaults to None.
             core_count (int, optional): Wanted core_count of the task to run. Defaults to 1.
             reset (bool, optional): Boolean on whether or not this object is called because of a reset. Defaults to False.
@@ -324,24 +366,27 @@ class SPORList(SbSOvRL_BaseModel):
             StepReturnType: Results of all steps.
         """
         self._rewards = []
-        done = False
+        observations, reward, done, info = step_informations
         for step in self.steps:
-            if reset and not (step.run_on_reset):   # ignore if step should be skiped during reset procedure
-                continue
-            try:
-                observation, reward, done, info = step.run(validation_id, core_count, reset)
-                if observation is not None:
-                    join_observations(self._observations, observation, self.logger_name)
-                if reward is not None:
-                    self._rewards.append(reward)
-                if info:
-                    join_infos(self._info, info, self.logger_name)
-                if done:
-                    break
-            except Exception as exp:
-                self.get_logger().warning(f"The current step with name {step.name} has thrown an error {exp}.")
-                if step.stop_after_error:
-                    done = True
-                    self.get_logger().warning(f"Due to the error in the step {step.name} this episode will now be terminated.")
-                    break
-        return self._observations, self._compute_reward(), done, self._info
+            if done:
+                if step.additional_observations:
+                    # print("adding zeros")
+                    observations = join_observations(observations, np.zeros((step.additional_observations,)), self.logger_name)
+                    # print(observations, observations.shape)
+            else:
+                if reset and not (step.run_on_reset):   # ignore if step should be skiped during reset procedure
+                    continue
+                try:
+                    observations, reward, done, info = step.run(step_informations, validation_id, core_count, reset)
+                    if reward is not None:
+                        self._rewards.append(reward)
+                    if info:
+                        join_infos(info, info, self.logger_name)
+                except Exception as exp:
+                    self.get_logger().warning(f"The current step with name {step.name} has thrown an error: {exp}.", exc_info=1)
+                    if step.stop_after_error:
+                        done = True
+                        self.get_logger().warning(f"Due to the error in the step {step.name} this episode will now be terminated.")
+            reward = self._compute_reward()
+            step_informations = (observations, reward, done, info)
+        return step_informations

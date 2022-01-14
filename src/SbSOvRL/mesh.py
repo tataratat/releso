@@ -15,7 +15,7 @@ class Mesh(SbSOvRL_BaseModel):
     mxyz_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think.") #: Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think. 
     mien_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.") #: Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.
 
-    path: str   #: after validation Tuple["path_to_mxyz_file", "path_to_mien_file"]
+    path: Optional[str] = None   #: after validation Tuple["mxyz_path", "mien_path"]
     export_path: str    #: Path to the default export location of the mesh during environment operations. (So that the solver can use it.)
     hypercube: bool = Field(description="If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).", default=True)    #: If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).
     dimensions: conint(ge=1)    #: Number of dimensions of the mesh.
@@ -148,7 +148,8 @@ class Mesh(SbSOvRL_BaseModel):
                 if mien_path is None:
                     SbSOvRLParserException("Mesh", "path", "Could not locate mien file path.")
             values["mien_path"] = mien_path
-            values["mxyz_path"] = mxyz_path                
+            values["mxyz_path"] = mxyz_path
+            values["path"] = mxyz_path.parent
             return values
         raise SbSOvRLParserException("Mesh", "[mien_|mxyz_|]path", "Could not locate the correct mien/mxyz paths.")
         

@@ -3,6 +3,7 @@ File holds the definition class for the validation.
 """
 import pathlib
 from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.util.logger import get_parser_logger
 from pydantic.class_validators import validator
 from pydantic.fields import Field
 from pydantic.types import conint, conlist
@@ -10,7 +11,6 @@ from typing import Any, Optional, List, Tuple, Dict
 from SbSOvRL.exceptions import SbSOvRLParserException
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.type_aliases import GymEnv
-import datetime
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.base_class import BaseAlgorithm
 
@@ -20,8 +20,34 @@ class Validation(SbSOvRL_BaseModel):
     save_best_agent: bool   #: Whether or not to save the best agent. If agent is not saved only results will be reported by the agent which produced them will not be saved.
     validate_on_training_end: bool  #: Whether or not to also run a validation when the training is terminated.
     mesh_base_path_extension: Optional[str] = None  #: Do not know currently
-    max_timesteps_per_episode: int = Field(description="Maximum number of steps in an episode during validation. If zero no maximum number of steps.", default=0)   #: after how many timesteps inside a single episode should the episode be terminated.
-    end_episode_on_spline_not_changed: bool = Field(description="End episode if spline has not changed from one step to the next.", default=False)  #: Should the episode be terminated if the spline representation has not changed between timesteps?
+    max_timesteps_in_episode: Optional[conint(ge=1)] = None   #: after how many timesteps inside a single episode should the episode be terminated.
+    end_episode_on_spline_not_changed: bool = False  #: Should the episode be terminated if the spline representation has not changed between timesteps?
+    reward_on_spline_not_changed: Optional[float] = None
+    reward_on_episode_exceeds_max_timesteps: Optional[float] = None
+    
+    @validator("reward_on_spline_not_changed", always=True)
+    @classmethod
+    def check_if_reward_given_if_spline_not_change_episode_killer_activated(cls, value, values) -> float:
+        if "end_episode_on_spline_not_changed" not in values:
+            raise SbSOvRLParserException("Validation", "reward_on_spline_not_changed", "Could not find definition of parameter end_episode_on_spline_not_changed, please define this variable since otherwise this variable would have no function.")
+        if value is not None and (values["end_episode_on_spline_not_changed"] is None or not values["end_episode_on_spline_not_changed"]):
+            raise SbSOvRLParserException("Validation", "reward_on_spline_not_changed", "Reward can only be set if end_episode_on_spline_not_changed is true.")
+        if values["end_episode_on_spline_not_changed"] and value is None:
+            get_parser_logger().warning("Please set a reward value for spline not changed if episode should end on it. Will set 0 for you now, but this might not be you intention.")
+            value = 0.
+        return value
+
+    @validator("reward_on_episode_exceeds_max_timesteps", always=True)
+    @classmethod
+    def check_if_reward_given_if_max_steps_killer_activated(cls, value, values) -> int:
+        if "max_timesteps_in_episode" not in values:
+            raise SbSOvRLParserException("Validation", "reward_on_episode_exceeds_max_timesteps", "Could not find definition of parameter max_timesteps_in_episode, please define this variable since otherwise this variable would have no function.")
+        if value is not None and (values["max_timesteps_in_episode"] is None or not values["max_timesteps_in_episode"]):
+            raise SbSOvRLParserException("Validation", "reward_on_episode_exceeds_max_timesteps", "Reward can only be set if max_timesteps_in_episode is a positive integer.")
+        if values["max_timesteps_in_episode"] and value is None:
+            get_parser_logger().warning("Please set a reward value for max time steps exceeded, if episode should end on it. Will set 0 for you now, but this might not be you intention.")
+            value = 0.
+        return value
 
     @validator("validation_values")
     @classmethod
@@ -101,4 +127,4 @@ class Validation(SbSOvRL_BaseModel):
         Returns:
             Dict[str, Any]: dict with all the necessary parameters. Should mirror the parameters in parser_environment.Environment.set_validation
         """
-        return {"validation_values": self.validation_values, "base_mesh_path": self.get_mesh_base_path(base_save_location), "end_episode_on_spline_not_change": self.end_episode_on_spline_not_changed, "max_timesteps_per_episode": self.max_timesteps_per_episode}
+        return {"validation_values": self.validation_values, "base_mesh_path": self.get_mesh_base_path(base_save_location), "end_episode_on_spline_not_change": self.end_episode_on_spline_not_changed, "max_timesteps_in_episode": self.max_timesteps_in_episode, "reward_on_episode_exceeds_max_timesteps": self.reward_on_episode_exceeds_max_timesteps, "reward_on_spline_not_changed": self.reward_on_spline_not_changed}

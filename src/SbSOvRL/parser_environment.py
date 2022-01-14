@@ -4,6 +4,7 @@ from typing import Optional, Any, List, Dict, Tuple, Union
 from pydantic.class_validators import validator
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.spline import Spline, VariableLocation
+from SbSOvRL.util.logger import get_parser_logger
 from SbSOvRL.mesh import Mesh
 from SbSOvRL.spor import MultiProcessor, SPORList
 from gustav import FreeFormDeformation
@@ -60,6 +61,9 @@ class Environment(SbSOvRL_BaseModel):
             raise SbSOvRLParserException("Environment", "reward_on_spline_not_changed", "Could not find definition of parameter end_episode_on_spline_not_changed, please defines this variable since otherwise this variable would have no function.")
         if not values["end_episode_on_spline_not_changed"] and value is not None:
             raise SbSOvRLParserException("Environment", "reward_on_spline_not_changed", "Reward can only be set if end_episode_on_spline_not_changed is true.")
+        if values["end_episode_on_spline_not_changed"] and value is None:
+            get_parser_logger().warning("Please set a reward value for spline not changed if episode should end on it. Will set 0 for you now, but this might not be you intention.")
+            value = 0.
         return value
 
     @validator("reward_on_episode_exceeds_max_timesteps", always=True)
@@ -69,6 +73,9 @@ class Environment(SbSOvRL_BaseModel):
             raise SbSOvRLParserException("Environment", "reward_on_episode_exceeds_max_timesteps", "Could not find definition of parameter max_timesteps_in_episode, please defines this variable since otherwise this variable would have no function.")
         if values is not None and values["max_timesteps_in_episode"] is not None:
             raise SbSOvRLParserException("Environment", "reward_on_episode_exceeds_max_timesteps", "Reward can only be set if max_timesteps_in_episode a positive integer.")
+        if values["max_timesteps_in_episode"] and value is None:
+            get_parser_logger().warning("Please set a reward value for max time steps exceeded, if episode should end on it. Will set 0 for you now, but this might not be you intention.")
+            value = 0.
         return value
     # object functions
 
@@ -105,29 +112,29 @@ class Environment(SbSOvRL_BaseModel):
         """
         return [variable.current_position for variable in self._actions]
 
-    def _get_observations(self, new_observations: ObservationType, done: bool) -> List[float]:
-        """Collects all observations (Spline observations and solver observations) into a single observation vector.
+    # def _get_observations(self, new_observations: ObservationType, done: bool) -> List[float]:
+    #     """Collects all observations (Spline observations and solver observations) into a single observation vector.
 
-        Note: This tool is currently setup to only work with and MLP policy since otherwise a multidimensional observation vector needs to be created.
+    #     Note: This tool is currently setup to only work with and MLP policy since otherwise a multidimensional observation vector needs to be created.
 
-        Args:
-            new_observations (ObservationType): Dict containing the reward and observations from the solver given by the solver.
-            done (bool): If done no solver obseration can be read in so 0 values will be added for them.
+    #     Args:
+    #         new_observations (ObservationType): Dict containing the reward and observations from the solver given by the solver.
+    #         done (bool): If done no solver obseration can be read in so 0 values will be added for them.
 
-        Returns:
-            List[float]: Vector of the observations.
-        """
-        # get spline observations
-        observations = self._get_spline_observations()
+    #     Returns:
+    #         List[float]: Vector of the observations.
+    #     """
+    #     # get spline observations
+    #     observations = self._get_spline_observations()
 
-        # add solver observations
-        if done: # if solver failed use 0 solver observations
-            observations.extend([0 for _ in range(self.spor.get_number_of_observations())])
-        elif new_observations is not None: # use observed observations
-            observations.extend(
-                [item for item in new_observations])
-        obs = np.array(observations)
-        return obs
+    #     # add solver observations
+    #     if done: # if solver failed use 0 solver observations
+    #         observations.extend([0 for _ in range(self.spor.get_number_of_observations())])
+    #     elif new_observations is not None: # use observed observations
+    #         observations.extend(
+    #             [item for item in new_observations])
+    #     obs = np.array(observations)
+    #     return obs
 
     def _apply_FFD(self, path: Optional[str] = None) -> None:
         """Apply the Free Form Deformation using the current spline to the mesh and export the resulting mesh to the path given.
@@ -173,7 +180,11 @@ class Environment(SbSOvRL_BaseModel):
             Optional[int]: Check text above.
         """
         if self._validation_ids is not None:
-            return self._validation_ids[self._validation_iteration]
+            # if self._validation_iteration >= len(self._validation_ids):
+            #     before = self._validation_iteration
+            #     self._validation_iteration = 0
+            #     self.get_logger().warning(f"Resetting the validation iteration of value {before} to the first validation value 0. If this happens please invertigate why this happens.")
+            return self._validation_ids[self._current_validation_idx]
         return None
 
     def step(self, action: Any) -> Tuple[Any, float, bool, Dict[str, Any]]:
@@ -191,10 +202,16 @@ class Environment(SbSOvRL_BaseModel):
 
         # apply Free Form Deformation
         self._apply_FFD()
-        # run solver
-        observations_, reward, done, info = self.spor.run(self.get_validation_id(), self.is_multiprocessing(), reset=False)
 
-        observations = self._get_observations(observations_, done=done)
+        observations = np.array(self._get_spline_observations())
+        done = False
+        reward = 0.
+        info = {
+            "mesh_path": str(self.mesh.mxyz_path)
+        }
+
+        # run solver
+        observations, reward, done, info = self.spor.run((observations, done, reward, info) ,self.get_validation_id(), self.is_multiprocessing(), reset=False)
 
         # check if spline has not changed. But only in validation phase to exit episodes that are always repeating the same action without breaking.
         if not done:
@@ -238,6 +255,13 @@ class Environment(SbSOvRL_BaseModel):
         # apply Free Form Deformation should now just recreate the non deformed mesh
         self._apply_FFD()
 
+        observations = np.array(self._get_spline_observations())
+        done = False
+        reward = 0
+        info = {
+            "mesh_path": str(self.mesh.mxyz_path)
+        }
+
         self._timesteps_in_episode = 0
         if self._validation_ids:
             # export mesh at end of validation
@@ -253,7 +277,7 @@ class Environment(SbSOvRL_BaseModel):
                 self.export_spline(validation_mesh_path.with_suffix(".xml"))
                 # ffd_vis_for_rl.plot_deformed_unit_mesh(self._FFD, base_path/"deformed_unit_mesh.svg")
                 # ffd_vis_for_rl.plot_deformed_spline(self._FFD, base_path/"deformed_spline.svg")
-            if self._current_validation_idx == len(self._validation_ids):
+            if self._current_validation_idx >= len(self._validation_ids):
                 self.get_logger().info("The validation callback resets the environment one time to often. Next goal state will again be the correct one.")
             self._current_validation_idx += 1
             if self._current_validation_idx>len(self._validation_ids):
@@ -262,12 +286,12 @@ class Environment(SbSOvRL_BaseModel):
 
 
         # run solver and reset reward and get new solver observations
-        observations, reward, info, done = self.spor.run(self.get_validation_id(), core_count=self.is_multiprocessing(), reset=True)
+        observations, reward, info, done = self.spor.run((observations, done, reward, info), self.get_validation_id(), core_count=self.is_multiprocessing(), reset=True)
 
-        obs = self._get_observations(observations, done=done)
-        return obs
+        # obs = self._get_observations(observations, done=done)
+        return observations
 
-    def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None, end_episode_on_spline_not_change: bool = False, max_timesteps_per_episode: int = 0):
+    def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None, end_episode_on_spline_not_change: bool = False, max_timesteps_in_episode: int = 0, reward_on_spline_not_changed: Optional[float] = None, reward_on_episode_exceeds_max_timesteps: Optional[float] = None):
         """Converts the environment to a validation environment. This environment now only sets the goal states to the predefined values.
 
         Args:
@@ -279,8 +303,10 @@ class Environment(SbSOvRL_BaseModel):
         self._validation_ids = validation_values
         self._current_validation_idx = 0
         self._validation_base_mesh_path = base_mesh_path
-        self.max_timesteps_in_episode = max_timesteps_per_episode
+        self.max_timesteps_in_episode = max_timesteps_in_episode
         self.end_episode_on_spline_not_changed = end_episode_on_spline_not_change
+        self.reward_on_spline_not_changed = reward_on_spline_not_changed
+        self.reward_on_episode_exceeds_max_timesteps = reward_on_episode_exceeds_max_timesteps
         self.get_logger().info(f"Setting environment to validation. max_timesteps {self.max_timesteps_in_episode}, spine_not_changed {self.end_episode_on_spline_not_changed}")
 
     def get_gym_environment(self) -> gym.Env:
@@ -306,7 +332,7 @@ class Environment(SbSOvRL_BaseModel):
         """
         self._FFD.deformed_spline.export(file_name)
 
-    def export_mesh(self, file_name: str, space_time: bool = True) -> None:
+    def export_mesh(self, file_name: str, space_time: bool = False) -> None:
         """Export the current deformed mesh to the given path. The export will be done via gustav. 
         
         Note: Gustav often uses the extension to determin the format and the sub files of the export so be careful how you input the file path.
