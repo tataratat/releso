@@ -59,7 +59,7 @@ class Environment(SbSOvRL_BaseModel):
     def check_if_reward_given_if_spline_not_change_episode_killer_activated(cls, value, values) -> float:
         if "end_episode_on_spline_not_changed" not in values:
             raise SbSOvRLParserException("Environment", "reward_on_spline_not_changed", "Could not find definition of parameter end_episode_on_spline_not_changed, please defines this variable since otherwise this variable would have no function.")
-        if not values["end_episode_on_spline_not_changed"] and value is not None:
+        if value is not None and (values["end_episode_on_spline_not_changed"] is None or not values["end_episode_on_spline_not_changed"]):
             raise SbSOvRLParserException("Environment", "reward_on_spline_not_changed", "Reward can only be set if end_episode_on_spline_not_changed is true.")
         if values["end_episode_on_spline_not_changed"] and value is None:
             get_parser_logger().warning("Please set a reward value for spline not changed if episode should end on it. Will set 0 for you now, but this might not be you intention.")
@@ -71,7 +71,7 @@ class Environment(SbSOvRL_BaseModel):
     def check_if_reward_given_if_max_steps_killer_activated(cls, value, values) -> int:
         if "max_timesteps_in_episode" not in values:
             raise SbSOvRLParserException("Environment", "reward_on_episode_exceeds_max_timesteps", "Could not find definition of parameter max_timesteps_in_episode, please defines this variable since otherwise this variable would have no function.")
-        if values is not None and values["max_timesteps_in_episode"] is not None:
+        if value is not None and (values["max_timesteps_in_episode"] is None or not values["max_timesteps_in_episode"]):
             raise SbSOvRLParserException("Environment", "reward_on_episode_exceeds_max_timesteps", "Reward can only be set if max_timesteps_in_episode a positive integer.")
         if values["max_timesteps_in_episode"] and value is None:
             get_parser_logger().warning("Please set a reward value for max time steps exceeded, if episode should end on it. Will set 0 for you now, but this might not be you intention.")
@@ -184,7 +184,7 @@ class Environment(SbSOvRL_BaseModel):
             #     before = self._validation_iteration
             #     self._validation_iteration = 0
             #     self.get_logger().warning(f"Resetting the validation iteration of value {before} to the first validation value 0. If this happens please invertigate why this happens.")
-            return self._validation_ids[self._current_validation_idx]
+            return self._validation_ids[self._current_validation_idx%len(self._validation_ids)]
         return None
 
     def step(self, action: Any) -> Tuple[Any, float, bool, Dict[str, Any]]:
@@ -218,13 +218,10 @@ class Environment(SbSOvRL_BaseModel):
             self._timesteps_in_episode += 1
             if self.max_timesteps_in_episode and self.max_timesteps_in_episode > 0 and self._timesteps_in_episode >= self.max_timesteps_in_episode:
                 done = True
-                reward += self.reward_on_spline_not_changed
+                reward += self.reward_on_episode_exceeds_max_timesteps
                 info["reset_reason"] = "max_timesteps"
             # self.get_logger().info(f"Checked if max timestep was reached: {self._max_timesteps_in_episode > 0 and self._timesteps_in_episode > self._max_timesteps_in_episode}.")
-            if done or self._last_observation is None or not self.end_episode_on_spline_not_changed:
-                # no need to compare during reset, done, during first step or if option for spline not changed is not wanted
-                pass
-            else:
+            if self.end_episode_on_spline_not_changed and self._last_observation is not None:
                 if np.allclose(np.array(self._last_observation), np.array(observations)): # check
                     self.get_logger().info("The Spline observation have not changed will exit episode.")
                     reward += self.reward_on_spline_not_changed

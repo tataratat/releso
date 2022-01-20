@@ -64,9 +64,6 @@ class BaseParser(SbSOvRL_BaseModel):
             ),
         ]
         validation_environment = self._create_validation_environment()
-        validation_environment.set_logger_name_recursively(
-            self.verbosity._environment_validation_logger
-        )
 
         if self.validation:
             if self.validation.should_add_callback():
@@ -176,7 +173,13 @@ class BaseParser(SbSOvRL_BaseModel):
                 raise SbSOvRLValidationNotSet()
             return None
         validation_environment = deepcopy(self.environment)
+
+        validation_environment.set_logger_name_recursively(
+            self.verbosity._environment_validation_logger
+        )
+        
         validation_environment.set_validation(
             **self.validation.get_environment_validation_parameters(self.save_location)
         )
+        
         return validation_environment

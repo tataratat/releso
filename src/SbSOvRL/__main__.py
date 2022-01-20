@@ -5,6 +5,7 @@ import argparse
 import pathlib
 import hjson
 import datetime
+import pprint
 
 
 def main(args) -> None:
@@ -31,7 +32,7 @@ def main(args) -> None:
     ###########################
     
     if args.json_validate:
-        print(optimization_object.dict())
+        pprint.pprint(optimization_object.dict())
         return
 
     ###########################
