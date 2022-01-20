@@ -178,7 +178,7 @@ class SplineSpaceDimension(SbSOvRL_BaseModel):
             starting_ending = values["degree"] + 1
             middle = n_knots - (2 * starting_ending)
             if middle >= 0:
-                knot_vec = list(np.array([np.zeros(starting_ending-1), np.linspace(0, 1, middle+2), np.ones(starting_ending-1)]).flatten())
+                knot_vec = list(np.append(np.append(np.zeros(starting_ending-1), np.linspace(0, 1, middle+2)), np.ones(starting_ending-1)))
             else:
                 get_parser_logger().warning(f"The knot vector is shorter {n_knots} than the length given by the open format {starting_ending*2}. Knot vector is created by adding the starting and ending parts. The knot vector might be to long.")
                 knot_vec = list(np.array([np.zeros(starting_ending), np.ones(starting_ending)]).flatten())
