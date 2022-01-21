@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-
+"""
+    File defines the main entry point of the framework if it is called via the command line. (via python -m SbSOvRL)
+"""
 from SbSOvRL.base_parser import BaseParser
 import argparse
 import pathlib
@@ -9,6 +11,14 @@ import pprint
 
 
 def main(args) -> None:
+    """Functions control how the framework works when called from the command line. 
+
+    Args:
+        args ([type]): Command line arguments
+
+    Raises:
+        ValueError: Thrown if the json file could not be found.
+    """
     
     ###########################
     #                         #

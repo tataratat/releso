@@ -1,10 +1,17 @@
+"""This files holds functions which can be used in custom command line spor object scripts.
+"""
 from typing import Union, Any, Dict
 import json
 from os import PathLike
 import argparse
 from pydantic.types import UUID4
 
-def spor_com_parse_arguments():
+def spor_com_parse_arguments() -> argparse.Namespace:
+    """Parses the spor com arguments and returns them in a namespace object for easy access.
+
+    Returns:
+        argparse.Namespace: [description]
+    """
     parser = argparse.ArgumentParser(description="Spline base Shape Optimization via Reinforcement Learning Toolbox. This is the basic script that can load a json file and run the resulting optimization problem.")
     parser.add_argument("-i", "--initialize", "--reset", dest="reset", action="store_true")
     parser.add_argument("-r", "--run", "--run_id", dest="run_id", action="store", type=UUID4, required=True)
@@ -12,10 +19,20 @@ def spor_com_parse_arguments():
     parser.add_argument("-j", "--additional_values", "--json_object", dest="json_object", action="store", type=str, required=False)
     args = parser.parse_args()
     if args.json_object:
-        args.json_object = spor_com_additional_informations(args.json_object)
+        args.json_object = spor_com_additional_information(args.json_object)
     return args
 
-def spor_com_additional_informations(j_str: str) -> Dict[str, Any]:
+def spor_com_additional_information(j_str: str) -> Dict[str, Any]:
+    """ converts the given string (should hold a json string) into a dictionary 
+    
+    This function is currently only used for the spor_com_parse_arguments function. 
+
+    Args:
+        j_str (str): string holding a json definition
+
+    Returns:
+        Dict[str, Any]: Dict created from the json definition
+    """
     a = json.loads(j_str)
     return a
 

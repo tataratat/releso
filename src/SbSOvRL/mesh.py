@@ -1,3 +1,6 @@
+"""
+File holds defintion classes for the mesh
+"""
 import pathlib
 from pydantic import Field
 from typing import Optional, Dict, Any

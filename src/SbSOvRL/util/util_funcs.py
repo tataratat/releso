@@ -10,6 +10,8 @@ from SbSOvRL.util.sbsovrl_types import InfoType, ObservationType
 import json
 
 class SbSOvRL_JSONEncoder(json.JSONEncoder):
+    """This encoder class is necessary to correctly encode numpy.ndarrays, bytes and numpy int values.
+    """
 
     def default(self, o: Any) -> Any:
         if isinstance(o, np.ndarray):
