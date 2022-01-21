@@ -1,3 +1,5 @@
+"""Files defines the environment used for parsing and also most function which hold the functionality for the Reinforcement Learning environment are defined here.
+"""
 from pydantic import conint
 from typing import Optional, Any, List, Dict, Tuple, Union
 
@@ -23,40 +25,51 @@ from SbSOvRL.util.sbsovrl_types import ObservationType, RewardType
 class MultiProcessing(SbSOvRL_BaseModel):
     """Defines if the Problem should use Multiprocessing and with how many cores the solver can work. Does not force Multiprocessing for example if the solver does not support it.
     """
-    number_of_cores: conint(ge=1) = 1
+    number_of_cores: conint(ge=1) = 1   #: Maximal number of cores which can be used by the current environment. Multi-Environments will use multiple of these.
 
 
 class Environment(SbSOvRL_BaseModel):
     """
     Parser Environment object is created by pydantic during the parsing of the json object defining the Spline base Shape optimization. Each object can create a gym environment that represents the given problem.
     """
-    multi_processing: Optional[MultiProcessing] = Field(default_factory=MultiProcessor)
-    spline: Spline
-    mesh: Mesh
-    spor: SPORList
-    discrete_actions: bool = True
-    max_timesteps_in_episode: Optional[conint(ge=1)] = None
-    end_episode_on_spline_not_changed: bool = False
-    reward_on_spline_not_changed: Optional[float] = None
-    reward_on_episode_exceeds_max_timesteps: Optional[float] = None
+    multi_processing: Optional[MultiProcessing] = Field(default_factory=MultiProcessor) #: defines if multi-processing can be used.
+    spline: Spline  #: definition of the spline
+    mesh: Mesh  #: definition of the mesh
+    spor: SPORList  #: definition of the spor objects
+    discrete_actions: bool = True   #: Whether or not to use discreet actions if False continuous actions will be used.
+    max_timesteps_in_episode: Optional[conint(ge=1)] = None #: maximal number of timesteps to run each episode for
+    end_episode_on_spline_not_changed: bool = False #: whether or not to reset the environment if the spline has not change after a step
+    reward_on_spline_not_changed: Optional[float] = None    #: reward if episode is ended due to reaching max step in episode 
+    reward_on_episode_exceeds_max_timesteps: Optional[float] = None #: reward if episode is ended due to spline not changed
 
     # object variables
-    _id: Optional[int] = PrivateAttr(default=None)
-    _actions: List[VariableLocation] = PrivateAttr()
-    _validation_ids: Optional[List[float]] = PrivateAttr(default=None)
-    _current_validation_idx: Optional[int] = PrivateAttr(default=None)
-    _timesteps_in_episode: Optional[int] = PrivateAttr(default=0)
-    _last_observation: Optional[ObservationType] = PrivateAttr(default=None)
-    _FFD: FreeFormDeformation = PrivateAttr(
-        default_factory=FreeFormDeformation)
-    _last_step_results: Dict[str, Any] = PrivateAttr(default={})
-    _validation_base_mesh_path: Optional[str] = PrivateAttr(default=None)
-    _validation_iteration: Optional[int] = PrivateAttr(default=0)
+    _id: Optional[int] = PrivateAttr(default=None)  #: id if the environment, important for multi-environment learning
+    _actions: List[VariableLocation] = PrivateAttr()    #: list of actions
+    _validation_ids: Optional[List[float]] = PrivateAttr(default=None)  #: if validation environment validation ids are stored here
+    _current_validation_idx: Optional[int] = PrivateAttr(default=None)  #: id of the current validation id
+    _timesteps_in_episode: Optional[int] = PrivateAttr(default=0)   #: number of timesteps currently spend in the episode
+    _last_observation: Optional[ObservationType] = PrivateAttr(default=None)    #: last observation from the last step used to determin whether or not the spline has changed between episodes
+    _FFD: FreeFormDeformation = PrivateAttr(default_factory=FreeFormDeformation)    #: FreeFormDeformation used for the spline based shape optimization
+    _last_step_results: Dict[str, Any] = PrivateAttr(default={})    #: StepReturn values from last step
+    _validation_base_mesh_path: Optional[str] = PrivateAttr(default=None)   #: path where the mesh should be saved to for validation
+    _validation_iteration: Optional[int] = PrivateAttr(default=0)   #: How many validations were already evaluated
 
 
     @validator("reward_on_spline_not_changed", always=True)
     @classmethod
     def check_if_reward_given_if_spline_not_change_episode_killer_activated(cls, value, values) -> float:
+        """Checks that 1) if a reward is set, also the boolean value for the end_episode_on_spline_not_changed is True. 2) If end_episode_on_spline_not_changed is True a reward value is set.
+
+        Args:
+            value (float): value to validate
+            values (Dict[str, Any]): previously validated values (here end_episode_on_spline_not_changed is important)
+
+        Raises:
+            SbSOvRLParserException: Error is thrown if one of the conditions is not met.
+
+        Returns:
+            float: reward for the specified occurrence.
+        """
         if "end_episode_on_spline_not_changed" not in values:
             raise SbSOvRLParserException("Environment", "reward_on_spline_not_changed", "Could not find definition of parameter end_episode_on_spline_not_changed, please defines this variable since otherwise this variable would have no function.")
         if value is not None and (values["end_episode_on_spline_not_changed"] is None or not values["end_episode_on_spline_not_changed"]):
@@ -69,6 +82,18 @@ class Environment(SbSOvRL_BaseModel):
     @validator("reward_on_episode_exceeds_max_timesteps", always=True)
     @classmethod
     def check_if_reward_given_if_max_steps_killer_activated(cls, value, values) -> int:
+        """Checks that 1) if a reward is set, also the boolean value for the max_timesteps_in_episode is True. 2) If max_timesteps_in_episode is True a reward value is set.
+
+        Args:
+            value (float): value to validate
+            values (Dict[str, Any]): previously validated values (here max_timesteps_in_episode is important)
+
+        Raises:
+            SbSOvRLParserException: Error is thrown if one of the conditions is not met.
+
+        Returns:
+            float: reward for the specified occurrence.
+        """
         if "max_timesteps_in_episode" not in values:
             raise SbSOvRLParserException("Environment", "reward_on_episode_exceeds_max_timesteps", "Could not find definition of parameter max_timesteps_in_episode, please defines this variable since otherwise this variable would have no function.")
         if value is not None and (values["max_timesteps_in_episode"] is None or not values["max_timesteps_in_episode"]):
@@ -183,7 +208,7 @@ class Environment(SbSOvRL_BaseModel):
             # if self._validation_iteration >= len(self._validation_ids):
             #     before = self._validation_iteration
             #     self._validation_iteration = 0
-            #     self.get_logger().warning(f"Resetting the validation iteration of value {before} to the first validation value 0. If this happens please invertigate why this happens.")
+            #     self.get_logger().warning(f"Resetting the validation iteration of value {before} to the first validation value 0. If this happens please investigate why this happens.")
             return self._validation_ids[self._current_validation_idx%len(self._validation_ids)]
         return None
 

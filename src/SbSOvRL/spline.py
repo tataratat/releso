@@ -1,3 +1,6 @@
+"""
+File holds all classes which define the spline and with that also the action definitio of the problem.
+"""
 from abc import abstractmethod
 from SbSOvRL.exceptions import SbSOvRLParserException
 import logging
@@ -13,15 +16,18 @@ import copy
 import datetime
 
 class VariableLocation(SbSOvRL_BaseModel):
-    current_position: float
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
-    n_steps: Optional[conint(ge=1)] = 10
-    step: Optional[float] = None
+    """
+    Object of this class defines the position and movement possibilities for a single dimensions of a single controll point of the spline.
+    """
+    current_position: float #: coordinate of the current position of the current control point in the dimension
+    min_value: Optional[float] = None   #: lower bound of possible values which can be reached by this variable
+    max_value: Optional[float] = None   #: upper bound  of possible values which can be reached by this variable
+    n_steps: Optional[conint(ge=1)] = 10    #: number of steps the value range is divided into used to define the step if not given.
+    step: Optional[float] = None    #: If discrete actions are used the step is used to define the new current position by adding/substracting it from the current position. 
     
     # non json variables
-    _is_action: Optional[bool] = PrivateAttr(default=None)
-    _original_position: Optional[float] = PrivateAttr(default=None)
+    _is_action: Optional[bool] = PrivateAttr(default=None)  #: Is true if min_value and max_value are not the same value
+    _original_position: Optional[float] = PrivateAttr(default=None) #: Original position needs to be saved so that the spline can be easily reset to its original state.
 
     def __init__(__pydantic_self__, **data: Any) -> None:
         super().__init__(**data)
@@ -142,10 +148,13 @@ class VariableLocation(SbSOvRL_BaseModel):
             self.current_position = self._original_position
 
 class SplineSpaceDimension(SbSOvRL_BaseModel):
-    name: str
-    number_of_points: conint(ge=1)
-    degree: conint(ge=1)
-    knot_vector: Optional[List[float]]
+    """
+        Defines a single spline space dimension of the current spline. The dimension is a dimension of the parametric spline dimension.
+    """
+    name: str   #: Name of the spline dimension used for easier identification
+    number_of_points: conint(ge=1)  #: number of control points in this diemension
+    degree: conint(ge=1)    #: degree of the spline in this dimension
+    knot_vector: Optional[List[float]]  #: knot vector describing the knot intervals of the spline in the current dimension
 
     @validator("knot_vector", always=True)
     @classmethod
@@ -193,9 +202,12 @@ class SplineSpaceDimension(SbSOvRL_BaseModel):
         return self.knot_vector
 
 class SplineDefinition(SbSOvRL_BaseModel):
-    space_dimensions: List[SplineSpaceDimension]
-    spline_dimension: conint(ge=1)
-    control_point_variables: Optional[List[List[Union[VariableLocation, confloat(ge=0, le=1)]]]]
+    """
+    Defines the spline. Base class for the NURBS and B-Spline implementations.
+    """
+    space_dimensions: List[SplineSpaceDimension]    #: Definition of the space dimensions of the spline
+    spline_dimension: conint(ge=1)  #: Non parameteric spline dimensions is currently not used.
+    control_point_variables: Optional[List[List[Union[VariableLocation, confloat(ge=0, le=1)]]]]    #: controll point grid of the spline needs to be converted into an  numpy.ndarray for 3D examples.
 
     @validator("control_point_variables", always=True)
     @classmethod
@@ -278,7 +290,12 @@ class SplineDefinition(SbSOvRL_BaseModel):
         """
         return np.prod([dimension.number_of_points for dimension in self.space_dimensions])
 
-    def get_controll_points(self):
+    def get_controll_points(self) -> List[List[float]]:
+        """Returns the positions of all control points in a two deep list. 
+
+        Returns:
+            List[List[float]]: Positions of all control points.
+        """
         return [[controll_point.current_position for controll_point in sub_list] for sub_list in self.control_point_variables]
 
     def get_actions(self) -> List[VariableLocation]:
@@ -310,7 +327,9 @@ class SplineDefinition(SbSOvRL_BaseModel):
                 dim.reset()
 
 class BSplineDefinition(SplineDefinition):
-
+    """
+    Defintion of the BSpline implementation of the SbSOvRL Toolbox
+    """
     def get_spline(self) -> BSpline:
         """Creates the BSpline from the defintion given by the json file.
 
@@ -329,6 +348,9 @@ class BSplineDefinition(SplineDefinition):
             )
 
 class NURBSDefinition(SplineDefinition):
+    """
+    Defintion of the NURBS implementation of the SbSOvRL Toolbox, in comparision to the B-Spline implentation only an additional weights vector is added. 
+    """
     weights: List[Union[float, VariableLocation]] # TODO should weights also be changable?
 
     @validator("weights")
@@ -395,13 +417,15 @@ class NURBSDefinition(SplineDefinition):
         """Extends the controll point actions with the weight actions.
 
         Returns:
-            List[VariableLocation]: List of possible actions for this NURB spline.
+            List[VariableLocation]: List of possible actions for this NURBS spline.
         """
         actions = super().get_actions()
         actions.extend([variable for variable in self.weights if variable.is_action()])
         return actions
 
     def reset(self) -> None:
+        """Resets the spline to the original shape.
+        """
         super().reset()
         for weight in self.weights:
             weight.reset()
@@ -409,6 +433,10 @@ class NURBSDefinition(SplineDefinition):
 SplineTypes = Union[NURBSDefinition, BSplineDefinition] # should always be a derivate of SplineDefinition
 
 class Spline(SbSOvRL_BaseModel):
+    """Defintion of the spline. Can be deleted in the next round of reworks.
+    
+    Had a historical significance but had all its additional functions removed. Please remove in next rework.
+    """
     spline_definition: SplineTypes
 
     def get_spline(self) -> SplineTypes:

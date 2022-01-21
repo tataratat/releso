@@ -128,11 +128,11 @@ class BaseParser(SbSOvRL_BaseModel):
         """Evaluate the model with the parameters defined in the validation variable. If an agent is already loaded use this agent, else get the agent from the agent variable. Validation will be done inside the 
 
         Args:
-            validation_env (Union[None, Environment], optional): If validation environment already exists it will be used else a new validation evironment will be created. Defaults to None.
+            validation_env (Union[None, Environment], optional): If validation environment already exists it will be used else a new validation environment will be created. Defaults to None.
             throw_error_if_None (bool, optional): If this is set and the validation variable is None an error is thrown. Defaults to False.
 
         Raises:
-            SbSOvRLValidationNotSet: Thrown if validation is absolutly needed. If not absolutly needed the validation will not be done but no error will be thrown.
+            SbSOvRLValidationNotSet: Thrown if validation is absolutely needed. If not absolutely needed the validation will not be done but no error will be thrown.
         """
         if self.validation:
             if validation_env is None:
@@ -161,7 +161,7 @@ class BaseParser(SbSOvRL_BaseModel):
             throw_error_if_None (bool, optional): If this is set and the validation variable is None an error is thrown. Defaults to False.
 
         Raises:
-            SbSOvRLValidationNotSet: Thrown if validation is absolutely needed. If not absolutly needed the validation will not be done but no error will be thrown.
+            SbSOvRLValidationNotSet: Thrown if validation is absolutely needed. If not absolutely needed the validation will not be done but no error will be thrown.
 
         Returns:
             Environment: Validation environment. Is not a 'gym' environment but and SbSOvRL.parser_environment.Environment. Create the gym environment by calling the function env.get_gym_environment()

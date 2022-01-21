@@ -61,7 +61,7 @@ class SbSOvRL_BaseModel(BaseModel):
         return path
 
     def _check_list(self, list_item: List[Any], logger_name: str):
-        """Recursivly goes through lists and add the logger_name where applicable.
+        """Recursively goes through lists and add the logger_name where applicable.
 
         Args:
             list_item (List[Any]): list in which to check if items reside which need checking for logger names

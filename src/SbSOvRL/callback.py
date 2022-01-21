@@ -1,3 +1,5 @@
+"""Defines the custom call backs the SbSOvRL library uses.
+"""
 # TODO overhall for multi environment learning
 from datetime import datetime
 from stable_baselines3.common.callbacks import BaseCallback
@@ -25,22 +27,29 @@ class EpisodeLogCallback(BaseCallback):
         self.update_n_episodes: int = update_n_episodes
 
     def _export(self):
+        """Function exports the current information into a csv file.
+        """
         df = pd.DataFrame({
             "steps_in_episode": self.episode_n_steps,
             "episode_reward": self.episode_rewards,
-            "epsiode_end_reason": self.episode_end,
+            "episode_end_reason": self.episode_end,
             "total_timesteps": self.episode_steps_total,
             "wall_time": self.episode_wall_time
         })
         df.to_csv(self.episode_log_location)
 
     def _on_step(self) -> bool:
-        # need this try because dqn is stupid
+        """Function is called after a step was performed.
+
+        Returns:
+            bool: Whether or not to stop the episode.
+        """
         if self.last_end_step is None:
             if self.num_timesteps <= 1:
                 self.last_end_step = 0
             else:
                 self.last_end_step = self.num_timesteps-1
+        # need this try because dqn is stupid
         try:
             self.current_episode_rewards.append(self.locals["rewards"][0])
         except KeyError:
@@ -67,4 +76,6 @@ class EpisodeLogCallback(BaseCallback):
         return True
 
     def _on_training_end(self) -> None:
+        """Function is called when training is terminated.
+        """
         self._export()

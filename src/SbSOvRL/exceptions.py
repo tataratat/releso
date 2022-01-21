@@ -1,3 +1,6 @@
+"""
+File defines the exceptions of the SbSOvRL toolbox/library.
+"""
 import logging
 import sys, os, platform, enum
 from typing import List
