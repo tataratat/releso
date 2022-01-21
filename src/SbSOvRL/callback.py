@@ -1,7 +1,9 @@
+# TODO overhall for multi environment learning
 from datetime import datetime
 from stable_baselines3.common.callbacks import BaseCallback
 import pandas as pd
 from pathlib import Path
+from typing import List, Optional
 
 
 
@@ -10,17 +12,17 @@ class EpisodeLogCallback(BaseCallback):
     """
     def __init__(self, episode_log_location: Path, verbose: int = 0, update_n_episodes: int = 1):
         super().__init__(verbose=verbose)
-        self.episodes = 0
-        self.current_episode_rewards = []
-        self.episode_rewards = []
-        self.episode_n_steps = []
-        self.episode_steps_total = []
-        self.episode_wall_time = []
-        self.episode_end = []
-        self.last_end_step = None
-        self.episode_log_location = episode_log_location
+        self.episodes: int = 0
+        self.current_episode_rewards: List[float] = []
+        self.episode_rewards: List[float] = []
+        self.episode_n_steps: List[int] = []
+        self.episode_steps_total: List[int] = []
+        self.episode_wall_time: List[str] = []
+        self.episode_end: List[Optional[str]] = []
+        self.last_end_step: Optional[int] = None
+        self.episode_log_location: Path = episode_log_location
         self.episode_log_location.parent.mkdir(parents=True, exist_ok=True)
-        self.update_n_episodes = update_n_episodes
+        self.update_n_episodes: int = update_n_episodes
 
     def _export(self):
         df = pd.DataFrame({
@@ -66,4 +68,3 @@ class EpisodeLogCallback(BaseCallback):
 
     def _on_training_end(self) -> None:
         self._export()
-        # print(self.locals)
