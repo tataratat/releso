@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from SbSOvRL.exceptions import SbSOvRLParserException
 import logging
+from SbSOvRL.util.logger import get_parser_logger
 from gustav import BSpline, NURBS
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from typing import List, Union, Optional, Dict, Any
@@ -9,7 +10,8 @@ from pydantic.class_validators import root_validator, validator
 from pydantic.fields import PrivateAttr
 from pydantic.types import confloat, conint
 import copy
- 
+import datetime
+
 class VariableLocation(SbSOvRL_BaseModel):
     current_position: float
     min_value: Optional[float] = None
@@ -20,6 +22,9 @@ class VariableLocation(SbSOvRL_BaseModel):
     # non json variables
     _is_action: Optional[bool] = PrivateAttr(default=None)
     _original_position: Optional[float] = PrivateAttr(default=None)
+
+    def __init__(__pydantic_self__, **data: Any) -> None:
+        super().__init__(**data)
 
     @validator("min_value", "max_value", always=True)
     @classmethod
@@ -111,7 +116,7 @@ class VariableLocation(SbSOvRL_BaseModel):
         if self._original_position is None:
             self._original_position = self.current_position
         step = self.step if increasing else -self.step
-        # logging.getLogger("SbSOvRL_environment").debug(f"Current step is {step} while increasing: {increasing}")
+        # self.get_logger().debug(f"Current step is {step} while increasing: {increasing}")
         self.current_position = np.clip(self.current_position + step, self.min_value, self.max_value)
         return self.current_position
 
@@ -163,19 +168,19 @@ class SplineSpaceDimension(SbSOvRL_BaseModel):
         else:
             raise SbSOvRLParserException("SplineSpaceDimension", "knot_vector", "During validation the prerequisite variables number_of_points and degree were not present.")
         if type(v) is list:
-            logging.getLogger("SbSOVRL_parser").debug(f"The knot_vector for dimension {values['name']} is given.")
+            get_parser_logger().debug(f"The knot_vector for dimension {values['name']} is given.")
             if len(v) == n_knots:
                 return v
             else:
-                logging.getLogger("SbSOVRL_parser").warning(f"The knot vector does not contain the correct number of items for an open knot vector definition. (is: {len(v)}, should_be: {n_knots}).")
+                get_parser_logger().warning(f"The knot vector does not contain the correct number of items for an open knot vector definition. (is: {len(v)}, should_be: {n_knots}).")
         elif v is None:
-            logging.getLogger("SbSOVRL_parser").debug(f"The knot_vector for dimension {values['name']} is not given, trying to generate one in the open format.")
+            get_parser_logger().debug(f"The knot_vector for dimension {values['name']} is not given, trying to generate one in the open format.")
             starting_ending = values["degree"] + 1
             middle = n_knots - (2 * starting_ending)
             if middle >= 0:
-                knot_vec = list(np.array([np.zeros(starting_ending-1), np.linspace(0, 1, middle+2), np.ones(starting_ending-1)]).flatten())
+                knot_vec = list(np.append(np.append(np.zeros(starting_ending-1), np.linspace(0, 1, middle+2)), np.ones(starting_ending-1)))
             else:
-                logging.getLogger("SbSOVRL_parser").warning(f"The knot vector is shorter {n_knots} than the length given by the open format {starting_ending*2}. Knot vector is created by adding the starting and ending parts. The knot vector might be to long.")
+                get_parser_logger().warning(f"The knot vector is shorter {n_knots} than the length given by the open format {starting_ending*2}. Knot vector is created by adding the starting and ending parts. The knot vector might be to long.")
                 knot_vec = list(np.array([np.zeros(starting_ending), np.ones(starting_ending)]).flatten())
             return knot_vec
 
@@ -194,7 +199,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
 
     @validator("control_point_variables", always=True)
     @classmethod
-    def make_default_controll_point_grid(cls, v, values) -> List[List[Union[VariableLocation]]]:
+    def make_default_controll_point_grid(cls, v, values) -> List[List[VariableLocation]]:
         """If value is None a equidistant grid of controll points will be given with variability of half the space between the each control point.
 
         Args:
@@ -208,10 +213,9 @@ class SplineDefinition(SbSOvRL_BaseModel):
         Returns:
             List[List[VariableLocation]]: Definition of the controll_points
         """
-        # raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "asdasdasd.")
         if v is None:
             if "space_dimensions" not in values.keys():
-                raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "During validation the prerequisite variable space_dimensions was not present.")
+                raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "During validation the prerequisite variable space_dimensions was not present."+str(values))
             spline_dimensions = values["space_dimensions"]
             n_points_in_dim = [dim.number_of_points for dim in spline_dimensions]
             # this can be done in a smaller and faster footprint but for readability and understanding 
@@ -221,36 +225,36 @@ class SplineDefinition(SbSOvRL_BaseModel):
             for n_p in n_points_in_dim:
                 dimension_lists.append(list(np.linspace(0.,1.,n_p)))
                 dim_spacings.append(1./((n_p-1)*2))
-
             # create each controll point for by concatenating each value in each list with each value of all other lists
+            save_location = str(values["save_location"])
             for inner_dim, dim_spacing in zip(dimension_lists, dim_spacings):
                 if v is None: # first iteration the v vector must be initialized with the first dimension vector
                     v = []
                     for element in inner_dim:
                         if element == 0.:
-                            v.append(VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing))
+                            v.append(VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing, save_location=save_location))
                         elif element == 1.:
-                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element))
+                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element, save_location=save_location))
                         else:
-                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing))
+                            v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing, save_location=save_location))
                 else: # for each successive dimension for each existing element in v each value in the new dimesion must be added
                     temp_v = []
                     for current_list in v:
                         for element in inner_dim:
                             elem = copy.deepcopy(current_list if type(current_list) is list else [current_list])
                             if element == 0.:
-                                temp_v.append([VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing)] + elem)
+                                temp_v.append([VariableLocation(current_position = element, min_value = element, max_value = element+dim_spacing, save_location=save_location)] + elem)
                             elif element == 1.:
-                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element)] + elem)
+                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element, save_location=save_location)] + elem)
                             else:
-                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing)] + elem)
+                                temp_v.append([VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing, save_location=save_location)] + elem)
                     v = temp_v
         return v 
 
 
     @validator("control_point_variables", each_item=True)
     @classmethod
-    def convert_all_control_point_locations_to_variable_locations(cls, v):
+    def convert_all_control_point_locations_to_variable_locations(cls, v, values):
         """ Converts all controll points values into VariabelLocations if the value is given as a simple float. Simple float will be converted into VariableLocation with current_position=value and no variability.
 
         Args:
@@ -261,7 +265,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
         """
         new_list = []
         for element in v:
-            new_list.append(VariableLocation(current_position=element) if type(element) is float else element)
+            new_list.append(VariableLocation(current_position=element, save_location=values["save_location"]) if type(element) is float else element)
             if not 0. <= new_list[-1].current_position <= 1.:
                 raise SbSOvRLParserException("SplineDefinition", "controll_point_variables", "The controll_point_variables need to be inside an unit hypercube. Found a values outside this unit hypercube.")
         return new_list
@@ -283,7 +287,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
         Returns:
             List[VariableLocation]: See above
         """
-        logging.getLogger("SbSOvRL_environment").debug("Collecting all actions for BSpline.")
+        self.get_logger().debug("Collecting all actions for BSpline.")
         return [variable for sub_dim in self.control_point_variables for variable in sub_dim if variable.is_action()]
 
     @abstractmethod
@@ -313,10 +317,10 @@ class BSplineDefinition(SplineDefinition):
         Returns:
             BSpline: given by the #degrees and knot_vector in each space_dimension and the current controll points.
         """
-        logging.getLogger("SbSOvRL_environment").debug("Creating Gustav BSpline.")
-        # logging.getLogger("SbSOvRL_environment").debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
-        # logging.getLogger("SbSOvRL_environment").debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
-        logging.getLogger("SbSOvRL_environment").debug(f"With controll_points: {self.get_controll_points()}")
+        self.get_logger().debug("Creating Gustav BSpline.")
+        # self.get_logger().debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
+        # self.get_logger().debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
+        self.get_logger().debug(f"With controll_points: {self.get_controll_points()}")
         
         return BSpline(
             [space_dim.degree for space_dim in self.space_dimensions],
@@ -347,7 +351,7 @@ class NURBSDefinition(SplineDefinition):
         n_cp = np.prod([space_dim.number_of_points for space_dim in values["space_dimensions"]])
         if type(v) is list:
             if len(v) == n_cp:
-                logging.getLogger("SbSOVRL_parser").debug("Found correct number of weights in SplineDefinition.")
+                get_parser_logger().debug("Found correct number of weights in SplineDefinition.")
             else:
                 raise SbSOvRLParserException("SplineDefinition NURBS", "weights", f"The length of the weight vector {len(v)} is not the same as the number of control_points {n_cp}.")
         elif v is None:
@@ -375,10 +379,10 @@ class NURBSDefinition(SplineDefinition):
         Returns:
             NURBS: NURBSSpline
         """
-        logging.getLogger("SbSOvRL_environment").debug("Creating Gustav NURBS.")
-        # logging.getLogger("SbSOvRL_environment").debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
-        # logging.getLogger("SbSOvRL_environment").debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
-        # logging.getLogger("SbSOvRL_environment").debug(f"controll_points: {self.get_controll_points()}")
+        self.get_logger().debug("Creating Gustav NURBS.")
+        # self.get_logger().debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
+        # self.get_logger().debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
+        # self.get_logger().debug(f"controll_points: {self.get_controll_points()}")
         
         return NURBS(
             [space_dim.degree for space_dim in self.space_dimensions],
@@ -407,7 +411,7 @@ SplineTypes = Union[NURBSDefinition, BSplineDefinition] # should always be a der
 class Spline(SbSOvRL_BaseModel):
     spline_definition: SplineTypes
 
-    def get_spline(self) -> Union[SplineTypes]:
+    def get_spline(self) -> SplineTypes:
         """Creates the current spline.
 
         Returns:
