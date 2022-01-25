@@ -2,7 +2,7 @@
  
 ### Job name
 
-#SBATCH --job-name=SbSORL_PPO_test
+#SBATCH --job-name=SbSORL_PPO_continous
 
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=clemens.fricke@rwth-aachen.de

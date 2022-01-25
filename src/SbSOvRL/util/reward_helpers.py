@@ -17,6 +17,8 @@ def spor_com_parse_arguments() -> argparse.Namespace:
     parser.add_argument("-r", "--run", "--run_id", dest="run_id", action="store", type=UUID4, required=True)
     parser.add_argument("-v", "--validation_value", dest="validation_value", action="store", type=float, required=False)
     parser.add_argument("-j", "--additional_values", "--json_object", dest="json_object", action="store", type=str, required=False)
+    parser.add_argument("-l", "--base_save_location", dest="base_save_location", action="store", type=str, required=True)
+
     args = parser.parse_args()
     if args.json_object:
         args.json_object = spor_com_additional_information(args.json_object)

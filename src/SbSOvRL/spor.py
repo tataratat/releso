@@ -18,6 +18,7 @@ from uuid import uuid4
 import sys
 from ast import literal_eval
 from SbSOvRL.util.util_funcs import call_commandline, join_infos, join_observations, SbSOvRL_JSONEncoder
+from timeit import default_timer as timer
 
 class MultiProcessor(SbSOvRL_BaseModel):
     """
@@ -214,11 +215,12 @@ class SPORObjectCommandLine(SPORObject):
 
         # collect all parts of the communication interface
         interface_options: List[str] = ["--run_id", str(self._run_id)]
+        interface_options.extend(["--base_save_location", str(self.save_location)])
         if reset:
             interface_options.append("--reset")
         if validation_id is not None:
             interface_options.extend(["--validation_value", str(validation_id)])
-        if self.step_information:
+        if self.add_step_information:
             json_step_information = {
                 "observations": step_information[0],
                 "reward": step_information[1],
@@ -245,6 +247,8 @@ class SPORObjectCommandLine(SPORObject):
         
         # print(step_dict["observation"], step_dict["observation"].shape)
         join_infos(step_dict["info"][self.name], returned_step_dict["info"], self.logger_name)
+        if step_dict["info"][self.name].get("reset_reason"):
+            step_dict["info"]["reset_reason"] = step_dict["info"][self.name].get("reset_reason")
         step_dict["done"] = step_dict["done"] or returned_step_dict["done"]
         step_dict["reward"] = returned_step_dict["reward"]
 
@@ -283,6 +287,7 @@ class SPORObjectCommandLine(SPORObject):
                 if self.stop_after_error:
                     env_logger.info("Will episode now, due to thrown error.")
                     step_return["done"] = True
+                    step_return["info"]["reset_reason"] = f"ExecutionFailed-{self.name}"
                 step_return["reward"] = self.reward_on_error
                 if self.additional_observations:    # adding zero observations for the ones that got missed due to thrown error
                     step_return["observation"] = np.zeros((self.additional_observations,))
@@ -368,6 +373,7 @@ class SPORList(SbSOvRL_BaseModel):
         self._rewards = []
         observations, reward, done, info = step_information
         for step in self.steps:
+            start = timer()
             if done:
                 if step.additional_observations:
                     # print("adding zeros")
@@ -389,4 +395,6 @@ class SPORList(SbSOvRL_BaseModel):
                         self.get_logger().warning(f"Due to the error in the step {step.name} this episode will now be terminated.")
             reward = self._compute_reward()
             step_information = (observations, reward, done, info)
+            end = timer()
+            self.get_logger().debug(f"SPOR Step {step.name} took {end-start} seconds.")
         return step_information

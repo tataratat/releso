@@ -70,7 +70,7 @@ class EpisodeLogCallback(BaseCallback):
             self.last_end_step = self.num_timesteps
             self.episode_steps_total.append(self.num_timesteps)
             self.episode_wall_time.append(str(datetime.now()))
-            self.episode_end.append(None if "reset_reason" not in info.keys() else info["reset_reason"])
+            self.episode_end.append(None if "reset_reason" not in info else info["reset_reason"])
         if self.episodes % self.update_n_episodes == 0:
             self._export()
         return True

@@ -58,6 +58,7 @@ The communications interface is currently only available for command line calls.
 .. This following parameter was planned but is removed due to the difficulty of correct memory/access management and the selective copying would also be pretty difficult.
 .. --additional_parameters         # This option is configurable to only send one or the other or neither.
 ..       {"mesh": MeshDefinition, "spline": SplineDefinition}
+.. --base_save_location str        # This value is the base path to the directory where the records of the current jobs are stored. To keep all information together it is advised to save the logs, memory and persistent data here.
 
 During the configuration if the validation the number of different episodes each validation should include. Each of these validation episodes gets validation id, which is transmitted to the external program.
 

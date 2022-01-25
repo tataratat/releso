@@ -75,7 +75,7 @@ class BaseParser(SbSOvRL_BaseModel):
                 )
 
         self.get_logger().info(
-            f"The environment is now trained for {self.number_of_timesteps} episodes. If the maximum number of episode callback is set this value might not mean much."
+            f"The environment is now trained for {self.number_of_episodes} episodes."
         )
         self._agent.env.reset()
         self._agent.learn(

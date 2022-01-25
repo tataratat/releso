@@ -19,7 +19,7 @@ from copy import copy
 from stable_baselines3.common.monitor import Monitor
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 import pathlib
-
+from timeit import default_timer as timer
 from SbSOvRL.util.sbsovrl_types import ObservationType, RewardType
 
 class MultiProcessing(SbSOvRL_BaseModel):
@@ -221,6 +221,7 @@ class Environment(SbSOvRL_BaseModel):
         Returns:
             Tuple[Any, float, bool, Dict[str, Any]]: [description]
         """
+        start = timer()
         # apply new action
         self.get_logger().debug(f"Action {action}")
         self.apply_action(action)
@@ -262,6 +263,9 @@ class Environment(SbSOvRL_BaseModel):
             "done": done,
             "info": info
         }
+        self.get_logger().debug(self._last_step_results)
+        end = timer()
+        self.get_logger().debug(f"Step took {end-start} seconds.")
         return observations, reward, done, info
 
     def reset(self) -> ObservationType:
