@@ -230,6 +230,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
                 raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "During validation the prerequisite variable space_dimensions was not present."+str(values))
             spline_dimensions = values["space_dimensions"]
             n_points_in_dim = [dim.number_of_points for dim in spline_dimensions]
+            n_points_in_dim.reverse()
             # this can be done in a smaller and faster footprint but for readability and understanding 
             dimension_lists = []
             dim_spacings = []

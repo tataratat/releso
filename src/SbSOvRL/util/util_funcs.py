@@ -97,7 +97,7 @@ def join_observations(old_observations: ObservationType, new_observations: Obser
             old_observations = np.append(old_observations, new_observations)
         elif type(new_observations) is list and type(old_observations) is np.ndarray:
             if number_of_observations is not None and len(new_observations) is not number_of_observations:
-                logging.getLogger(logger_name).error(f"The given observations have a size of {new_observations.size} but should have the {number_of_observations}.")
+                logging.getLogger(logger_name).error(f"The given observations have a size of {len(new_observations)} but should have the {number_of_observations}.")
             old_observations = np.append(old_observations, np.array(new_observations).flatten())
 
         else:

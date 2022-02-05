@@ -386,8 +386,8 @@ class SPORList(SbSOvRL_BaseModel):
                     observations, reward, done, info = step.run(step_information, validation_id, core_count, reset)
                     if reward is not None:
                         self._rewards.append(reward)
-                    if info:
-                        join_infos(info, info, self.logger_name)
+                    # if info:
+                    #     join_infos(info, info, self.logger_name)
                 except Exception as exp:
                     self.get_logger().warning(f"The current step with name {step.name} has thrown an error: {exp}.", exc_info=1)
                     if step.stop_after_error:
