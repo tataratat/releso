@@ -42,8 +42,9 @@ class EpisodeLogCallback(BaseCallback):
         """Function is called after a step was performed.
 
         Returns:
-            bool: Whether or not to stop the episode.
+            bool: If the callback returns False, training is aborted early.
         """
+        continue_training = True 
         if self.last_end_step is None:
             if self.num_timesteps <= 1:
                 self.last_end_step = 0
@@ -71,9 +72,14 @@ class EpisodeLogCallback(BaseCallback):
             self.episode_steps_total.append(self.num_timesteps)
             self.episode_wall_time.append(str(datetime.now()))
             self.episode_end.append(None if "reset_reason" not in info else info["reset_reason"])
+            for value in info.values():
+                if isinstance(value, dict):
+                    output = value.get("output")
+                    if output and "srun: error: Unable to create step for job" in output:
+                        continue_training = False
         if self.episodes % self.update_n_episodes == 0:
             self._export()
-        return True
+        return continue_training
 
     def _on_training_end(self) -> None:
         """Function is called when training is terminated.
