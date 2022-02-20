@@ -13,12 +13,13 @@ def spor_com_parse_arguments() -> argparse.Namespace:
         argparse.Namespace: [description]
     """
     parser = argparse.ArgumentParser(description="Spline base Shape Optimization via Reinforcement Learning Toolbox. This is the basic script that can load a json file and run the resulting optimization problem.")
-    parser.add_argument("-i", "--initialize", "--reset", dest="reset", action="store_true")
-    parser.add_argument("-r", "--run", "--run_id", dest="run_id", action="store", type=UUID4, required=True)
-    parser.add_argument("-v", "--validation_value", dest="validation_value", action="store", type=float, required=False)
-    parser.add_argument("-j", "--additional_values", "--json_object", dest="json_object", action="store", type=str, required=False)
-    parser.add_argument("-l", "--base_save_location", dest="base_save_location", action="store", type=str, required=True)
-
+    parser.add_argument("-i", "--initialize", "--reset", dest="reset", action="store_true", help="Should the script perform the step necessary for a reset.")
+    parser.add_argument("-r", "--run", "--run_id", dest="run_id", action="store", type=UUID4, required=True, help="Id of the SPOR_Communication interface for this specific spor object.")
+    parser.add_argument("-v", "--validation_value", dest="validation_value", action="store", type=float, required=False, help="If during validation the current validation value is passed to the script by the variable. If not present not currently in validation.")
+    parser.add_argument("-j", "--additional_values", "--json_object", dest="json_object", action="store", type=str, required=False, help="Currently available step information including observations, done, reward, info. Will automatically be parsed into a dict. Only present if spor step is configured to sent it.")
+    parser.add_argument("-l", "--base_save_location", dest="base_save_location", action="store", type=str, required=True, help="Path pointing to the save location of all permanent records of this trainings run. Please save the logs here.")
+    parser.add_argument("-e", "--environment_id", dest="environment_id", action="store", type=str, required=True, help="ID of the environment this call is comming from. NOT unique to this spor object.")
+    
     args = parser.parse_args()
     if args.json_object:
         args.json_object = spor_com_additional_information(args.json_object)

@@ -8,6 +8,7 @@ import numpy as np
 from SbSOvRL.util.logger import logging
 from SbSOvRL.util.sbsovrl_types import InfoType, ObservationType
 import json
+import datetime
 
 class SbSOvRL_JSONEncoder(json.JSONEncoder):
     """This encoder class is necessary to correctly encode numpy.ndarrays, bytes and numpy int values.
@@ -81,6 +82,7 @@ def join_observations(old_observations: ObservationType, new_observations: Obser
     Join methods:
         :py:class:`numpy.ndarray` and :py:class:`numpy.ndarray` are joined the numpy function :py:meth:`numpy.append` is used. This will flatten all arrays and append the new array to the end of the old array. The resulting shape will be (x,) where x = prod(new_obs.shape)*prod(old_obs.shape)
         :py:class:`list` and :py:class:`numpy.ndarray` are joined the list is first converted into an numpy array flattened and than used as before.
+    
     Args:
         old_observations (ObservationType): Already existing observations on which the new observations should be added to.
         new_observations (ObservationType): Observations which should be added to the old_observation field.
@@ -115,3 +117,23 @@ def join_infos(old_info: InfoType, new_info: InfoType, logger_name: str):
         logger_name (str): LoggerName so that if necessary the log message is sent into the correct logging cue.
     """
     old_info.update(new_info)
+
+def get_path_extension() -> str:
+    """Creates a string which has the following characteristics:
+
+    If not on a slurm system only the current time stamp is added
+    If in a slurm job (non task array) the current time stamp + job id
+    If in slurm task array job the job_id with subfolders for each task with the task_id_timestamp
+
+    If on a slurm system the slurm information are read from the environment variables $SLURM_JOB_ID, $SLURM_ARRAY_JOB_ID, $SLURM_ARRAY_TASK_ID.
+
+    Returns:
+        str: See function documentation body for definition.
+    """
+    ret_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    if os.getenv("SLURM_CLUSTER_NAME"): #slurm job is running
+        if os.getenv("SLURM_ARRAY_TASK_COUNT") and int(os.getenv("SLURM_ARRAY_TASK_COUNT")) > 1 and os.getenv("SLURM_ARRAY_JOB_ID") and os.getenv("SLURM_ARRAY_TASK_ID"):  #slurm task array is running
+            ret_str = os.getenv("SLURM_ARRAY_JOB_ID")+"/"+os.getenv("SLURM_ARRAY_TASK_ID")+"_"+ret_str
+        elif os.getenv("SLURM_JOB_ID"):   #default slurm job running
+            ret_str += "_"+os.getenv("SLURM_JOB_ID")
+    return ret_str

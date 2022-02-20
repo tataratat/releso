@@ -71,12 +71,10 @@ class EpisodeLogCallback(BaseCallback):
             self.last_end_step = self.num_timesteps
             self.episode_steps_total.append(self.num_timesteps)
             self.episode_wall_time.append(str(datetime.now()))
-            self.episode_end.append(None if "reset_reason" not in info else info["reset_reason"])
-            for value in info.values():
-                if isinstance(value, dict):
-                    output = value.get("output")
-                    if output and "srun: error: Unable to create step for job" in output:
-                        continue_training = False
+            reset_reason = None if "reset_reason" not in info else info["reset_reason"]
+            self.episode_end.append(reset_reason)
+            if reset_reason == "srunError-main_solver":
+                continue_training = False
         if self.episodes % self.update_n_episodes == 0:
             self._export()
         return continue_training

@@ -66,6 +66,16 @@ class Mesh(SbSOvRL_BaseModel):
             self.get_logger().info("Done loading mesh.")
         return mesh
 
+    def adapt_export_path(self, environment_id: str):
+        """If placeholder in export path insert environment_id into it.
+
+        Args:
+            environment_id (str): Environment ID
+        """
+        if "{}" in str(self.export_path):
+            self.export_path = pathlib.Path(str(self.export_path).format(environment_id))
+            self.export_path.parent.mkdir(parents=True, exist_ok=True)
+
     def get_export_path(self) -> str:
         """Direct return of object variable.
 

@@ -1,6 +1,6 @@
 """Files defines the environment used for parsing and also most function which hold the functionality for the Reinforcement Learning environment are defined here.
 """
-from pydantic import conint
+from pydantic import conint, UUID4
 from typing import Optional, Any, List, Dict, Tuple, Union
 
 from pydantic.class_validators import validator
@@ -19,6 +19,7 @@ from copy import copy
 from stable_baselines3.common.monitor import Monitor
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 import pathlib
+from uuid import uuid4
 from timeit import default_timer as timer
 from SbSOvRL.util.sbsovrl_types import ObservationType, RewardType
 
@@ -43,7 +44,7 @@ class Environment(SbSOvRL_BaseModel):
     reward_on_episode_exceeds_max_timesteps: Optional[float] = None #: reward if episode is ended due to spline not changed
 
     # object variables
-    _id: Optional[int] = PrivateAttr(default=None)  #: id if the environment, important for multi-environment learning
+    _id: UUID4 = PrivateAttr(default_factory=uuid4)  #: id if the environment, important for multi-environment learning
     _actions: List[VariableLocation] = PrivateAttr()    #: list of actions
     _validation_ids: Optional[List[float]] = PrivateAttr(default=None)  #: if validation environment validation ids are stored here
     _current_validation_idx: Optional[int] = PrivateAttr(default=None)  #: id of the current validation id
@@ -108,6 +109,7 @@ class Environment(SbSOvRL_BaseModel):
         super().__init__(**data)
         self._actions = self.spline.get_actions()
         self._FFD.set_mesh(self.mesh.get_mesh())
+        self.mesh.adapt_export_path(self._id)
 
     def _set_up_actions(self) -> gym.Space:
         """Creates the action space the gym environment uses to define its action space.
@@ -223,7 +225,7 @@ class Environment(SbSOvRL_BaseModel):
         """
         start = timer()
         # apply new action
-        self.get_logger().debug(f"Action {action}")
+        self.get_logger().info(f"Action {action}")
         self.apply_action(action)
 
         # apply Free Form Deformation
@@ -237,7 +239,7 @@ class Environment(SbSOvRL_BaseModel):
         }
 
         # run solver
-        observations, reward, done, info = self.spor.run((observations, done, reward, info) ,self.get_validation_id(), self.is_multiprocessing(), reset=False)
+        observations, reward, done, info = self.spor.run(step_information=(observations, done, reward, info) ,validation_id=self.get_validation_id(), core_count=self.is_multiprocessing(), reset=False, environment_id = self._id)
 
         # check if spline has not changed. But only in validation phase to exit episodes that are always repeating the same action without breaking.
         if not done:
@@ -312,7 +314,7 @@ class Environment(SbSOvRL_BaseModel):
 
 
         # run solver and reset reward and get new solver observations
-        observations, reward, info, done = self.spor.run((observations, done, reward, info), self.get_validation_id(), core_count=self.is_multiprocessing(), reset=True)
+        observations, reward, info, done = self.spor.run(step_information=(observations, done, reward, info), validation_id=self.get_validation_id(), core_count=self.is_multiprocessing(), reset=True, environment_id = self._id)
 
         # obs = self._get_observations(observations, done=done)
         return observations
@@ -368,3 +370,8 @@ class Environment(SbSOvRL_BaseModel):
             space_time (bool): Whether or not to use space time during the export. Currently during the import it is assumed no space time mesh is given.
         """
         self._FFD.deformed_mesh.export(file_name, space_time=space_time)
+        
+    def close(self):
+        """Function is called when training is stopped.
+        """
+        pass
