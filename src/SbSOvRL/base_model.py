@@ -41,7 +41,6 @@ class SbSOvRL_BaseModel(BaseModel):
 
     def __init__(self, **data: Any) -> None:
         if "save_location" in data:
-            # print("in data")
             if type(data["save_location"]) is str:  # This is so that the save location always gets the same 
                 data["save_location"] = SbSOvRL_BaseModel.convert_path_to_pathlib_and_add_datetime_if_applicable(data["save_location"])
             # if a save_location is present in the current object definition add this save_location also to all object definition which are direct dependends
