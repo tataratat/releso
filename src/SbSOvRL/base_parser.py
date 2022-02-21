@@ -15,6 +15,7 @@ from pydantic.fields import Field, PrivateAttr
 from pydantic.types import conint
 from stable_baselines3.common.callbacks import StopTrainingOnMaxEpisodes
 from stable_baselines3.common.base_class import BaseAlgorithm
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
 import pathlib
 import datetime
 import numpy as np
@@ -37,6 +38,7 @@ class BaseParser(SbSOvRL_BaseModel):
         ge=1
     )  #: Number of episodes the training prcess should run for
     validation: Optional[Validation]  #: Definition of the validation parameters
+    n_environments: Optional[conint(ge=1)]  #: Number of environments to train in parallel
 
     # internal objects
     _agent: Optional[BaseAlgorithm] = PrivateAttr(
@@ -55,7 +57,17 @@ class BaseParser(SbSOvRL_BaseModel):
         """
         Starts the training that is specified in the loaded json file.
         """
-        self._agent = self.agent.get_agent(self.environment.get_gym_environment())
+        train_env: Optional[VecEnv] = None
+        if self.n_environments:
+            env_create_list = []
+            for idx in range(self.n_environments):
+                cur_logger = self.verbosity.add_environment_logger_with_name_extension(str(idx))
+                env_create_list.append(self._create_new_environment(cur_logger.name))
+            train_env = SubprocVecEnv(env_create_list)
+        else:
+            train_env = DummyVecEnv([lambda: self.environment.get_gym_environment()])
+
+        self._agent = self.agent.get_agent(train_env)
 
         callbacks = [
             StopTrainingOnMaxEpisodes(max_episodes=self.number_of_episodes),
@@ -151,6 +163,19 @@ class BaseParser(SbSOvRL_BaseModel):
             self.get_logger().info(f"The length per episode was: {episode_length}")
         elif throw_error_if_None:
             raise SbSOvRLValidationNotSet()
+
+    def _create_new_environment(self, logger_name: str):
+        """Function used for multi environment training.
+
+        Args:
+            logger_name (str): name of the logger used for the rl_logger used for this specific environment.
+        """
+        def _init():
+            c_env = deepcopy(self.environment)
+            c_env.set_logger_name_recursively(logger_name)
+            return c_env.get_gym_environment()
+        return _init
+
 
     def _create_validation_environment(
         self, throw_error_if_None: bool = False

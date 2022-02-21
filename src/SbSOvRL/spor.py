@@ -272,7 +272,7 @@ class SPORObjectCommandLine(SPORObject):
             StepReturnType: The full compliment of the step information are returned. The include observation, reward, done, info. 
         """
         if self._first_time_setup_not_done:
-            self.get_logger().info(f"Setup is performed for step with name {self.name}.")
+            self.get_logger().info(f"Setup is performed for step with name {self.name}. For environment with id {environment_id}.")
             # add environemt_id to working path if necessary
             if "{}" in self.working_directory:
                 self.working_directory = self.working_directory.format(environment_id)

@@ -92,7 +92,7 @@ class Verbosity(SbSOvRL_BaseModel):
             logging.Logger: Logger of the name defined name. The name definition is explained in the main documentation of the function.
         """
         logger_name = "_".join(filter(("").__ne__, [self.base_logger_name, self.environment_extension, extension]))
-        if not logging.getLogger(logger_name).hasHandlers():
+        if not logging.getLogger(logger_name).hasHandlers() or not (len(logging.getLogger(logger_name).handlers) > 0):
             logger = set_up_logger(logger_name, self.SbSOvRL_logfile_location, self.environment, self.console_logging)
         else:
             logger = logging.getLogger(logger_name)
