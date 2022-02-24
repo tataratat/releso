@@ -1,6 +1,7 @@
 """
 File holding the base class for all SbSOvRL classes which are needed for the command line based application of this toolbox.
 """
+import multiprocessing
 import os
 from random import randint
 import pathlib
@@ -97,11 +98,13 @@ class SbSOvRL_BaseModel(BaseModel):
                     attr(logger_name)
 
     def get_logger(self) -> logging.Logger:
-        """Gets the currently defined environment logger.
+        """Gets the currently defined environment logger. If multiprocessing is part of the logger name the multiprocessing standard logger will be called.
 
         Returns:
             logging.Logger: logger which is currently to be used.
         """
+        if "multiprocessing" in self.logger_name:
+            return multiprocessing.get_logger()
         return logging.getLogger(self.logger_name)
 
     class Config:

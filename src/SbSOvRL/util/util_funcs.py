@@ -70,7 +70,13 @@ def call_commandline(command, folder, logger=None):
         exitcode=0
     except subprocess.CalledProcessError as exc:
         # if anything went wrong, catch the error, report to the user and abort
-        output = None
+        
+        # print("error:",exc)
+        # print("output:",exc.output)
+        # print("returncode:",exc.returncode)
+        # print("stderr:",exc.stderr)
+        # print("stdout:",exc.stdout)
+        output = exc.output
         if logger is not None:
             logger.error(f'Execution failed with return code {exc.returncode}')
         exitcode=exc.returncode

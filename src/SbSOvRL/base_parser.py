@@ -58,11 +58,10 @@ class BaseParser(SbSOvRL_BaseModel):
         Starts the training that is specified in the loaded json file.
         """
         train_env: Optional[VecEnv] = None
-        if self.n_environments:
+        if self.n_environments and self.n_environments > 1:
             env_create_list = []
             for idx in range(self.n_environments):
-                cur_logger = self.verbosity.add_environment_logger_with_name_extension(str(idx))
-                env_create_list.append(self._create_new_environment(cur_logger.name))
+                env_create_list.append(self._create_new_environment(self.get_logger().name+f"_{idx}"))
             train_env = SubprocVecEnv(env_create_list)
         else:
             train_env = DummyVecEnv([lambda: self.environment.get_gym_environment()])
@@ -172,8 +171,12 @@ class BaseParser(SbSOvRL_BaseModel):
         """
         def _init():
             c_env = deepcopy(self.environment)
-            c_env.set_logger_name_recursively(logger_name)
-            return c_env.get_gym_environment()
+            logging_information = {
+                "logger_name": logger_name,
+                "log_file_location": self.verbosity.SbSOvRL_logfile_location,
+                "logging_level": self.verbosity.environment
+            }
+            return c_env.get_gym_environment(logging_information=logging_information)
         return _init
 
 

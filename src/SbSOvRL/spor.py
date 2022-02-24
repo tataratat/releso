@@ -315,6 +315,7 @@ class SPORObjectCommandLine(SPORObject):
                         step_return["info"]["reset_reason"] = f"meshTangled-{self.name}"
                     elif self.name == "main_solver" and not output:   # the main_solver should always have an output only time no output is generated srun aborted early (hopefully)
                         step_return["info"]["reset_reason"] = f"srunError-{self.name}"
+                        self.get_logger().warning("Could not find any output of failed command assuming srun/mpi error. Trying to exit training now.")
                     else:
                         step_return["info"]["reset_reason"] = f"ExecutionFailed-{self.name}"
                 step_return["reward"] = self.reward_on_error

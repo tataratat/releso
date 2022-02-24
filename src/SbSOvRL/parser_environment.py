@@ -1,5 +1,6 @@
 """Files defines the environment used for parsing and also most function which hold the functionality for the Reinforcement Learning environment are defined here.
 """
+import multiprocessing
 from pydantic import conint, UUID4
 from typing import Optional, Any, List, Dict, Tuple, Union
 
@@ -22,6 +23,7 @@ import pathlib
 from uuid import uuid4
 from timeit import default_timer as timer
 from SbSOvRL.util.sbsovrl_types import ObservationType, RewardType
+from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
 
 class MultiProcessing(SbSOvRL_BaseModel):
     """Defines if the Problem should use Multiprocessing and with how many cores the solver can work. Does not force Multiprocessing for example if the solver does not support it.
@@ -44,7 +46,7 @@ class Environment(SbSOvRL_BaseModel):
     reward_on_episode_exceeds_max_timesteps: Optional[float] = None #: reward if episode is ended due to spline not changed
 
     # object variables
-    _id: UUID4 = PrivateAttr(default_factory=uuid4)  #: id if the environment, important for multi-environment learning
+    _id: UUID4 = PrivateAttr(default=None)  #: id if the environment, important for multi-environment learning
     _actions: List[VariableLocation] = PrivateAttr()    #: list of actions
     _validation_ids: Optional[List[float]] = PrivateAttr(default=None)  #: if validation environment validation ids are stored here
     _current_validation_idx: Optional[int] = PrivateAttr(default=None)  #: id of the current validation id
@@ -107,9 +109,6 @@ class Environment(SbSOvRL_BaseModel):
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
-        self._actions = self.spline.get_actions()
-        self._FFD.set_mesh(self.mesh.get_mesh())
-        self.mesh.adapt_export_path(self._id)
 
     def _set_up_actions(self) -> gym.Space:
         """Creates the action space the gym environment uses to define its action space.
@@ -317,6 +316,8 @@ class Environment(SbSOvRL_BaseModel):
         observations, reward, info, done = self.spor.run(step_information=(observations, done, reward, info), validation_id=self.get_validation_id(), core_count=self.is_multiprocessing(), reset=True, environment_id = self._id)
 
         # obs = self._get_observations(observations, done=done)
+        
+        self.get_logger().info("Resetting the Environment DONE.")
         return observations
 
     def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None, end_episode_on_spline_not_change: bool = False, max_timesteps_in_episode: int = 0, reward_on_spline_not_changed: Optional[float] = None, reward_on_episode_exceeds_max_timesteps: Optional[float] = None):
@@ -337,18 +338,33 @@ class Environment(SbSOvRL_BaseModel):
         self.reward_on_episode_exceeds_max_timesteps = reward_on_episode_exceeds_max_timesteps
         self.get_logger().info(f"Setting environment to validation. max_timesteps {self.max_timesteps_in_episode}, spine_not_changed {self.end_episode_on_spline_not_changed}")
 
-    def get_gym_environment(self) -> gym.Env:
+    def get_gym_environment(self, logging_information: Optional[Dict[str, Union[str, pathlib.Path, VerbosityLevel]]] = None) -> gym.Env:
         """Creates and configures the gym environment so it can be used for training.
 
         Returns:
             gym.Env: OpenAI gym environment that can be used to train with stable_baselines[3] agents.
         """
+        if logging_information:
+            self._set_up_logger(**logging_information)
         self.get_logger().info("Setting up Gym environment.")
+        if self._id is None:
+            self._id = uuid4()
+        else:
+            self.get_logger().warning(f"During setup of gym environment: The id of the environment is already set to {self._id}. Please note that when using multi environment training this will lead to errors. Please use this function only after multiplying the environments and not before.")
+        
+        self._actions = self.spline.get_actions()
+        self._FFD.set_mesh(self.mesh.get_mesh())
+        self.mesh.adapt_export_path(self._id)
         env = GymEnvironment(self._set_up_actions(),
                              self._define_observation_space()) 
         env.step = self.step
         env.reset = self.reset
         return Monitor(env)
+
+    def _set_up_logger(self, logger_name: str, log_file_location: pathlib.Path, logging_level: VerbosityLevel):
+        logger = multiprocessing.get_logger()
+        resulting_logger = set_up_logger(logger_name, log_file_location, logging_level, logger=logger)
+        self.set_logger_name_recursively(resulting_logger.name)
 
     def export_spline(self, file_name: str) -> None:
         """Export the current spline to the given path. The export will be done via gustav.

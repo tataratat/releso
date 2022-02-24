@@ -3,6 +3,7 @@ This file holds the verbosity definitions and helper functions for the logger us
 """
 import logging, pathlib
 import enum, os
+from typing import Optional
 
 def get_parser_logger() -> logging.Logger:
     """Gets the logger which is to be used during the parsing of the json file.
@@ -20,7 +21,7 @@ class VerbosityLevel(enum.IntEnum):
     INFO = logging.INFO         #: Writes errors, warnings and info fields to the log
     DEBUG = logging.DEBUG       #: Writes everything to the log.
 
-def set_up_logger(loggerName: str = '', log_file_location: pathlib.Path = pathlib.Path("."), verbosity: VerbosityLevel = VerbosityLevel.INFO, console_logging: bool = False) -> logging.Logger:
+def set_up_logger(loggerName: str = '', log_file_location: pathlib.Path = pathlib.Path("."), verbosity: VerbosityLevel = VerbosityLevel.INFO, console_logging: bool = False, logger: Optional[logging.Logger] = None) -> logging.Logger:
     """Create a logger instance with a specified name
 
     Author: 
@@ -36,8 +37,10 @@ def set_up_logger(loggerName: str = '', log_file_location: pathlib.Path = pathli
     Returns:
         logging.Logger: Configured logger instance for simultaneously writing to file and console
     """
-    
-    logger = logging.getLogger(loggerName)
+    if not logger:  # if no logger is given a new logger is created
+        logger = logging.getLogger(loggerName)
+    else:   # with existing loggers the wanted logger name is added to the existing name. (multiprocessing)
+        logger.name += f"_{loggerName}"
     # log everything which is debug or above
     logger.setLevel(verbosity.value)
     # create formatter for file output and add it to the handlers
