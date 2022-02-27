@@ -138,7 +138,7 @@ class VariableLocation(SbSOvRL_BaseModel):
             self._original_position = self.current_position
         delta = self.max_value - self.min_value
         descaled_value = ((value+1.)/2.) * delta
-        self.current_position = np.clip(descaled_value, self.min_value, self.max_value)
+        self.current_position = np.clip(descaled_value+self.min_value, self.min_value, self.max_value)
         return self.current_position
 
     def reset(self) -> None:
