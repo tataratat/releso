@@ -3,6 +3,7 @@
 from typing import Union, Any, Dict
 import json
 from os import PathLike
+from pathlib import Path
 import argparse
 from pydantic.types import UUID4
 
@@ -40,7 +41,7 @@ def spor_com_additional_information(j_str: str) -> Dict[str, Any]:
     return a
 
 def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
-    """Loads data from a given file as a json object.
+    """Loads data from a given file as a json object. Will create a dummy file if it does not exist.
 
     Args:
         f_n (Union[PathLike, str]): Path to the file where the json encoded data is stored.
@@ -48,6 +49,11 @@ def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Data loaded from the given file.
     """
+    path = Path(f_n)
+    if not(path.exists() and path.is_file()):
+        empty_dict = {}
+        with open(path, "w") as wf:
+            json.dump(empty_dict, wf)
     with open(f_n, "r") as rf:
         return json.load(rf)
 
