@@ -10,11 +10,13 @@ The following table shows which agent can be used for which shape optimization a
 +=======+===========================+=============================+
 | PPO   | YES                       | YES                         |
 +-------+---------------------------+-----------------------------+
-| DQN   | NO                        | YES                         |
+| DQN   | YES                       | NO                          |
 +-------+---------------------------+-----------------------------+
 | SAC   | NO                        | YES                         |
 +-------+---------------------------+-----------------------------+
 | DDPG  | NO                        | YES                         |
++-------+---------------------------+-----------------------------+
+| A2C   | Yes                       | YES                         |
 +-------+---------------------------+-----------------------------+
 
 Author:
@@ -26,7 +28,7 @@ from typing import Literal, Optional, Union, Dict, Any
 # from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.gym_environment import GymEnvironment
 from pydantic.types import FilePath
-from stable_baselines3 import PPO, DDPG, SAC, DQN
+from stable_baselines3 import A2C, PPO, DDPG, SAC, DQN
 from stable_baselines3.common.base_class import BaseAlgorithm
 import datetime
 from SbSOvRL.base_model import SbSOvRL_BaseModel
@@ -94,6 +96,40 @@ class PretrainedAgent(BaseAgent):
             else:
                 return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         return None
+
+
+class A2CAgent(BaseAgent):
+    """PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
+    """
+    type: Literal["A2C"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
+    policy: Literal["MlpPolicy"]    #: policy defines the network structure which the agent uses
+    learning_rate: float = 7e-4 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
+    n_steps: int = 5 #: The number of steps to run for each environment per update(i.e. rollout buffer size is n_steps * n_envs where n_envs is number of environment copies running in parallel) NOTE: n_steps * n_envs must be greater than 1 (because of the advantage normalization) See https://github.com/pytorch/pytorch/issues/29372
+    gamma: float = 0.99 #: Discount factor
+    gae_lambda: float = 1.0 #: Factor for trade-off of bias vs variance for Generalized Advantage Estimator to classic advantage when set to 1
+    ent_coef: float = 0.0 #: Entropy coefficient for the loss calculation
+    vf_coef: float = 0.5 #: Value function coefficient for the loss calculation
+    max_grad_norm=0.5 #: The maximum value fot he gradient clipping
+    rms_prop_eps=1e-05 #: RMSProp epsilon. It stabilizes square root computation in denominator of of RMSProp update
+    use_rms_prop=True #: Whether to use RMSprop (default) or Adam as optimizer
+    use_sde=False #: Whether to use generalized State Dependent Exploration (gSDE) instead of action noise exploration (default: False)
+    sde_sample_freq=- 1 #: Sample a new noise matrix every n steps when using gSDE Default: -1 (sample only at begining of roll)
+    normalize_advantage=False #: Whether to normalize or not the advantage
+    seed: Optional[int] = None #: Seed for the pseudo random generators
+    device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
+    n_epochs: int = 10 #: Number of epoch when optimizing the surrogate loss
+    policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
+
+    def get_agent(self, environment: GymEnvironment) -> A2C:
+        """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
+
+        Args:
+            environment (GymEnvironment): The environment the agent uses to train.
+
+        Returns:
+            A2C: Initialized A2C agent.
+        """
+        return A2C(env = environment, **self.get_additional_kwargs())
 
 
 
@@ -220,4 +256,4 @@ class DQNAgent(BaseAgent):
         """
         return DQN(env = environment, **self.get_additional_kwargs())
 
-AgentTypeDefinition = Union[PPOAgent, DDPGAgent, SACAgent, PretrainedAgent, DQNAgent]
+AgentTypeDefinition = Union[PPOAgent, DDPGAgent, SACAgent, PretrainedAgent, DQNAgent, A2CAgent]
