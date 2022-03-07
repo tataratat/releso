@@ -286,6 +286,11 @@ class SPORObjectCommandLine(SPORObject):
                 if self.name == "main_solver":
                     shutil.copyfile(path.parent/"xns_multi.in", path/"xns.in")
                     self.get_logger().info(f"Copying file please.....")
+            if len(self.command_options) == 1:
+                possible_file = pathlib.Path(self.command_options[0])
+                if possible_file.exists() and possible_file.is_file() and possible_file.suffix == ".py":
+                    ret_path = shutil.copy(possible_file, self.save_location/possible_file.name)
+                    self.get_logger().debug(f"Successfully copied the python file {str(ret_path)}.")
             self._first_time_setup_not_done = False
         # first set up done
         

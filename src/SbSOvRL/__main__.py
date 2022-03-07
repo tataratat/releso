@@ -2,6 +2,7 @@
 """
     File defines the main entry point of the framework if it is called via the command line. (via python -m SbSOvRL)
 """
+import shutil
 from SbSOvRL.base_parser import BaseParser
 import argparse
 import pathlib
@@ -37,7 +38,15 @@ def main(args) -> None:
     
     ###########################
     #                         #
-    #   Only json validation  #
+    #  Save json definition   #
+    #                         #
+    ###########################
+
+    shutil.copy(file_path, optimization_object.save_location/file_path.name)
+
+    ###########################
+    #                         #
+    #   Validate json file    #
     #                         #
     ###########################
     
