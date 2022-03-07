@@ -58,6 +58,7 @@ class BaseParser(SbSOvRL_BaseModel):
         Starts the training that is specified in the loaded json file.
         """
         train_env: Optional[VecEnv] = None
+        validation_environment = self._create_validation_environment()
         if self.n_environments and self.n_environments > 1:
             env_create_list = []
             for idx in range(self.n_environments):
@@ -74,7 +75,6 @@ class BaseParser(SbSOvRL_BaseModel):
                 episode_log_location=self.save_location / "episode_log.csv", verbose=1
             ),
         ]
-        validation_environment = self._create_validation_environment()
 
         if self.validation:
             if self.validation.should_add_callback():

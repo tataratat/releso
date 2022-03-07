@@ -103,7 +103,7 @@ class SbSOvRL_BaseModel(BaseModel):
         Returns:
             logging.Logger: logger which is currently to be used.
         """
-        if "multiprocessing" in self.logger_name:
+        if self.logger_name and "multiprocessing" in self.logger_name:
             return multiprocessing.get_logger()
         return logging.getLogger(self.logger_name)
 
