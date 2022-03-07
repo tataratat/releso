@@ -2,7 +2,7 @@
 File holds defintion classes for the mesh
 """
 import pathlib
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 from typing import Optional, Dict, Any
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.util.logger import get_parser_logger
@@ -22,6 +22,8 @@ class Mesh(SbSOvRL_BaseModel):
     export_path: str    #: Path to the default export location of the mesh during environment operations. (So that the solver can use it.)
     hypercube: bool = Field(description="If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).", default=True)    #: If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).
     dimensions: conint(ge=1)    #: Number of dimensions of the mesh.
+
+    _export_path_changed: Optional[str] = PrivateAttr(default=None)
 
     @validator("export_path")
     @classmethod
@@ -72,9 +74,8 @@ class Mesh(SbSOvRL_BaseModel):
         Args:
             environment_id (str): Environment ID
         """
-        if "{}" in str(self.export_path):
-            self.export_path = pathlib.Path(str(self.export_path).format(environment_id))
-            self.export_path.parent.mkdir(parents=True, exist_ok=True)
+        self._export_path_changed = pathlib.Path(str(self._export_path_changed).format(environment_id))
+        self._export_path_changed.parent.mkdir(parents=True, exist_ok=True)
 
     def get_export_path(self) -> str:
         """Direct return of object variable.
@@ -82,7 +83,9 @@ class Mesh(SbSOvRL_BaseModel):
         Returns:
             str: Path to the default export location of the mesh during environment operations. (So that the solver can use it.)
         """
-        return self.export_path
+        if not self._export_path_changed:
+            self.adapt_export_path()
+        return self._export_path_changed
 
 
     @root_validator

@@ -39,7 +39,8 @@ class Environment(SbSOvRL_BaseModel):
     spline: Spline  #: definition of the spline
     mesh: Mesh  #: definition of the mesh
     spor: SPORList  #: definition of the spor objects
-    discrete_actions: bool = True   #: Whether or not to use discreet actions if False continuous actions will be used.
+    discrete_actions: bool = True   #: Whether or not to use discret actions if False continuous actions will be used.
+    reset_with_random_control_points: bool = False   #: Whether or not to reset the controlable control point variables to a random state (True) or the default original state (False). Default False.
     max_timesteps_in_episode: Optional[conint(ge=1)] = None #: maximal number of timesteps to run each episode for
     end_episode_on_spline_not_changed: bool = False #: whether or not to reset the environment if the spline has not change after a step
     reward_on_spline_not_changed: Optional[float] = None    #: reward if episode is ended due to reaching max step in episode 
@@ -277,7 +278,10 @@ class Environment(SbSOvRL_BaseModel):
         """
         self.get_logger().info("Resetting the Environment.")
         # reset spline
-        self.spline.reset()
+        if self.reset_with_random_control_points:  # reset spline with new positions of the spline control points
+            self.apply_random_action(str(self.get_validation_id()))
+        else:   # reset the control points of the spline to the original position (positions defined in the json file)
+            self.spline.reset()
 
         # apply Free Form Deformation should now just recreate the non deformed mesh
         self._apply_FFD()
@@ -290,10 +294,17 @@ class Environment(SbSOvRL_BaseModel):
         }
 
         self._timesteps_in_episode = 0
+
+
+        # run solver and reset reward and get new solver observations
+        observations, reward, info, done = self.spor.run(step_information=(observations, done, reward, info), validation_id=self.get_validation_id(), core_count=self.is_multiprocessing(), reset=True, environment_id = self._id)
+
+        # obs = self._get_observations(observations, done=done)
+        
         if self._validation_ids:
             # export mesh at end of validation
             if self._current_validation_idx > 0 and self._validation_base_mesh_path:
-                # TODO check if path definition is correct NEEDS to change for multi environment learning
+                # validation is performed in single environment with no multi threading so this is not necessary.
                 base_path = pathlib.Path(self._validation_base_mesh_path).parents[0] / str(self._validation_iteration) / str(self._current_validation_idx)
                 file_name = pathlib.Path(self._validation_base_mesh_path).name
                 if "_." in self._validation_base_mesh_path:
@@ -310,13 +321,6 @@ class Environment(SbSOvRL_BaseModel):
             if self._current_validation_idx>len(self._validation_ids):
                 self._current_validation_idx = 0
                 self._validation_iteration += 1
-
-
-        # run solver and reset reward and get new solver observations
-        observations, reward, info, done = self.spor.run(step_information=(observations, done, reward, info), validation_id=self.get_validation_id(), core_count=self.is_multiprocessing(), reset=True, environment_id = self._id)
-
-        # obs = self._get_observations(observations, done=done)
-        
         self.get_logger().info("Resetting the Environment DONE.")
         return observations
 
@@ -391,3 +395,22 @@ class Environment(SbSOvRL_BaseModel):
         """Function is called when training is stopped.
         """
         pass
+
+
+    def apply_random_action(self, seed:Optional[str] = None):
+        """Applying a random continuous action to all movable control point variables. Can be activated to be used during the reset of an environment.
+
+        Args:
+            seed (Optional[str], optional): Seed for the generation of the random action. The same seed will result in always the same action. This functionality is chosen to make validation possible. If None (default) a random seed will be used and the action will be different each time. Defaults to None.
+        """
+        def _parse_string_to_int(string: str) -> int:
+            chars_as_ints = [ord(char) for char in string]
+            string_as_int = sum(chars_as_ints)
+            return string_as_int
+        seed = _parse_string_to_int(str(seed)) if seed else seed
+        self.get_logger().debug(f"A random action is applied during reset with the following seed {str(seed)}")
+        rng_gen = np.random.default_rng(seed)
+        random_action = (rng_gen.random((len(self._actions),))*2)-1
+        for new_value, action_obj in zip(random_action, self._actions):
+            action_obj.apply_continuos_action(new_value)
+        return random_action
