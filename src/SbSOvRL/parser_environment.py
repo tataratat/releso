@@ -279,7 +279,7 @@ class Environment(SbSOvRL_BaseModel):
         self.get_logger().info("Resetting the Environment.")
         # reset spline
         if self.reset_with_random_control_points:  # reset spline with new positions of the spline control points
-            self.apply_random_action(str(self.get_validation_id()))
+            self.apply_random_action(self.get_validation_id())
         else:   # reset the control points of the spline to the original position (positions defined in the json file)
             self.spline.reset()
 
@@ -404,10 +404,10 @@ class Environment(SbSOvRL_BaseModel):
             seed (Optional[str], optional): Seed for the generation of the random action. The same seed will result in always the same action. This functionality is chosen to make validation possible. If None (default) a random seed will be used and the action will be different each time. Defaults to None.
         """
         def _parse_string_to_int(string: str) -> int:
-            chars_as_ints = [ord(char) for char in string]
+            chars_as_ints = [ord(char) for char in str(string)]
             string_as_int = sum(chars_as_ints)
             return string_as_int
-        seed = _parse_string_to_int(str(seed)) if seed else seed
+        seed = _parse_string_to_int(str(seed)) if seed is not None else seed
         self.get_logger().debug(f"A random action is applied during reset with the following seed {str(seed)}")
         rng_gen = np.random.default_rng(seed)
         random_action = (rng_gen.random((len(self._actions),))*2)-1
