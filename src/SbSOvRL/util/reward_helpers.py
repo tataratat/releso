@@ -1,13 +1,13 @@
 """This files holds functions which can be used in custom command line spor object scripts.
 """
-from typing import Union, Any, Dict
+from typing import List, Optional, Union, Any, Dict
 import json
 from os import PathLike
 from pathlib import Path
 import argparse
 from pydantic.types import UUID4
 
-def spor_com_parse_arguments() -> argparse.Namespace:
+def spor_com_parse_arguments(own_arguments: Optional[List[str]] = None) -> argparse.Namespace:
     """Parses the spor com arguments and returns them in a namespace object for easy access.
 
     Returns:
@@ -20,8 +20,10 @@ def spor_com_parse_arguments() -> argparse.Namespace:
     parser.add_argument("-j", "--additional_values", "--json_object", dest="json_object", action="store", type=str, required=False, help="Currently available step information including observations, done, reward, info. Will automatically be parsed into a dict. Only present if spor step is configured to sent it.")
     parser.add_argument("-l", "--base_save_location", dest="base_save_location", action="store", type=str, required=True, help="Path pointing to the save location of all permanent records of this trainings run. Please save the logs here.")
     parser.add_argument("-e", "--environment_id", dest="environment_id", action="store", type=str, required=True, help="ID of the environment this call is comming from. NOT unique to this spor object.")
-    
-    args = parser.parse_args()
+    if own_arguments is not None:
+        args = parser.parse_args(own_arguments)
+    else:
+        args = parser.parse_args()
     if args.json_object:
         args.json_object = spor_com_additional_information(args.json_object)
     return args
