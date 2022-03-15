@@ -5,6 +5,9 @@ This part of the SbSOvRL environment definition is a list of steps the environme
 
 A more in depth documentation of the SPOR concept is given here :ref:`SPOR Communication Interface <sporcominterface>`
 """
+from SbSOvRL.util.reward_helpers import spor_com_parse_arguments
+import importlib
+from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
 import json
 import shutil
 from pydantic.fields import PrivateAttr
@@ -143,6 +146,8 @@ class SPORObjectCommandLine(SPORObject):
 
     # communication_interface_variables
     _run_id: UUID4 = PrivateAttr(default=None)  #: If the communication interface is used this UUID will be used to identify the job/correct worker
+    _run_func: Optional[Any] = PrivateAttr(default=None)  #: 
+    _run_logger: Optional[Any] = PrivateAttr(default=None)  #: 
 
     @validator("working_directory")
     def validate_working_directory_path(cls, v: str):
@@ -248,6 +253,15 @@ class SPORObjectCommandLine(SPORObject):
         except SyntaxError as err:
             self.get_logger().warning(f"An error was thrown while reading in the spor_com_interface return values of the step {self.name}. Please check that only the dictionary holding the correct information is printed during the execution of the external program.", exc_info=True)
             raise err
+        self.spor_com_interface_add(returned_step_dict, step_dict)
+
+    def spor_com_interface_add(self, returned_step_dict: Dict[str, Any], step_dict: Dict[str, Any]):
+        """Add thenewly returned values to the observation, reward, done and info return values.
+
+        Args:
+            returned_step_dict (Dict): Newly received values.
+            step_dict (Dict): Already known values of the step return this dict will be updated in place.
+        """
         step_dict["observation"] = join_observations(step_dict["observation"], returned_step_dict["observations"], self.logger_name, self.additional_observations)
         
         # print(step_dict["observation"], step_dict["observation"].shape)
@@ -287,10 +301,25 @@ class SPORObjectCommandLine(SPORObject):
                     shutil.copyfile(path.parent/"xns_multi.in", path/"xns.in")
                     self.get_logger().info(f"Copying file please.....")
             if len(self.command_options) == 1:
-                possible_file = pathlib.Path(self.command_options[0])
+                possible_file = pathlib.Path(self.command_options[0]).resolve().absolute()
                 if possible_file.exists() and possible_file.is_file() and possible_file.suffix == ".py":
                     ret_path = shutil.copy(possible_file, self.save_location/possible_file.name)
                     self.get_logger().debug(f"Successfully copied the python file {str(ret_path)}.")
+
+                    try:
+                        sys.path.insert(0, f'{possible_file.parent}{os.sep}')
+                        func = importlib.import_module(possible_file.stem)
+                    except ModuleNotFoundError as err:
+                        self.get_logger().warning(f"Could not load the python file at {str(possible_file)}. This means the python file will be run externally. The runtime will be longer.")
+                    else:
+                        try:
+                            self._run_func = func.main
+                        except AttributeError as err:
+                            self.get_logger().warning(f"Could not get main function from python file {str(possible_file)}. This means the python file will be run externally. The runtime will be longer.")
+                        else:
+                            self._run_logger = set_up_logger(f"spor_step_logger_{self.name.replace(' ','_')}", pathlib.Path(self.save_location/"logging"), VerbosityLevel.INFO, console_logging=False)
+                            self.get_logger().info(f"Initialized internal python function calling for step {self.name}.")
+
             self._first_time_setup_not_done = False
         # first set up done
         
@@ -305,8 +334,22 @@ class SPORObjectCommandLine(SPORObject):
             pass
         else:   # executes the step
             multi_proc_prefix = self.get_multiprocessing_prefix(core_count=core_count)
-            command = " ".join([multi_proc_prefix, self.execution_command, *self.command_options, *self.spor_com_interface(reset, environment_id, validation_id, step_information)])
-            exit_code, output = call_commandline(command, self.working_directory, env_logger)
+            command_list = [multi_proc_prefix, self.execution_command, *self.command_options, *self.spor_com_interface(reset, environment_id, validation_id, step_information)]
+            if self._run_func is not None:
+                args = spor_com_parse_arguments(command_list[3:])
+                exit_code = 0
+                output = None
+                try:
+                    current_dir = os.getcwd()
+                    os.chdir(self.working_directory)
+                    output = self._run_func(args, self._run_logger)
+                    os.chdir(current_dir)
+                except Exception as err:
+                    self.get_logger().warning("Could not run the internalized python spor function without error. The follwing error was thrown {err}. Please check if this is a user error.")
+                    exit_code = 404
+            else:
+                command = " ".join(command_list)
+                exit_code, output = call_commandline(command, self.working_directory, env_logger)
             step_return["info"][self.name] = {
                "output": output,
                "exit_code": int(exit_code)
@@ -314,7 +357,7 @@ class SPORObjectCommandLine(SPORObject):
             if exit_code != 0:
                 env_logger.info("SPOR Step thrown error.")
                 if self.stop_after_error:
-                    env_logger.info("Will episode now, due to thrown error.")
+                    env_logger.info("Will stop episode now, due to thrown error.")
                     step_return["done"] = True
                     if self.name == "main_solver" and int(exit_code) == 137:    # exit code for xns if mesh is tangled hopefully
                         step_return["info"]["reset_reason"] = f"meshTangled-{self.name}"
@@ -325,10 +368,14 @@ class SPORObjectCommandLine(SPORObject):
                         step_return["info"]["reset_reason"] = f"ExecutionFailed-{self.name}"
                 step_return["reward"] = self.reward_on_error
                 if self.additional_observations:    # adding zero observations for the ones that got missed due to thrown error
-                    step_return["observation"] = np.zeros((self.additional_observations,))
+                    step_return["observation"] = join_observations(step_return["observation"], np.zeros((self.additional_observations,)), self.logger_name, self.additional_observations)
+                    self.get_logger().debug(f"Added 0 observations due to thrown error this step.")
             else:
                 if self.use_communication_interface:
-                    self.spor_com_interface_read(output, step_return)
+                    if isinstance(output, dict):
+                        self.spor_com_interface_add(output, step_return)
+                    else:
+                        self.spor_com_interface_read(output, step_return)
                 if self.reward_on_completion:
                     if step_return["reward"]:
                         env_logger.warning(f"A reward {step_return['reward']} is already set but a default reward {self.reward_on_completion} on completion is also set. The default reward will overwrite the already set reward. Please check if this is the wanted behavior, if not set the reward on completion to None.")
