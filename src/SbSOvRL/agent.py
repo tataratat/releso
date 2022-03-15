@@ -10,11 +10,11 @@ The following table shows which agent can be used for which shape optimization a
 +=======+===========================+=============================+
 | PPO   | YES                       | YES                         |
 +-------+---------------------------+-----------------------------+
-| DQN   | YES                       | NO                          |
+| DQN   | NO                        | YES                         |
 +-------+---------------------------+-----------------------------+
-| SAC   | NO                        | YES                         |
+| SAC   | YES                       | NO                          |
 +-------+---------------------------+-----------------------------+
-| DDPG  | NO                        | YES                         |
+| DDPG  | YES                       | NO                          |
 +-------+---------------------------+-----------------------------+
 | A2C   | Yes                       | YES                         |
 +-------+---------------------------+-----------------------------+
@@ -35,6 +35,21 @@ from SbSOvRL.base_model import SbSOvRL_BaseModel
 from SbSOvRL.exceptions import SbSOvRLAgentUnknownException
 
 # TODO dynamic agent detection via https://stackoverflow.com/a/3862957
+####################################
+# >>> def get_subclasses(type):
+# ...     for sub in type.__subclasses__():
+# ...             print(sub)
+# ...             get_subclasses(sub)
+# ... 
+# >>> get_subclasses(stable_baselines3.common.base_class.BaseAlgorithm)
+# <class 'stable_baselines3.common.on_policy_algorithm.OnPolicyAlgorithm'>
+# <class 'stable_baselines3.a2c.a2c.A2C'>
+# <class 'stable_baselines3.ppo.ppo.PPO'>
+# <class 'stable_baselines3.common.off_policy_algorithm.OffPolicyAlgorithm'>
+# <class 'stable_baselines3.td3.td3.TD3'>
+# <class 'stable_baselines3.ddpg.ddpg.DDPG'>
+# <class 'stable_baselines3.dqn.dqn.DQN'>
+####################################
 # get argument names https://docs.python.org/3/library/inspect.html
 class BaseAgent(SbSOvRL_BaseModel):
     """
@@ -59,7 +74,7 @@ class PretrainedAgent(BaseAgent):
     """
     This class can be used to load pretrained agents, instead of using untrained agents. Can also be used to only validate this agent without training it further. Please see validation section for this use-case.
     """
-    type: Literal["PPO", "SAC", "DDPG"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
+    type: Literal["PPO", "SAC", "DDPG", "A2C", "DQN"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
     path: FilePath  #: Path to the save files of the pretrained agent.
     tesorboard_run_directory: Union[str, None] = None   #: If the agent is to be trained further the results can be added to the existing tensorboard experiment. This is the path to the existing tenorboard experiment
 
@@ -75,12 +90,17 @@ class PretrainedAgent(BaseAgent):
         Returns:
             BaseAlgorithm: Return the correctly loaded agent.
         """
+        self.get_logger().info(f"Using pretrained agent from location {self.path}.")
         if self.type == "PPO":
             return PPO.load(self.path, environment)
         elif self.type == "DDPG":
             return DDPG.load(self.path, environment)
         elif self.type == "SAC":
             return SAC.load(self.path, environment)
+        elif self.type == "DQN":
+            return DQN.load(self.path, environment)
+        elif self.type == "A2C":
+            return A2C.load(self.path, environment)
         else:
             raise SbSOvRLAgentUnknownException(self.type)
 
@@ -117,7 +137,6 @@ class A2CAgent(BaseAgent):
     normalize_advantage=False #: Whether to normalize or not the advantage
     seed: Optional[int] = None #: Seed for the pseudo random generators
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
-    n_epochs: int = 10 #: Number of epoch when optimizing the surrogate loss
     policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
     def get_agent(self, environment: GymEnvironment) -> A2C:
