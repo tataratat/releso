@@ -78,7 +78,7 @@ class Mesh(SbSOvRL_BaseModel):
         self._export_path_changed.parent.mkdir(parents=True, exist_ok=True)
         self.get_logger().debug(f"Adapted mesh export path to the following value {self._export_path_changed}.")
 
-    def get_export_path(self) -> str:
+    def get_export_path(self) -> pathlib.Path:
         """Direct return of object variable.
 
         Returns:
