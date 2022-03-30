@@ -67,7 +67,7 @@ class BaseAgent(SbSOvRL_BaseModel):
             return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         return None
 
-    def get_additional_kwargs(self) -> Dict[str, Any]:
+    def get_additional_kwargs(self, ) -> Dict[str, Any]:
         return {k:v for k,v in self.__dict__.items() if not k in ['type', 'logger_name', 'save_location']}
 
 class PretrainedAgent(BaseAgent):
@@ -78,11 +78,12 @@ class PretrainedAgent(BaseAgent):
     path: FilePath  #: Path to the save files of the pretrained agent.
     tesorboard_run_directory: Union[str, None] = None   #: If the agent is to be trained further the results can be added to the existing tensorboard experiment. This is the path to the existing tenorboard experiment
 
-    def get_agent(self, environment: GymEnvironment) -> BaseAlgorithm:
+    def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> BaseAlgorithm:
         """Tries to locate the agent defined and to load it correctly.
 
         Args:
             environment (GymEnvironment): Environment with which the agent will interact.
+            normalizer_divisor (int): Currently not used in this function. 
 
         Raises:
             SbSOvRLAgentUnknownException: Possible exception which can be thrown.
@@ -90,7 +91,7 @@ class PretrainedAgent(BaseAgent):
         Returns:
             BaseAlgorithm: Return the correctly loaded agent.
         """
-        self.get_logger().info(f"Using pretrained agent from location {self.path}.")
+        self.get_logger().info(f"Using pretrained agent of type {self.type} from location {self.path}.")
         if self.type == "PPO":
             return PPO.load(self.path, environment)
         elif self.type == "DDPG":
@@ -139,15 +140,21 @@ class A2CAgent(BaseAgent):
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
     policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
-    def get_agent(self, environment: GymEnvironment) -> A2C:
+    def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> A2C:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
+
+        Notes:
+            The A2C variable n_steps scales with the amount of environments the agent is trained with. If this behavior is unwanted you can set the variable ''normalize_training_values'' in BaseParser to true. This will set this variable to the number of environments so that the scaled values can be unscaled.
 
         Args:
             environment (GymEnvironment): The environment the agent uses to train.
+            normalizer_divisor (int): Divides the variable n_steps by this value to descale scaled values with n_environments unequal zero.
 
         Returns:
             A2C: Initialized A2C agent.
         """
+        self.get_logger().info(f"Using agent of type {self.type}.")
+        self.n_steps = int(self.n_steps/normalizer_divisor)
         return A2C(env = environment, **self.get_additional_kwargs())
 
 
@@ -170,15 +177,21 @@ class PPOAgent(BaseAgent):
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
     policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
-    def get_agent(self, environment: GymEnvironment) -> PPO:
+    def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> PPO:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
+
+        Notes:
+            The PPO variable n_steps scales with the amount of environments the agent is trained with. If this behavior is unwanted you can set the variable ''normalize_training_values'' in BaseParser to true. This will set this variable to the number of environments so that the scaled values can be unscaled.
 
         Args:
             environment (GymEnvironment): The environment the agent uses to train.
+            normalizer_divisor (int): Divides the variable n_steps by this value to descale scaled values with n_environments unequal zero.
 
         Returns:
             PPO: Initialized PPO agent.
         """
+        self.get_logger().info(f"Using agent of type {self.type}.")
+        self.n_steps = int(self.n_steps/normalizer_divisor)
         return PPO(env = environment, **self.get_additional_kwargs())
 
 class DDPGAgent(BaseAgent):
@@ -197,15 +210,17 @@ class DDPGAgent(BaseAgent):
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
     policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
-    def get_agent(self, environment: GymEnvironment) -> DDPG:
+    def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> DDPG:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
 
         Args:
             environment (GymEnvironment): The environment the agent uses to train.
+            normalizer_divisor (int): Currently not used in this function. 
 
         Returns:
             DDPG: Initialized DDPG agent.
         """
+        self.get_logger().info(f"Using agent of type {self.type}.")
         return DDPG(env = environment, **self.get_additional_kwargs())
 
 class SACAgent(BaseAgent):
@@ -230,15 +245,17 @@ class SACAgent(BaseAgent):
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
     policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
-    def get_agent(self, environment: GymEnvironment) -> SAC:
+    def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> SAC:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
 
         Args:
             environment (GymEnvironment): The environment the agent uses to train.
+            normalizer_divisor (int): Currently not used in this function. 
 
         Returns:
             SAC: Initialized SAC agent.
         """
+        self.get_logger().info(f"Using agent of type {self.type}.")
         return SAC(env = environment, **self.get_additional_kwargs())
 
 class DQNAgent(BaseAgent):
@@ -264,15 +281,17 @@ class DQNAgent(BaseAgent):
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
     policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
-    def get_agent(self, environment: GymEnvironment) -> DQN:
+    def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> DQN:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
 
         Args:
             environment (GymEnvironment): The environment the agent uses to train.
+            normalizer_divisor (int): Currently not used in this function. 
 
         Returns:
             DQN: Initialized DQN agent.
         """
+        self.get_logger().info(f"Using agent of type {self.type}.")
         return DQN(env = environment, **self.get_additional_kwargs())
 
 AgentTypeDefinition = Union[PPOAgent, DDPGAgent, SACAgent, PretrainedAgent, DQNAgent, A2CAgent]

@@ -33,12 +33,14 @@ class BaseParser(SbSOvRL_BaseModel):
     environment: Environment  #: Definition of the environment which encodes the parameters of the RL use case
     number_of_timesteps: conint(
         ge=1
-    )  #: Number of timesteps the training process should run for (supperseeded by the SbSOvRL.base_parser.BaseParser.number_of_episodes)
-    number_of_episodes: conint(
+    )  #: Number of timesteps the training process should run for
+    number_of_episodes: Optional[conint(
         ge=1
-    )  #: Number of episodes the training prcess should run for
+    )] = None  #: Number of episodes the training prcess should run for. If given both timesteps and max episodes can stop the trainings progress. Default: None
     validation: Optional[Validation]  #: Definition of the validation parameters
     n_environments: Optional[conint(ge=1)]  #: Number of environments to train in parallel
+    normalize_training_values: bool = False #: Should training parameters be normalized to the number of environments
+    multi_env_sequential: bool = False  #: Should the multi environment be run sequentially (True) or with multi processing (False)
 
     # internal objects
     _agent: Optional[BaseAlgorithm] = PrivateAttr(
@@ -59,22 +61,30 @@ class BaseParser(SbSOvRL_BaseModel):
         """
         train_env: Optional[VecEnv] = None
         validation_environment = self._create_validation_environment()
+        normalizer_divisor = 1 if self.n_environments is None or not self.normalize_training_values else self.n_environments
         if self.n_environments and self.n_environments > 1:
             env_create_list = []
             for idx in range(self.n_environments):
                 env_create_list.append(self._create_new_environment(self.get_logger().name+f"_{idx}"))
-            train_env = SubprocVecEnv(env_create_list)
+            if self.multi_env_sequential:
+                train_env = DummyVecEnv(env_create_list)
+            else:
+                train_env = SubprocVecEnv(env_create_list)
         else:
             train_env = DummyVecEnv([lambda: self.environment.get_gym_environment()])
 
-        self._agent = self.agent.get_agent(train_env)
+        self._agent = self.agent.get_agent(train_env, normalizer_divisor)
 
         callbacks = [
-            StopTrainingOnMaxEpisodes(max_episodes=self.number_of_episodes),
             EpisodeLogCallback(
                 episode_log_location=self.save_location / "episode_log.csv", verbose=1
             ),
         ]
+        if self.number_of_episodes is not None:
+            num = self.number_of_episodes
+            if self.normalize_training_values:
+                num = int(num/normalizer_divisor)
+            callbacks.append(StopTrainingOnMaxEpisodes(max_episodes=num))
 
         if self.validation:
             if self.validation.should_add_callback():
@@ -82,11 +92,12 @@ class BaseParser(SbSOvRL_BaseModel):
                     self.validation.get_callback(
                         validation_environment.get_gym_environment(),
                         save_location=self.save_location,
+                        normalizer_divisor=normalizer_divisor
                     )
                 )
 
         self.get_logger().info(
-            f"The environment is now trained for {self.number_of_episodes} episodes."
+            f"The environment is now trained for {self.number_of_episodes} episodes or {self.number_of_timesteps} timesteps."
         )
         self._agent.env.reset()
         self._agent.learn(
