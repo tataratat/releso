@@ -1,29 +1,33 @@
 """Files defines the environment used for parsing and also most function which hold the functionality for the Reinforcement Learning environment are defined here.
 """
-import multiprocessing
-from pydantic import conint, UUID4
+import multiprocessing, pathlib, datetime
 from typing import Optional, Any, List, Dict, Tuple, Union
+import numpy as np
+from copy import copy
+from uuid import uuid4
+from timeit import default_timer as timer
+import matplotlib.pyplot as plt
 
 from pydantic.class_validators import validator
+from pydantic.fields import Field, PrivateAttr
+from pydantic import conint, UUID4
+
+import gym
+from gym import spaces
+from stable_baselines3.common.monitor import Monitor
+
+from gustav import FreeFormDeformation
+
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.spline import Spline, VariableLocation
 from SbSOvRL.util.logger import get_parser_logger
 from SbSOvRL.mesh import Mesh
 from SbSOvRL.spor import MultiProcessor, SPORList
-from gustav import FreeFormDeformation
-from pydantic.fields import Field, PrivateAttr
-import gym
-from gym import spaces
 from SbSOvRL.gym_environment import GymEnvironment
-import numpy as np
-from copy import copy
-from stable_baselines3.common.monitor import Monitor
 from SbSOvRL.base_model import SbSOvRL_BaseModel
-import pathlib
-from uuid import uuid4
-from timeit import default_timer as timer
 from SbSOvRL.util.sbsovrl_types import ObservationType, RewardType
 from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
+from SbSOvRL.util.load_binary import load_mixd, read_mixd_double
 
 class MultiProcessing(SbSOvRL_BaseModel):
     """Defines if the Problem should use Multiprocessing and with how many cores the solver can work. Does not force Multiprocessing for example if the solver does not support it.
@@ -45,6 +49,7 @@ class Environment(SbSOvRL_BaseModel):
     end_episode_on_spline_not_changed: bool = False #: whether or not to reset the environment if the spline has not change after a step
     reward_on_spline_not_changed: Optional[float] = None    #: reward if episode is ended due to reaching max step in episode 
     reward_on_episode_exceeds_max_timesteps: Optional[float] = None #: reward if episode is ended due to spline not changed
+    use_cnn_observations: bool = False  #: use a cnn based feature extractor, if false the base observations will be supplied by the movable spline coordinates current values.
 
     # object variables
     _id: UUID4 = PrivateAttr(default=None)  #: id if the environment, important for multi-environment learning
@@ -57,6 +62,10 @@ class Environment(SbSOvRL_BaseModel):
     _last_step_results: Dict[str, Any] = PrivateAttr(default={})    #: StepReturn values from last step
     _validation_base_mesh_path: Optional[str] = PrivateAttr(default=None)   #: path where the mesh should be saved to for validation
     _validation_iteration: Optional[int] = PrivateAttr(default=0)   #: How many validations were already evaluated
+    _connectivity: Optional[np.ndarray] = PrivateAttr(default=None) #: The triangular connectivity of the 
+    _save_image_in_validation: bool = PrivateAttr(default=False)
+    _validation_timestep: int = PrivateAttr(default=0)
+    _observation_is_dict: bool = PrivateAttr(default=False)
 
 
     @validator("reward_on_spline_not_changed", always=True)
@@ -129,7 +138,28 @@ class Environment(SbSOvRL_BaseModel):
             # gym.Space: Observation space of the current problem.
         """
         # TODO This needs to be changed
-        return spaces.Box(low=-1, high=1, shape=(len(self._actions)+self.spor.get_number_of_observations(),))
+        observation_spaces: List[Tuple[str, gym.Space]] = []
+        # define base observation
+        if self.use_cnn_observations:
+            observation_spaces.append(("base_observation", spaces.Box(low=0, high=255, shape=(200,200,3), dtype=np.uint8)))
+        else:
+            observation_spaces.append(("base_observation", spaces.Box(low=0, high=1, shape=(len(self._actions)), dtype=np.float32)))
+        
+        # define spor observations
+        spor_obs = self.spor.get_number_of_observations()
+        if spor_obs is not None:
+            for item in spor_obs:
+                observation_spaces.append(item.get_observation_definition())
+        
+        # return a dict space where each space is an entry
+        if len(observation_spaces) > 1:
+            self._observation_is_dict = True
+            observation_dict = {key: observation_space for key, observation_space in observation_spaces}
+            self.get_logger().info(f"Observation space is of type Dict and has the following description: {observation_dict}")
+            return spaces.Dict(observation_dict)
+        
+        self.get_logger().info(f"Observation space is NOT of type Dict and has the following description: {observation_spaces}")
+        return observation_spaces[0][1] # no dict space is needed so only the base observation space is returned without a name
 
     def _get_spline_observations(self) -> List[float]:
         """Collects all observations that are part of the spline.
@@ -137,7 +167,7 @@ class Environment(SbSOvRL_BaseModel):
         Returns:
             List[float]: Observation vector containing only the spline values.
         """
-        return [variable.current_position for variable in self._actions]
+        return np.array([variable.current_position for variable in self._actions])
 
     # def _get_observations(self, new_observations: ObservationType, done: bool) -> List[float]:
     #     """Collects all observations (Spline observations and solver observations) into a single observation vector.
@@ -183,6 +213,7 @@ class Environment(SbSOvRL_BaseModel):
         if self.discrete_actions:
             increasing: bool = (action%2 == 0)
             action_index: int = int(action/2)
+            self.get_logger().debug(f"Setting discrete action, of variable {action_index}, to {'increase'if increasing else 'decrease'} the value.")
             self._actions[action_index].apply_discrete_action(increasing)
             # TODO check if this is correct
         else:
@@ -231,7 +262,7 @@ class Environment(SbSOvRL_BaseModel):
         # apply Free Form Deformation
         self._apply_FFD()
 
-        observations = np.array(self._get_spline_observations())
+        observations = {}
         done = False
         reward = 0.
         info = {
@@ -266,8 +297,19 @@ class Environment(SbSOvRL_BaseModel):
             "info": info
         }
         self.get_logger().debug(self._last_step_results)
+        if self._validation_ids and self._save_image_in_validation:
+            self._validation_timestep += 1
+            self.save_current_solution_as_png(self.save_location/"validation"/str(self._validation_iteration)/str(self._current_validation_idx)/f"{self._validation_timestep}.png")
+
+        if self.use_cnn_observations:
+            observations["base_observation"] = self.get_visual_representation(sol_len=3)
+        else:
+            observations["base_observation"] = self._get_spline_observations()
+        if len(observations.keys()) == 1:
+            observations = observations["base_observation"]
         end = timer()
         self.get_logger().debug(f"Step took {end-start} seconds.")
+
         return observations, reward, done, info
 
     def reset(self) -> ObservationType:
@@ -285,8 +327,8 @@ class Environment(SbSOvRL_BaseModel):
 
         # apply Free Form Deformation should now just recreate the non deformed mesh
         self._apply_FFD()
+        observations = {}
 
-        observations = np.array(self._get_spline_observations())
         done = False
         reward = 0
         info = {
@@ -322,9 +364,18 @@ class Environment(SbSOvRL_BaseModel):
                 self._current_validation_idx = 0
                 self._validation_iteration += 1
         self.get_logger().info("Resetting the Environment DONE.")
+        if self._validation_ids and self._save_image_in_validation:
+            self._validation_timestep = 0
+            self.save_current_solution_as_png(self.save_location/"validation"/str(self._validation_iteration)/str(self._current_validation_idx)/f"{self._validation_timestep}.png")
+        if self.use_cnn_observations:
+            observations["base_observation"] = self.get_visual_representation(sol_len=3)
+        else:
+            observations["base_observation"] = self._get_spline_observations()
+        if len(observations.keys()) == 1:
+            observations = observations["base_observation"]
         return observations
 
-    def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None, end_episode_on_spline_not_change: bool = False, max_timesteps_in_episode: int = 0, reward_on_spline_not_changed: Optional[float] = None, reward_on_episode_exceeds_max_timesteps: Optional[float] = None):
+    def set_validation(self, validation_values: List[float], base_mesh_path: Optional[str] = None, end_episode_on_spline_not_change: bool = False, max_timesteps_in_episode: int = 0, reward_on_spline_not_changed: Optional[float] = None, reward_on_episode_exceeds_max_timesteps: Optional[float] = None, save_image_in_validation: Optional[bool] = False):
         """Converts the environment to a validation environment. This environment now only sets the goal states to the predefined values.
 
         Args:
@@ -340,6 +391,7 @@ class Environment(SbSOvRL_BaseModel):
         self.end_episode_on_spline_not_changed = end_episode_on_spline_not_change
         self.reward_on_spline_not_changed = reward_on_spline_not_changed
         self.reward_on_episode_exceeds_max_timesteps = reward_on_episode_exceeds_max_timesteps
+        self._save_image_in_validation = save_image_in_validation
         self.get_logger().info(f"Setting environment to validation. max_timesteps {self.max_timesteps_in_episode}, spine_not_changed {self.end_episode_on_spline_not_changed}")
 
     def get_gym_environment(self, logging_information: Optional[Dict[str, Union[str, pathlib.Path, VerbosityLevel]]] = None) -> gym.Env:
@@ -414,3 +466,88 @@ class Environment(SbSOvRL_BaseModel):
         for new_value, action_obj in zip(random_action, self._actions):
             action_obj.apply_continuos_action(new_value)
         return random_action
+    
+    def get_visual_representation(self, /, *, sol_len: int=3, height: int = 10, width: int = 10, dpi: int = 20):
+        """_summary_
+
+        Args:
+            sol_len (int, optional): _description_. Defaults to 3.
+            height (int, optional): _description_. Defaults to 10.
+            width (int, optional): _description_. Defaults to 10.
+            dpi (int, optional): _description_. Defaults to 20.
+
+        Raises:
+            RuntimeError: _description_
+            RuntimeError: _description_
+            RuntimeError: _description_
+
+        Returns:
+            _type_: _description_
+        """
+        # Loading the correct data and checking if correct attributes are set.
+        if self._connectivity is None:
+            self._connectivity = read_mixd_double(self.mesh.get_export_path().parent/"mien", 3, 4, ">i").astype(int)-1
+        solution_location = next((x for x in self.spor.steps if x.name == "main_solver"), None)
+        if solution_location:
+            solution_location = pathlib.Path(solution_location.working_directory).expanduser().resolve()
+        else: 
+            raise RuntimeError("Could not find the main_solver spor step. Please check if you actually want to use this function, as it only works with the XNS solver.")
+        if self.mesh.hypercube:
+            raise RuntimeError("The given mesh is not a mesh with triangular entities. This function was designed to work with only those.")
+        if not self.mesh.dimensions == 2:
+            raise RuntimeError("The given mesh has a dimension unequal two. This function was designed to work only with meshes of dimension two.")
+        solution = read_mixd_double(solution_location/"ins.out", 3)
+        coordinates = self._FFD.deformed_unit_mesh_.vertices
+        # Plotting and creating resulting array
+        limits_max = [1,1,0.2e8]
+        limits_min = [-1,-1,-0.2e8]
+        arrays = []
+        for i in range(sol_len):
+            fig = plt.figure(figsize=(width,height), dpi=dpi)
+            if i == 2:
+                mappable = plt.gca().tricontourf(coordinates[:,0],coordinates[:,1],np.clip(solution[:,i], limits_min[i], limits_max[i])-1, triangles=self._connectivity, cmap="Greys", vmin=limits_min[i], vmax=limits_max[i])
+            else:
+                mappable = plt.gca().tricontourf(coordinates[:,0],coordinates[:,1],solution[:,i], triangles=self._connectivity, cmap="Greys", vmin=limits_min[i], vmax=limits_max[i])
+            # plt.tight_layout(pad=0, w_pad=0, h_pad=0)
+            # plt.axis("equal")
+            ax=plt.gca()
+            ax.set_xlim((0,1))
+            ax.set_ylim((0,1))
+            # ax.use_sticky_edges = False
+            # plt.colorbar(mappable)
+            # plt.title("Flow Field")
+            # plt.autoscale(True)
+            # for col in ax.collections:
+            #   print(col)
+            ax.margins(tight=True)
+            plt.axis('off')
+            # ax.get_xaxis().set_visible(False)
+            # ax.get_yaxis().set_visible(False)
+            plt.tight_layout(pad=0, w_pad=0, h_pad=0)
+            # fig.canvas.draw()
+            # sio = StringIO()
+            # arrays.append(np.asarray(fig.canvas.get_renderer().buffer_rgba()))
+            # sio.close()
+            fig.canvas.draw()
+            # Now we can save it to a numpy array.
+            data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+            data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+            arrays.append(data)
+            plt.close()
+        arr = np.array(arrays[0])
+        for i in range(sol_len-1):
+            arr[:,:,i+1] = arrays[i+1][:,:,0]
+        return arr
+    
+    def save_current_solution_as_png(self, save_location: Union[pathlib.Path, str], include_pressure: bool = True):
+        image_arr = self.get_visual_representation(sol_len=3 if include_pressure else 2, width=10, height=10, dpi=100)
+        meta_data_dict = {
+            "Author": "Clemens Fricke",
+            "Software": "SbSOvRL",
+            "Creation Time": str(datetime.datetime.now()),
+            "Description": "This is a description"
+            }
+        if isinstance(save_location, str):
+            save_location = pathlib.Path(save_location)
+        save_location.parent.mkdir(parents=True, exist_ok=True)
+        plt.imsave(save_location, image_arr, metadata=meta_data_dict)

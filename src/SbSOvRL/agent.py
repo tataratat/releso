@@ -123,7 +123,7 @@ class A2CAgent(BaseAgent):
     """PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["A2C"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy"]    #: policy defines the network structure which the agent uses
+    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
     learning_rate: float = 7e-4 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     n_steps: int = 5 #: The number of steps to run for each environment per update(i.e. rollout buffer size is n_steps * n_envs where n_envs is number of environment copies running in parallel) NOTE: n_steps * n_envs must be greater than 1 (because of the advantage normalization) See https://github.com/pytorch/pytorch/issues/29372
     gamma: float = 0.99 #: Discount factor
@@ -163,7 +163,7 @@ class PPOAgent(BaseAgent):
     """PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["PPO"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy"]    #: policy defines the network structure which the agent uses
+    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
     learning_rate: float = 3e-4 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     n_steps: int = 2048 #: The number of steps to run for each environment per update(i.e. rollout buffer size is n_steps * n_envs where n_envs is number of environment copies running in parallel) NOTE: n_steps * n_envs must be greater than 1 (because of the advantage normalization) See https://github.com/pytorch/pytorch/issues/29372
     batch_size: Optional[int] = 64 #: Minibatch size
@@ -198,7 +198,7 @@ class DDPGAgent(BaseAgent):
     """DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["DDPG"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy"]    #: policy defines the network structure which the agent uses
+    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
     learning_rate: float = 1e-3 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000 #: size of the replay buffer
     learning_starts: int = 100 #: how many steps of the model to collect transitions for before learning starts
@@ -227,7 +227,7 @@ class SACAgent(BaseAgent):
     """SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["SAC"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy"]    #: policy defines the network structure which the agent uses
+    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
     learning_rate: float = 1e-3 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000  #: size of the replay buffer
     learning_starts: int = 100  #: how many steps of the model to collect transitions for before learning starts
@@ -262,7 +262,7 @@ class DQNAgent(BaseAgent):
     """DQN definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["DQN"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy"]
+    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]
     learning_rate: float = 1e-4 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000  #: size of the replay buffer
     learning_starts: int = 256 #: how many steps of the model to collect transitions for before learning starts

@@ -82,37 +82,37 @@ def call_commandline(command, folder, logger=None):
         exitcode=exc.returncode
     return exitcode, output
 
-def join_observations(old_observations: ObservationType, new_observations: ObservationType, logger_name: str, number_of_observations: Optional[int] = None) -> ObservationType:
-    """Adds the new observations to the already received observations. Currently only :py:class:`numpy.ndarrays` are permissable.
+# def join_observations(old_observations: ObservationType, new_observations: ObservationType, logger_name: str, number_of_observations: Optional[int] = None) -> ObservationType:
+#     """Adds the new observations to the already received observations. Currently only :py:class:`numpy.ndarrays` are permissable.
 
-    Join methods:
-        :py:class:`numpy.ndarray` and :py:class:`numpy.ndarray` are joined the numpy function :py:meth:`numpy.append` is used. This will flatten all arrays and append the new array to the end of the old array. The resulting shape will be (x,) where x = prod(new_obs.shape)*prod(old_obs.shape)
-        :py:class:`list` and :py:class:`numpy.ndarray` are joined the list is first converted into an numpy array flattened and than used as before.
+#     Join methods:
+#         :py:class:`numpy.ndarray` and :py:class:`numpy.ndarray` are joined the numpy function :py:meth:`numpy.append` is used. This will flatten all arrays and append the new array to the end of the old array. The resulting shape will be (x,) where x = prod(new_obs.shape)*prod(old_obs.shape)
+#         :py:class:`list` and :py:class:`numpy.ndarray` are joined the list is first converted into an numpy array flattened and than used as before.
     
-    Args:
-        old_observations (ObservationType): Already existing observations on which the new observations should be added to.
-        new_observations (ObservationType): Observations which should be added to the old_observation field.
-        logger_name (str): LoggerName so that if necessary the log message is sent into the correct logging cue.
-        number_of_observations (Optional[int]): The number of observations the new observation array should generate  
+#     Args:
+#         old_observations (ObservationType): Already existing observations on which the new observations should be added to.
+#         new_observations (ObservationType): Observations which should be added to the old_observation field.
+#         logger_name (str): LoggerName so that if necessary the log message is sent into the correct logging cue.
+#         number_of_observations (Optional[int]): The number of observations the new observation array should generate  
     
-    Returns:
-        ObservationType: Returns the new observation object
-    """
-    if old_observations is not None:
-        if type(new_observations) is np.ndarray and type(old_observations) is np.ndarray:
-            if number_of_observations is not None and new_observations.size is not number_of_observations:
-                logging.getLogger(logger_name).error(f"The given observations have a size of {new_observations.size} but should have the {number_of_observations}.")
-            old_observations = np.append(old_observations, new_observations)
-        elif type(new_observations) is list and type(old_observations) is np.ndarray:
-            if number_of_observations is not None and len(new_observations) is not number_of_observations:
-                logging.getLogger(logger_name).error(f"The given observations have a size of {len(new_observations)} but should have the {number_of_observations}.")
-            old_observations = np.append(old_observations, np.array(new_observations).flatten())
+#     Returns:
+#         ObservationType: Returns the new observation object
+#     """
+#     if old_observations is not None:
+#         if type(new_observations) is np.ndarray and type(old_observations) is np.ndarray:
+#             if number_of_observations is not None and new_observations.size is not number_of_observations:
+#                 logging.getLogger(logger_name).error(f"The given observations have a size of {new_observations.size} but should have the {number_of_observations}.")
+#             old_observations = np.append(old_observations, new_observations)
+#         elif type(new_observations) is list and type(old_observations) is np.ndarray:
+#             if number_of_observations is not None and len(new_observations) is not number_of_observations:
+#                 logging.getLogger(logger_name).error(f"The given observations have a size of {len(new_observations)} but should have the {number_of_observations}.")
+#             old_observations = np.append(old_observations, np.array(new_observations).flatten())
 
-        else:
-            logging.getLogger(logger_name).warning(f"Conversion from {type(new_observations)} to {type(old_observations)} has currently no handler to stack observations. Please add one.")
-    else:
-        old_observations = new_observations
-    return old_observations
+#         else:
+#             logging.getLogger(logger_name).warning(f"Conversion from {type(new_observations)} to {type(old_observations)} has currently no handler to stack observations. Please add one.")
+#     else:
+#         old_observations = new_observations
+#     return old_observations
 
 def join_infos(old_info: InfoType, new_info: InfoType, logger_name: str):
     """Updates the old Info field with the new info.
