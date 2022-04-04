@@ -27,7 +27,8 @@ class Validation(SbSOvRL_BaseModel):
     end_episode_on_spline_not_changed: bool = False  #: Should the episode be terminated if the spline representation has not changed between timesteps?
     reward_on_spline_not_changed: Optional[float] = None    #: What reward should be added to the step reward if the spline was not changed for the defined number of steps.
     reward_on_episode_exceeds_max_timesteps: Optional[float] = None #: What reward should be added to the step reward if the maximal timesteps per episode is exceeded.
-    
+    save_image_in_validation: Optional[bool] = False    #: Export for each validation step the solution image. Only works for triangular meshes and solutions of the XNS solver.
+
     @validator("reward_on_spline_not_changed", always=True)
     @classmethod
     def check_if_reward_given_if_spline_not_change_episode_killer_activated(cls, value: float, values: Dict[str, Any]) -> float:
@@ -105,7 +106,7 @@ class Validation(SbSOvRL_BaseModel):
             return True
         return False
 
-    def get_callback(self, eval_environment: GymEnv, save_location: Optional[pathlib.Path] = None) -> EvalCallback:
+    def get_callback(self, eval_environment: GymEnv, save_location: Optional[pathlib.Path] = None, normalizer_divisor: int = 1) -> EvalCallback:
         """Creates the EvalCallback with the values given in this object.
 
         Args:
@@ -117,7 +118,7 @@ class Validation(SbSOvRL_BaseModel):
         variable_dict = {
             "eval_env": eval_environment,
             "n_eval_episodes": len(self.validation_values),
-            "eval_freq": self.validation_freq
+            "eval_freq": int(self.validation_freq/normalizer_divisor)
         }
         if self.save_best_agent and save_location:
             variable_dict["best_model_save_path"] = save_location/"eval/best_model"
@@ -154,4 +155,4 @@ class Validation(SbSOvRL_BaseModel):
         Returns:
             Dict[str, Any]: dict with all the necessary parameters. Should mirror the parameters in parser_environment.Environment.set_validation
         """
-        return {"validation_values": self.validation_values, "base_mesh_path": self.get_mesh_base_path(base_save_location), "end_episode_on_spline_not_change": self.end_episode_on_spline_not_changed, "max_timesteps_in_episode": self.max_timesteps_in_episode, "reward_on_episode_exceeds_max_timesteps": self.reward_on_episode_exceeds_max_timesteps, "reward_on_spline_not_changed": self.reward_on_spline_not_changed}
+        return {"validation_values": self.validation_values, "base_mesh_path": self.get_mesh_base_path(base_save_location), "end_episode_on_spline_not_change": self.end_episode_on_spline_not_changed, "max_timesteps_in_episode": self.max_timesteps_in_episode, "reward_on_episode_exceeds_max_timesteps": self.reward_on_episode_exceeds_max_timesteps, "reward_on_spline_not_changed": self.reward_on_spline_not_changed, "save_image_in_validation": self.save_image_in_validation}
