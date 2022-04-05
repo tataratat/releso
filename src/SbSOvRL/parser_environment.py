@@ -25,9 +25,10 @@ from SbSOvRL.mesh import Mesh
 from SbSOvRL.spor import MultiProcessor, SPORList
 from SbSOvRL.gym_environment import GymEnvironment
 from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.sbsovrl_types import ObservationType, RewardType
+from SbSOvRL.util.sbsovrl_types import ObservationType
 from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
-from SbSOvRL.util.load_binary import load_mixd, read_mixd_double
+from SbSOvRL.util.load_binary import read_mixd_double
+from SbSOvRL.util.plotting import get_tricontour_solution
 
 class MultiProcessing(SbSOvRL_BaseModel):
     """Defines if the Problem should use Multiprocessing and with how many cores the solver can work. Does not force Multiprocessing for example if the solver does not support it.
@@ -468,18 +469,19 @@ class Environment(SbSOvRL_BaseModel):
         return random_action
     
     def get_visual_representation(self, /, *, sol_len: int=3, height: int = 10, width: int = 10, dpi: int = 20):
-        """_summary_
+        """Returns an array representing the calculated solution. This function is used to create the array which is used if the solution/cnn representation of the base observations are selected.
+
+        Note:
+        The calculated solution can only be found if the SporObject of the solver is called main_solver and uses the xns solver. #TODO make it broader in its application e.g. other solvers? 
 
         Args:
-            sol_len (int, optional): _description_. Defaults to 3.
-            height (int, optional): _description_. Defaults to 10.
-            width (int, optional): _description_. Defaults to 10.
-            dpi (int, optional): _description_. Defaults to 20.
+            sol_len (int, optional): Number of variables to return per datapoint, input can be more but not less. Assumed is u,v,p. Defaults to 3.
+            height (int, optional): Height of the image array in inches. Defaults to 10.
+            width (int, optional): Width of the image array in inches. Defaults to 10.
+            dpi (int, optional): DPI of the image array. Together with the height and width, this variable defines the shape of the return array shape=(height*dpi, width*dpi, sol_len) . Defaults to 20.
 
         Raises:
-            RuntimeError: _description_
-            RuntimeError: _description_
-            RuntimeError: _description_
+            RuntimeError: could not find solution file, mesh is of the incorrect type (needs to be triangular), mesh is of the incorrect dimensions (needs to be dim=2)
 
         Returns:
             _type_: _description_
@@ -501,43 +503,32 @@ class Environment(SbSOvRL_BaseModel):
         # Plotting and creating resulting array
         limits_max = [1,1,0.2e8]
         limits_min = [-1,-1,-0.2e8]
-        arrays = []
-        for i in range(sol_len):
-            fig = plt.figure(figsize=(width,height), dpi=dpi)
-            if i == 2:
-                mappable = plt.gca().tricontourf(coordinates[:,0],coordinates[:,1],np.clip(solution[:,i], limits_min[i], limits_max[i])-1, triangles=self._connectivity, cmap="Greys", vmin=limits_min[i], vmax=limits_max[i])
-            else:
-                mappable = plt.gca().tricontourf(coordinates[:,0],coordinates[:,1],solution[:,i], triangles=self._connectivity, cmap="Greys", vmin=limits_min[i], vmax=limits_max[i])
-            # plt.tight_layout(pad=0, w_pad=0, h_pad=0)
-            # plt.axis("equal")
-            ax=plt.gca()
-            ax.set_xlim((0,1))
-            ax.set_ylim((0,1))
-            # ax.use_sticky_edges = False
-            # plt.colorbar(mappable)
-            # plt.title("Flow Field")
-            # plt.autoscale(True)
-            # for col in ax.collections:
-            #   print(col)
-            ax.margins(tight=True)
-            plt.axis('off')
-            # ax.get_xaxis().set_visible(False)
-            # ax.get_yaxis().set_visible(False)
-            plt.tight_layout(pad=0, w_pad=0, h_pad=0)
-            # fig.canvas.draw()
-            # sio = StringIO()
-            # arrays.append(np.asarray(fig.canvas.get_renderer().buffer_rgba()))
-            # sio.close()
-            fig.canvas.draw()
-            # Now we can save it to a numpy array.
-            data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-            data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-            arrays.append(data)
-            plt.close()
-        arr = np.array(arrays[0])
-        for i in range(sol_len-1):
-            arr[:,:,i+1] = arrays[i+1][:,:,0]
-        return arr
+        
+        #
+        # 
+        # arrays = []
+        # for i in range(sol_len):
+        #     fig = plt.figure(figsize=(width,height), dpi=dpi)
+        #     if i == 2:
+        #         mappable = plt.gca().tricontourf(coordinates[:,0],coordinates[:,1],np.clip(solution[:,i], limits_min[i], limits_max[i])-1, triangles=self._connectivity, cmap="Greys", vmin=limits_min[i], vmax=limits_max[i])
+        #     else:
+        #         mappable = plt.gca().tricontourf(coordinates[:,0],coordinates[:,1],solution[:,i], triangles=self._connectivity, cmap="Greys", vmin=limits_min[i], vmax=limits_max[i])
+        #     ax=plt.gca()
+        #     ax.set_xlim((0,1))
+        #     ax.set_ylim((0,1))
+        #     ax.margins(tight=True)
+        #     plt.axis('off')
+        #     plt.tight_layout(pad=0, w_pad=0, h_pad=0)
+        #     fig.canvas.draw()
+        #     # Now we can save it to a numpy array.
+        #     data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        #     data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        #     arrays.append(data)
+        #     plt.close()
+        # arr = np.array(arrays[0])
+        # for i in range(sol_len-1):
+        #     arr[:,:,i+1] = arrays[i+1][:,:,0]
+        return get_tricontour_solution(width, height, dpi, coordinates, self._connectivity, solution, sol_len, limits_min, limits_max)
     
     def save_current_solution_as_png(self, save_location: Union[pathlib.Path, str], include_pressure: bool = True):
         image_arr = self.get_visual_representation(sol_len=3 if include_pressure else 2, width=10, height=10, dpi=100)
