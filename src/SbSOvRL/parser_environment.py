@@ -142,9 +142,9 @@ class Environment(SbSOvRL_BaseModel):
         observation_spaces: List[Tuple[str, gym.Space]] = []
         # define base observation
         if self.use_cnn_observations:
-            observation_spaces.append(("base_observation", spaces.Box(low=0, high=255, shape=(200,200,3), dtype=np.uint8)))
+            observation_spaces.append(("base_observation", spaces.Box(low=0, high=255, shape=(3,200,200), dtype=np.uint8)))
         else:
-            observation_spaces.append(("base_observation", spaces.Box(low=0, high=1, shape=(len(self._actions)), dtype=np.float32)))
+            observation_spaces.append(("base_observation", spaces.Box(low=0, high=1, shape=(len(self._actions), ), dtype=np.float32)))
         
         # define spor observations
         spor_obs = self.spor.get_number_of_observations()
@@ -156,10 +156,12 @@ class Environment(SbSOvRL_BaseModel):
         if len(observation_spaces) > 1:
             self._observation_is_dict = True
             observation_dict = {key: observation_space for key, observation_space in observation_spaces}
-            self.get_logger().info(f"Observation space is of type Dict and has the following description: {observation_dict}")
+            self.get_logger().info(f"Observation space is of type Dict and has the following description:")
+            for name, subspace in observation_spaces:
+                self.get_logger().info(f"{name} has shape {subspace.shape}")
             return spaces.Dict(observation_dict)
         
-        self.get_logger().info(f"Observation space is NOT of type Dict and has the following description: {observation_spaces}")
+        self.get_logger().info(f"Observation space is NOT of type Dict and has the following description: {observation_spaces[0][1].shape}")
         return observation_spaces[0][1] # no dict space is needed so only the base observation space is returned without a name
 
     def _get_spline_observations(self) -> List[float]:
@@ -303,7 +305,7 @@ class Environment(SbSOvRL_BaseModel):
             self.save_current_solution_as_png(self.save_location/"validation"/str(self._validation_iteration)/str(self._current_validation_idx)/f"{self._validation_timestep}.png")
 
         if self.use_cnn_observations:
-            observations["base_observation"] = self.get_visual_representation(sol_len=3)
+            observations["base_observation"] = self.get_visual_representation(sol_len=3).T  # Need to transpose because torch wants channel first representation
         else:
             observations["base_observation"] = self._get_spline_observations()
         if len(observations.keys()) == 1:
@@ -369,7 +371,7 @@ class Environment(SbSOvRL_BaseModel):
             self._validation_timestep = 0
             self.save_current_solution_as_png(self.save_location/"validation"/str(self._validation_iteration)/str(self._current_validation_idx)/f"{self._validation_timestep}.png")
         if self.use_cnn_observations:
-            observations["base_observation"] = self.get_visual_representation(sol_len=3)
+            observations["base_observation"] = self.get_visual_representation(sol_len=3).T  # Need to transpose because torch wants channel first representation
         else:
             observations["base_observation"] = self._get_spline_observations()
         if len(observations.keys()) == 1:

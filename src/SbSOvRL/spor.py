@@ -524,7 +524,7 @@ class SPORList(SbSOvRL_BaseModel):
             if done:
                 if step.additional_observations:
                     # print("adding zeros")
-                    observations = step.get_done_observations(observations)
+                    observations = step.get_default_observation(observations)
                     # print(observations, observations.shape)
             else:
                 if reset and not (step.run_on_reset):   # ignore if step should be skiped during reset procedure
