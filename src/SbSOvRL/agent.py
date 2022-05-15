@@ -1,28 +1,29 @@
 """
 Out of the box the SbSOvRL package uses agents implemented in the Python package
-stable-baselines3. Currently the agents Deep Q-Network (DQN), Proximal Policy Optimization (PPO), Soft Actor-Critic (SAC) and Deep Deterministic Policy Gradient (DDPG)
+stable-baselines3. Currently the agents Deep Q-Network (DQN), Proximal Policy Optimization (PPO), Soft Actor-Critic (SAC) Advantage Actor Critic (A2C) and Deep Deterministic Policy Gradient (DDPG)
 can be used directly but the others can be added easily. 
 
 The following table shows which agent can be used for which shape optimization approach:
 
-+-------+---------------------------+-----------------------------+
-| Agent | Direct shape optimization | Indirect shape optimization |
-+=======+===========================+=============================+
-| PPO   | YES                       | YES                         |
-+-------+---------------------------+-----------------------------+
-| DQN   | NO                        | YES                         |
-+-------+---------------------------+-----------------------------+
-| SAC   | YES                       | NO                          |
-+-------+---------------------------+-----------------------------+
-| DDPG  | YES                       | NO                          |
-+-------+---------------------------+-----------------------------+
-| A2C   | Yes                       | YES                         |
-+-------+---------------------------+-----------------------------+
++-------+---------------------------+--------------------------------+
+| Agent | Direct shape optimization | Incremental shape optimization |
++=======+===========================+================================+
+| PPO   | YES                       | YES                            |
++-------+---------------------------+--------------------------------+
+| DQN   | NO                        | YES                            |
++-------+---------------------------+--------------------------------+
+| SAC   | YES                       | NO                             |
++-------+---------------------------+--------------------------------+
+| DDPG  | YES                       | NO                             |
++-------+---------------------------+--------------------------------+
+| A2C   | Yes                       | YES                            |
++-------+---------------------------+--------------------------------+
 
 Author:
     Clemens Fricke (clemens.fricke@rwth-aachen.de)
 
 """
+from email import policy
 from typing import Literal, Optional, Union, Dict, Any
 # import numpy as np
 # from SbSOvRL.exceptions import SbSOvRLParserException
@@ -33,6 +34,7 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 import datetime
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from SbSOvRL.exceptions import SbSOvRLAgentUnknownException
+from SbSOvRL.feature_extractor import SbSOvRL_FeatureExtractor, SbSOvRL_CombinedExtractor
 
 # TODO dynamic agent detection via https://stackoverflow.com/a/3862957
 ####################################
@@ -51,6 +53,7 @@ from SbSOvRL.exceptions import SbSOvRLAgentUnknownException
 # <class 'stable_baselines3.dqn.dqn.DQN'>
 ####################################
 # get argument names https://docs.python.org/3/library/inspect.html
+
 class BaseAgent(SbSOvRL_BaseModel):
     """
         The class BaseAgent should be used as the base class for all classes defining agents for the SbSOvRL framework. 
@@ -67,8 +70,44 @@ class BaseAgent(SbSOvRL_BaseModel):
             return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         return None
 
-    def get_additional_kwargs(self, ) -> Dict[str, Any]:
-        return {k:v for k,v in self.__dict__.items() if not k in ['type', 'logger_name', 'save_location']}
+class BaseTrainingAgent(BaseAgent):
+    """
+        The class BaseAgent should be used as the base class for all classes defining agents for the SbSOvRL framework. 
+    """
+    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
+    use_custom_feature_extractor: Optional[Literal["resnet18", "mobilenetv2", "mobilenetv3_small", "mobilenetv3_large"]] = None #: If given the str identifies the Custom Feature Extractor to be added.
+    cfe_without_linear: bool = False
+    policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
+
+    def get_next_tensorboard_experiment_name(self) -> str:
+        """Adds a date and time marker to the tensorboard experiment name so that it can be distinguished from other experiments.
+
+        Returns:
+            str: Experiment name consisting of a time and date stamp.
+        """
+        if self.tensorboard_log is not None:
+            return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        return None
+
+    def get_additional_kwargs(self, **kwargs) -> Dict[str, Any]:
+        if self.policy_kwargs is None:
+            self.policy_kwargs = {}
+        if self.use_custom_feature_extractor:
+            self.policy_kwargs["features_extractor_kwargs"] = dict()
+            if self.use_custom_feature_extractor:
+                if self.policy == "CnnPolicy":
+                    self.policy_kwargs["features_extractor_class"] = SbSOvRL_FeatureExtractor
+                elif self.policy == "MultiInputPolicy":
+                    self.policy_kwargs["features_extractor_class"] = SbSOvRL_CombinedExtractor
+                else:
+                    self.get_logger().warning("Please use the CnnPolicy or the MultiInputPolicy with the SbSOvRL_FeatureExtractors everything else might not work. But I also have no idea what works and what not. Will try to use the SbSOvRL_CustomFeatureExtractor, but as said might not work with the current policy.")
+                    self.policy_kwargs["features_extractor_class"] = SbSOvRL_FeatureExtractor
+                if self.cfe_without_linear:
+                    self.policy_kwargs["features_extractor_kwargs"]["without_linear"]=True
+                self.policy_kwargs["features_extractor_kwargs"]["network_type"] = self.use_custom_feature_extractor
+                self.policy_kwargs["features_extractor_kwargs"]["logger"] = self.get_logger()
+        return_dict = {k:v for k,v in self.__dict__.items() if not k in ['type', 'logger_name', 'save_location', 'use_custom_feature_extractor', "cfe_without_linear"]}
+        return return_dict
 
 class PretrainedAgent(BaseAgent):
     """
@@ -115,15 +154,14 @@ class PretrainedAgent(BaseAgent):
             if self.tesorboard_run_directory:
                 return self.tesorboard_run_directory
             else:
-                return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                return super().get_next_tensorboard_experiment_name()
         return None
 
 
-class A2CAgent(BaseAgent):
+class A2CAgent(BaseTrainingAgent):
     """PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["A2C"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
     learning_rate: float = 7e-4 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     n_steps: int = 5 #: The number of steps to run for each environment per update(i.e. rollout buffer size is n_steps * n_envs where n_envs is number of environment copies running in parallel) NOTE: n_steps * n_envs must be greater than 1 (because of the advantage normalization) See https://github.com/pytorch/pytorch/issues/29372
     gamma: float = 0.99 #: Discount factor
@@ -138,7 +176,6 @@ class A2CAgent(BaseAgent):
     normalize_advantage=False #: Whether to normalize or not the advantage
     seed: Optional[int] = None #: Seed for the pseudo random generators
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
-    policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
     def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> A2C:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
@@ -159,11 +196,10 @@ class A2CAgent(BaseAgent):
 
 
 
-class PPOAgent(BaseAgent):
+class PPOAgent(BaseTrainingAgent):
     """PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["PPO"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
     learning_rate: float = 3e-4 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     n_steps: int = 2048 #: The number of steps to run for each environment per update(i.e. rollout buffer size is n_steps * n_envs where n_envs is number of environment copies running in parallel) NOTE: n_steps * n_envs must be greater than 1 (because of the advantage normalization) See https://github.com/pytorch/pytorch/issues/29372
     batch_size: Optional[int] = 64 #: Minibatch size
@@ -175,7 +211,6 @@ class PPOAgent(BaseAgent):
     vf_coef: float = 0.5 #: Value function coefficient for the loss calculation
     seed: Optional[int] = None #: Seed for the pseudo random generators
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
-    policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
     def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> PPO:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
@@ -194,11 +229,10 @@ class PPOAgent(BaseAgent):
         self.n_steps = int(self.n_steps/normalizer_divisor)
         return PPO(env = environment, **self.get_additional_kwargs())
 
-class DDPGAgent(BaseAgent):
+class DDPGAgent(BaseTrainingAgent):
     """DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["DDPG"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
     learning_rate: float = 1e-3 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000 #: size of the replay buffer
     learning_starts: int = 100 #: how many steps of the model to collect transitions for before learning starts
@@ -208,7 +242,6 @@ class DDPGAgent(BaseAgent):
     optimize_memory_usage: float = 0.95 #: Enable a memory efficient variant of the replay buffer at a cost of more complexity. See https://github.com/DLR-RM/stable-baselines3/issues/37#:issuecomment-637501195
     seed: Optional[int] = None #: Seed for the pseudo random generators
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
-    policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
     def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> DDPG:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
@@ -223,11 +256,10 @@ class DDPGAgent(BaseAgent):
         self.get_logger().info(f"Using agent of type {self.type}.")
         return DDPG(env = environment, **self.get_additional_kwargs())
 
-class SACAgent(BaseAgent):
+class SACAgent(BaseTrainingAgent):
     """SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["SAC"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
     learning_rate: float = 1e-3 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000  #: size of the replay buffer
     learning_starts: int = 100  #: how many steps of the model to collect transitions for before learning starts
@@ -243,7 +275,6 @@ class SACAgent(BaseAgent):
     use_sde_at_warmup: bool = False #: Whether to use gSDE instead of uniform sampling during the warm up phase (before learning starts)
     seed: Optional[int] = None #: Seed for the pseudo random generators
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
-    policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
     def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> SAC:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
@@ -258,11 +289,10 @@ class SACAgent(BaseAgent):
         self.get_logger().info(f"Using agent of type {self.type}.")
         return SAC(env = environment, **self.get_additional_kwargs())
 
-class DQNAgent(BaseAgent):
+class DQNAgent(BaseTrainingAgent):
     """DQN definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.
     """
     type: Literal["DQN"] #: What RL algorithm was used to train the agent. Needs to be know to correctly load the agent.
-    policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]
     learning_rate: float = 1e-4 #: The learning rate, it can be a function of the current progress remaining (from 1 to 0)
     buffer_size: int = 1000000  #: size of the replay buffer
     learning_starts: int = 256 #: how many steps of the model to collect transitions for before learning starts
@@ -279,7 +309,6 @@ class DQNAgent(BaseAgent):
     max_grad_norm: float = 10 #: The maximum value for the gradient clipping
     seed: Optional[int] = None #: Seed for the pseudo random generators
     device: str = "auto" #: Device (cpu, cuda, …) on which the code should be run. Setting it to auto, the code will be run on the GPU if possible.
-    policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
     def get_agent(self, environment: GymEnvironment, normalizer_divisor: int = 1) -> DQN:
         """Creates the stable_baselines version of the wanted Agent. Uses all Variables given in the object (except type) as the input parameters of the agent object creation.
