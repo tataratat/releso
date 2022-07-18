@@ -8,6 +8,7 @@ from SbSOvRL.util.logger import get_parser_logger
 from gustav import BSpline, NURBS
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from typing import List, Union, Optional, Dict, Any
+from matplotlib.pyplot import figure
 import numpy as np
 from pydantic.class_validators import root_validator, validator
 from pydantic.fields import PrivateAttr
@@ -349,16 +350,16 @@ class BSplineDefinition(SplineDefinition):
             self.get_controll_points()
             )
     
-    def draw_action_space(self, control_points: List[List[Dict[str,int]]], save_location: Optional[str] = None):
+    def draw_action_space(self, save_location: Optional[str] = None, no_axis: bool = False, fig_size: List[float] = [6,6], dpi: int = 400):
         """Draws the spline control points and the play they have. Currently only available for B-Splines with a 2 parametric dimensions.
 
         Args:
-            control_points (List[List[Dict[str,int]]]): _description_
+            no_axis (bool): Whether or not the axis of the plot are displayed. Defaults to False.
             save_location (Optional[str], optional): _description_. Defaults to None.
         """
         from matplotlib.patches import Polygon
         import matplotlib.pyplot as plt
-        
+        control_points = self.control_point_variables
         if not len(self.space_dimensions) == 2:
             raise RuntimeError("Could not draw the splines action space. Only a 2D parametric space is currently available.")
         phi = np.linspace(0, 2*np.pi, len(control_points))
@@ -366,23 +367,20 @@ class BSplineDefinition(SplineDefinition):
         .5*(1.+np.cos(phi          )), # scaled to [0,1]
         .5*(1.+np.cos(phi+2*np.pi/3)), # 120° phase shifted.
         .5*(1.+np.cos(phi-2*np.pi/3)))).T # Shape = (60,3)
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=fig_size, dpi=dpi)
 
         dots = [[], []]
 
         for elem, color in zip(control_points, rgb_cycle):
-            dots[0].append(elem[0]["current_position"])
-            dots[1].append(elem[1]["current_position"])
+            dots[0].append(elem[0].current_position)
+            dots[1].append(elem[1].current_position)
             cur_pos = np.array([dots[0][-1],dots[1][-1]])
             spanning_elements = []
             no_boundary = False
             for item in elem:
-                if "min_value" in item.keys():
-                    spanning_elements.append([item["min_value"], item['max_value']])
-                else:
-                    no_boundary=True
-                    spanning_elements.append([item['current_position'], item['current_position']])
-
+                spanning_elements.append([item.min_value, item.max_value])
+                if item.min_value == item.max_value:
+                    no_boundary = True
             boundary = []
             for i,j in zip([0,1,1,0],[0,0,1,1]):
                 end_pos = np.array([spanning_elements[0][i],spanning_elements[1][j]])
@@ -394,6 +392,8 @@ class BSplineDefinition(SplineDefinition):
                 pol = Polygon(boundary,facecolor=color,linewidth=1, alpha=0.2)
                 ax.add_patch(pol)
         ax.scatter(dots[0], dots[1], c=rgb_cycle, marker="o", s=50, zorder=3)
+        if no_axis:
+            plt.axis("off")
         if save_location:
             fig.savefig(save_location, transparent=True)
             plt.close()

@@ -1,0 +1,131 @@
+import logging
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from stable_baselines3.common.type_aliases import TensorDict
+import torch  as th # import nn, Tensor, from_numpy, flatten, no_grad
+from gym import Space, spaces
+from typing import Dict, Any, Literal, Optional
+import numpy as np
+from torchvision import models, transforms
+from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space
+
+
+class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
+    def __init__(self, observation_space: Space, features_dim = 512, without_linear: bool = False, network_type: Literal["resnet18", "mobilenetv2"] = "resnet18", logger: Optional[logging.Logger] = None):
+        super().__init__(observation_space, features_dim=features_dim)
+        self.without_linear = without_linear
+        # Define the network
+        if network_type == "resnet18":
+          pre_network = models.resnet18(pretrained=True)
+          self.model = th.nn.Sequential(*[
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229,0.224,0.225)),
+            pre_network.conv1, pre_network.bn1, pre_network.relu, pre_network.maxpool,
+            pre_network.layer1, pre_network.layer2, pre_network.layer3, pre_network.layer4, th.nn.Flatten()])
+        elif network_type == "mobilenetv2":
+          pre_network = models.mobilenet_v2(pretrained=True)
+          self.model = th.nn.Sequential(*[
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229,0.224,0.225)),
+            pre_network.features, th.nn.Flatten()])
+        elif network_type == "mobilenetv3_small":
+          pre_network = models.mobilenet_v3_small(pretrained=True)
+          self.model = th.nn.Sequential(*[
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229,0.224,0.225)),
+            pre_network.features, th.nn.Flatten()])
+        elif network_type == "mobilenetv3_large":
+          pre_network = models.mobilenet_v3_large(pretrained=True)
+          self.model = th.nn.Sequential(*[
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229,0.224,0.225)),
+            pre_network.features, th.nn.Flatten()])
+        elif network_type == "inception_v3":
+          if self.without_linear:
+            if logger:
+              logger.error("FeatureExtractor: Inception_v3 can only be used with linear layer.")
+            raise RuntimeError("FeatureExtractor: Inception_v3 can only be used with linear layer.")
+          self.model = models.inception_v3(pretrained=True)
+        else:
+          if logger:
+            logger.error(f"The given network type of {network_type} is unknown. Please choose one that is known.")
+          raise RuntimeError(f"FeatureExtractor: Given network type -{network_type}- unknown.")
+        # deactivate training
+        for param in self.model.parameters():
+          param.requires_grad = False
+        # # Define the feature dimension of the 
+        # gen = np.random.default_rng()
+        # ins = gen.random((64,*observation_space.shape))
+        # ins_torch = from_numpy(ins).float().to("cpu")
+        # self._features_dim = sum(self.model(ins_torch).shape[1:])
+
+        # Compute shape by doing one forward pass
+        with th.no_grad():
+            n_flatten = self.model(th.as_tensor(observation_space.sample()[None]).float()).shape
+
+            # print("-"*20,flush=True)
+            # print(th.as_tensor(observation_space.sample()[None]).float().shape, n_flatten)
+            # print("-"*20,flush=True)
+        if self.without_linear:
+          features_dim = n_flatten[1]
+        else:
+          if network_type == "inception_v3":
+            self.model.fc = th.nn.Linear(self.model.fc.in_features, features_dim, th.nn.ReLU())
+            self.without_linear = True  # only so that forward correctly works. Actually uses the linear layer but it is included inside the model itself.
+          else:
+            self.linear = th.nn.Sequential(th.nn.Linear(n_flatten[1], features_dim), th.nn.ReLU())
+        if logger:
+          logger.warning(f"FeatureExtractor: Used pretrained {network_type} results in {features_dim} feature dims.")
+        self._features_dim = features_dim
+
+    def forward(self, observations: th.Tensor) -> th.Tensor:
+        # print("-"*20,flush=True)
+        # print(observations.shape)
+        # print(th.min(observations))
+        # print(th.max(observations))
+        # print("-"*20,flush=True)
+        observations = self.model(observations)
+        # return observations
+        if not self.without_linear:
+          observations = self.linear(observations)
+        return observations
+
+
+# import gym
+# import torch as th
+# from torch import nn
+
+# from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+
+class SbSOvRL_CombinedExtractor(BaseFeaturesExtractor):
+    """_summary_
+
+    Notes:
+      Class is a direct copy from stable_baselines3.common.torch_layers.CombinedExtractor. Only change is the image feature extractor.
+
+    Args:
+        BaseFeaturesExtractor (_type_): _description_
+    """
+    def __init__(self, observation_space: spaces.Dict, cnn_output_dim: int = 256 , without_linear: bool = False, network_type: Literal["resnet18", "mobilenetv2"] = "resnet18", logger: Optional[logging.Logger] = None):
+       
+        # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!
+        super().__init__(observation_space, features_dim=1)
+
+        extractors = {}
+
+        total_concat_size = 0
+        for key, subspace in observation_space.spaces.items():
+            if is_image_space(subspace):
+                extractors[key] = SbSOvRL_FeatureExtractor(observation_space=subspace, features_dim=cnn_output_dim, without_linear=without_linear, network_type=network_type, logger=logger)
+                total_concat_size += extractors[key]._features_dim
+            else:
+                # The observation key is a vector, flatten it if needed
+                extractors[key] = th.nn.Flatten()
+                total_concat_size += get_flattened_obs_dim(subspace)
+
+        self.extractors = th.nn.ModuleDict(extractors)
+
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations: TensorDict) -> th.Tensor:
+        encoded_tensor_list = []
+
+        for key, extractor in self.extractors.items():
+            encoded_tensor_list.append(extractor(observations[key]))
+        return th.cat(encoded_tensor_list, dim=1)

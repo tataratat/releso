@@ -6,7 +6,7 @@ This part of the SbSOvRL environment definition is a list of steps the environme
 A more in depth documentation of the SPOR concept is given here :ref:`SPOR Communication Interface <sporcominterface>`
 """
 from SbSOvRL.util.reward_helpers import spor_com_parse_arguments
-import importlib
+import importlib, warnings
 from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
 import json
 import shutil
@@ -123,7 +123,7 @@ class SPORObject(SbSOvRL_BaseModel):
     reward_on_error: float  #: Reward which is returned if any kind of error is thrown during completing the defined task.
     reward_on_completion: Optional[float] = None  #: Reward which is returned if the task completed with out an error. If this is set this reward will overwrite any other reward this function will generate. (Implementation specific might differ for child classes see documentation). If *None* no default reward is returned when task is finished. Defaults to *None*.
     run_on_reset: bool = True   #: This boolean can disable the running of the task when a reset is performed.
-    additional_observations: Union[ObservationDefinition, ObservationDefinitionMulti, List[ObservationDefinition], None] = None  #: How many additional observations does this object yield. For np.ndarrays the number represents the size of the flattened array. Checking for correct size is the responsibility of the child classes.
+    additional_observations: Union[ObservationDefinition, ObservationDefinitionMulti, List[ObservationDefinition], None] = None  #: How many additional observations does this object yield. Please define this correctly and not just write in a single number. Be responsible, the single number functionality is only in here due to backwards compatibility reasons.
 
     _first_time_setup_not_done: bool = PrivateAttr(True)    #: Whether or not the first time setup still needs to be done.
 
@@ -131,7 +131,11 @@ class SPORObject(SbSOvRL_BaseModel):
     def validate_additional_observations(cls, v: str, values: Dict[str, Any]) -> Union[ObservationDefinition, ObservationDefinitionMulti, List[ObservationDefinition]]:
         if not isinstance(v, dict):
             if not int(v) == 0:
+                warnings.warn("Please do not use this method to register additional observations anymore. Please specify the exact type and number of observations and their limits via the ObservationDefinition, ObservationDefinitionMulti or as a List of ObservationDefinitions.", warnings.DeprecationWarning)
+                # if only a number of 
                 v = {"name": f"unnamed_{str(uuid4())}", "value_min": -10, "value_max": 10, "observation_shape": [int(v)], "value_type": "float", "save_location": values["save_location"]}
+                # v = {"name": f"unnamed_8a85bd74-d60b-4746-ae39-437de5774669", "value_min": -10, "value_max": 10, "observation_shape": [int(v)], "value_type": "float", "save_location": values["save_location"]}
+                # unnamed_8a85bd74-d60b-4746-ae39-437de5774669
             else:
                 v = None
         return v

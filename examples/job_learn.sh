@@ -5,7 +5,7 @@
 #SBATCH --job-name=SbSORL_PPO_continous
 
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=clemens.fricke@rwth-aachen.de
+#SBATCH --mail-user=example@rwth-aachen.de
  
 ### Output path for stdout and stderr
 ### %J is the job ID
@@ -23,28 +23,17 @@
 ### Request the number of parallel threads for your job
 #SBATCH --ntasks=4
  
-### activate spack, splinelib
+### activate your console environment (should also activate conda)
 cd ~/
 source ~/.zshrc
 # spack load splinelib
  
-### Load python module
-# module load python/3.8.7
-# cd /home/na103664/Schreibtisch/HeatPipe_venv/bin
-# source activate
 
-conda activate stable_baselines
 
+## Activate the correct conda environemnt (PLEASE check if the environemnt name is correct)
+conda activate sbsovrl
+
+# PLASE change the following lone to the base directory of yout experiments
 cd ~/seminararbeit/sa072021-rl-shape-opti-framework/05-Code/SORL
-python -m SbSOvRL -i ../../04-Data/examples/input_c_multi_continuous.json
 
-### If you only want to use a CPU, the CUDA and cuDNN modules are
-### unnecessary. Make sure you have 'tensorflow' installed, because
-### using 'tensorflow-gpu' without those modules will crash your
-### program.
- 
-### Execute your application
-# cd /home/na103664/Schreibtisch/shape-opti-rl/uebungen/stable_baselines/FreeFormDeformation_learn
-# python freeFormv1.py
-# cd /home/na103664/Schreibtisch/HeatPipe_venv/bin
-# deactivate
+# PLEASE change the following line so that the path points to the json file describing the current experiment.

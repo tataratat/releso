@@ -51,6 +51,9 @@ class Environment(SbSOvRL_BaseModel):
     reward_on_spline_not_changed: Optional[float] = None    #: reward if episode is ended due to reaching max step in episode 
     reward_on_episode_exceeds_max_timesteps: Optional[float] = None #: reward if episode is ended due to spline not changed
     use_cnn_observations: bool = False  #: use a cnn based feature extractor, if false the base observations will be supplied by the movable spline coordinates current values.
+    save_good_episode_results: bool = False #: periodically save the end result of the optimization T-junction use case
+    save_random_good_episode_results: bool = False #: periodically save the end result of the optimization converging channel use case
+    save_random_good_episode_mesh: bool = False #: also saves the mesh when an episode is saved with save_random_good_episode_results, works only if the named option is True
 
     # object variables
     _id: UUID4 = PrivateAttr(default=None)  #: id if the environment, important for multi-environment learning
@@ -67,6 +70,9 @@ class Environment(SbSOvRL_BaseModel):
     _save_image_in_validation: bool = PrivateAttr(default=False)
     _validation_timestep: int = PrivateAttr(default=0)
     _observation_is_dict: bool = PrivateAttr(default=False)
+    _result_values_to_save: List[float] = PrivateAttr(default=list([0.2,0.6,0.9,1.4,1.8]))
+    _approximate_episode: int = PrivateAttr(default=-1)
+    _number_exported: int = PrivateAttr(default=0)
 
 
     @validator("reward_on_spline_not_changed", always=True)
@@ -113,7 +119,7 @@ class Environment(SbSOvRL_BaseModel):
         if value is not None and (values["max_timesteps_in_episode"] is None or not values["max_timesteps_in_episode"]):
             raise SbSOvRLParserException("Environment", "reward_on_episode_exceeds_max_timesteps", "Reward can only be set if max_timesteps_in_episode a positive integer.")
         if values["max_timesteps_in_episode"] and value is None:
-            get_parser_logger().warning("Please set a reward value for max time steps exceeded, if episode should end on it. Will set 0 for you now, but this might not be you intention.")
+            get_parser_logger().warning("Please set a reward value for max time steps exceeded, if episode should end on it. Will set 0 for you now, but this might not be your intention.")
             value = 0.
         return value
     # object functions
@@ -290,6 +296,20 @@ class Environment(SbSOvRL_BaseModel):
                     done = True
                     info["reset_reason"] = "SplineNotChanged" 
             self._last_observation = copy(observations)
+        else:
+            if reward >= 5.:
+                if self.save_good_episode_results:
+                    for elem in self._result_values_to_save:
+                        if np.isclose(list(observations.values())[0][1],elem,atol=0.05):
+                            self.save_current_solution_as_png(self.save_location/"episode_end_results"/str(elem)/f"{list(observations.values())[0][1]}_{self._approximate_episode}.png", height=2, width=2, dpi=400)
+                            break
+                if self.save_random_good_episode_results:
+                    if self._number_exported < 200:
+                        if np.random.default_rng().random() < 5:
+                                self.save_current_solution_as_png(self.save_location/"episode_end_results"/f"{self._approximate_episode}.png", height=2, width=2, dpi=400)
+                                if self.save_random_good_episode_mesh:
+                                    self.export_mesh(self.save_location/"episode_end_results"/"mesh"/f"{self._approximate_episode}.xns")
+                                self._number_exported += 1
 
         self.get_logger().info(f"Current reward {reward} and episode is done: {done}.")
 
@@ -339,7 +359,7 @@ class Environment(SbSOvRL_BaseModel):
         }
 
         self._timesteps_in_episode = 0
-
+        self._approximate_episode += 1
 
         # run solver and reset reward and get new solver observations
         observations, reward, info, done = self.spor.run(step_information=(observations, done, reward, info), validation_id=self.get_validation_id(), core_count=self.is_multiprocessing(), reset=True, environment_id = self._id)
@@ -438,7 +458,7 @@ class Environment(SbSOvRL_BaseModel):
     def export_mesh(self, file_name: str, space_time: bool = False) -> None:
         """Export the current deformed mesh to the given path. The export will be done via gustav. 
         
-        Note: Gustav often uses the extension to determin the format and the sub files of the export so be careful how you input the file path.
+        Note: Gustav often uses the extension to determine the format and the sub files of the export so be careful how you input the file path.
 
         Args:
             file_name (str): Path to where and how gustav should export the mesh.
@@ -532,8 +552,8 @@ class Environment(SbSOvRL_BaseModel):
         #     arr[:,:,i+1] = arrays[i+1][:,:,0]
         return get_tricontour_solution(width, height, dpi, coordinates, self._connectivity, solution, sol_len, limits_min, limits_max)
     
-    def save_current_solution_as_png(self, save_location: Union[pathlib.Path, str], include_pressure: bool = True):
-        image_arr = self.get_visual_representation(sol_len=3 if include_pressure else 2, width=10, height=10, dpi=100)
+    def save_current_solution_as_png(self, save_location: Union[pathlib.Path, str], include_pressure: bool = True, height: int = 10, width: int = 10, dpi:int = 400):
+        image_arr = self.get_visual_representation(sol_len=3 if include_pressure else 2, width=height, height=width, dpi=dpi)
         meta_data_dict = {
             "Author": "Clemens Fricke",
             "Software": "SbSOvRL",

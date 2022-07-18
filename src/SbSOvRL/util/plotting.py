@@ -107,7 +107,7 @@ def create_gif_mp4_delete_images(files: List[str], save_path: str, fps: int = 5,
   save_path = pathlib.Path(save_path)
   save_path.parent.mkdir(parents=True, exist_ok=True)
   imageio.mimsave(save_path, images, fps=fps)
-  imageio.mimsave(save_path.with_suffix(".mp4"), images)
+  imageio.mimsave(save_path.with_suffix(".mp4"), images, fps=fps)
 
   if delete_used:
     for file_name in set(files):
@@ -152,8 +152,8 @@ def normalize_mesh(mesh: gus.Mesh) -> gus.Mesh:
   return _mesh
 
 
-def get_face_boundaries_and_vertices(mesh: gus.Mesh) -> Tuple[List[List[List[float]]], pd.DataFrame]:
-  # create vertice dataframe
+def get_face_boundaries_and_vertices(mesh: gus.Mesh, optional = False) -> Tuple[List[List[List[float]]], pd.DataFrame]:
+   # create vertice dataframe
   vertice_df = pd.DataFrame(mesh.vertices)
 
   # create plotlines for faceb oundaries
@@ -165,10 +165,18 @@ def get_face_boundaries_and_vertices(mesh: gus.Mesh) -> Tuple[List[List[List[flo
     x.append(x[0])
     y.append(y[0])
     face_boundaries.append([x,y])
-
+  if optional:
+    bounds = []
+    for boundary in mesh.edges[mesh.outlines]:
+      x = [vertice_df.iloc[node][0] for node in boundary]
+      y = [vertice_df.iloc[node][1] for node in boundary]
+      x.append(x[0])
+      y.append(y[0])
+      bounds.append([x,y])
+    return face_boundaries, vertice_df, bounds
   return face_boundaries, vertice_df
 
-def plot_mesh(mesh: gus.Mesh, save_name:str):
+def plot_mesh(mesh: gus.Mesh, save_name:str, no_axis: bool = False, tight:bool = False):
   plt.rcParams["figure.figsize"] = (20,20)
   plt.rcParams.update({'font.size':22})
 
@@ -186,7 +194,11 @@ def plot_mesh(mesh: gus.Mesh, save_name:str):
   for face in face_boundaries:
     ax.plot(face[0],face[1],c="black")
   ax.scatter(vertice_df[0], vertice_df[1], c="black", s=10)
-  ax.grid(True)
+  if no_axis:
+    plt.axis('off')
+  plt.grid(True)
+  if tight:
+    plt.tight_layout()
   plt.savefig(save_name)
   plt.close()
 
