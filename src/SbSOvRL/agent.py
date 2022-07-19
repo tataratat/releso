@@ -76,7 +76,7 @@ class BaseTrainingAgent(BaseAgent):
     """
     policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]    #: policy defines the network structure which the agent uses
     use_custom_feature_extractor: Optional[Literal["resnet18", "mobilenetv2", "mobilenetv3_small", "mobilenetv3_large"]] = None #: If given the str identifies the Custom Feature Extractor to be added.
-    cfe_without_linear: bool = False
+    cfe_without_linear: bool = False    #: use the custom feature extractor with out a final linear layer
     policy_kwargs: Optional[Dict[str, Any]] = None #: additional arguments to be passed to the policy on creation
 
     def get_next_tensorboard_experiment_name(self) -> str:
@@ -90,6 +90,11 @@ class BaseTrainingAgent(BaseAgent):
         return None
 
     def get_additional_kwargs(self, **kwargs) -> Dict[str, Any]:
+        """Reads and gets the additional keyword arguments for the agent definition.
+
+        Returns:
+            Dict[str, Any]: Dictionary of the needed additional keywords.
+        """
         if self.policy_kwargs is None:
             self.policy_kwargs = {}
         if self.use_custom_feature_extractor:

@@ -1,10 +1,11 @@
+"""
+  This file contains some plotting functions these are very limited and should 
+  were created for the seminar and master thesis of clemens fricke. Other 
+  plotting function exist but are not part of the library.
+"""
 from typing import List, Optional, Tuple
 import gustav as gus
-import imageio as io
 import pathlib
-from numpy.core.function_base import linspace
-from pandas.core.frame import DataFrame
-# import vedo
 from copy import deepcopy
 import numpy as np
 from matplotlib import pyplot as plt

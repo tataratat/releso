@@ -1,7 +1,10 @@
+"""
+File defines the FeatureExtractors currently implemented in this framework. These are implemented in a more or less slapdash fashion. Use at own Risk.
+"""
 import logging
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.type_aliases import TensorDict
-import torch  as th # import nn, Tensor, from_numpy, flatten, no_grad
+import torch as th # import nn, Tensor, from_numpy, flatten, no_grad
 from gym import Space, spaces
 from typing import Dict, Any, Literal, Optional
 import numpy as np
@@ -10,6 +13,9 @@ from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_ima
 
 
 class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
+    """
+    The standard feature extractor can only be used with a Box defined Observation space. For more complex Observations spaces see :py:class:`SbSOvRL.feature_extractor.SbSOvRL_CombinedExtractor`
+    """
     def __init__(self, observation_space: Space, features_dim = 512, without_linear: bool = False, network_type: Literal["resnet18", "mobilenetv2"] = "resnet18", logger: Optional[logging.Logger] = None):
         super().__init__(observation_space, features_dim=features_dim)
         self.without_linear = without_linear
@@ -74,58 +80,74 @@ class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
         self._features_dim = features_dim
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
-        # print("-"*20,flush=True)
-        # print(observations.shape)
-        # print(th.min(observations))
-        # print(th.max(observations))
-        # print("-"*20,flush=True)
-        observations = self.model(observations)
-        # return observations
-        if not self.without_linear:
-          observations = self.linear(observations)
-        return observations
+      """Forward pass of the Network defined.
 
+      Args:
+          observations (th.Tensor): Input for the network
 
-# import gym
-# import torch as th
-# from torch import nn
+      Returns:
+          th.Tensor: Output of the network
+      """
+      # print("-"*20,flush=True)
+      # print(observations.shape)
+      # print(th.min(observations))
+      # print(th.max(observations))
+      # print("-"*20,flush=True)
+      observations = self.model(observations)
+      # return observations
+      if not self.without_linear:
+        observations = self.linear(observations)
+      return observations
 
-# from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 class SbSOvRL_CombinedExtractor(BaseFeaturesExtractor):
-    """_summary_
+  """
+    Combined Extractor can use a Dict definition of the observations space.
 
     Notes:
       Class is a direct copy from stable_baselines3.common.torch_layers.CombinedExtractor. Only change is the image feature extractor.
+  """
+  def __init__(self, observation_space: spaces.Dict, cnn_output_dim: int = 256 , without_linear: bool = False, network_type: Literal["resnet18", "mobilenetv2"] = "resnet18", logger: Optional[logging.Logger] = None):
+    """_summary_
 
     Args:
-        BaseFeaturesExtractor (_type_): _description_
+        observation_space (spaces.Dict): Observations space of the environment.
+        cnn_output_dim (int, optional): How many features the feature extractor should return. Defaults to 256.
+        without_linear (bool, optional): Use the pretrained nets without a linear layer at the end. Setting the output_dim is not possible since the output sie is directly dependent on the input size. Defaults to False.
+        network_type (Literal["resnet18", "mobilenetv2"], optional): Network to use for the cnn extractor. Defaults to "resnet18".
+        logger (Optional[logging.Logger], optional): Logger to use for logging purposes. Defaults to None.
     """
-    def __init__(self, observation_space: spaces.Dict, cnn_output_dim: int = 256 , without_linear: bool = False, network_type: Literal["resnet18", "mobilenetv2"] = "resnet18", logger: Optional[logging.Logger] = None):
-       
-        # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!
-        super().__init__(observation_space, features_dim=1)
+    # TODO we do not know features-dim here before going over all the items, so put something there. This is not clean!
+    super().__init__(observation_space, features_dim=1)
 
-        extractors = {}
+    extractors = {}
 
-        total_concat_size = 0
-        for key, subspace in observation_space.spaces.items():
-            if is_image_space(subspace):
-                extractors[key] = SbSOvRL_FeatureExtractor(observation_space=subspace, features_dim=cnn_output_dim, without_linear=without_linear, network_type=network_type, logger=logger)
-                total_concat_size += extractors[key]._features_dim
-            else:
-                # The observation key is a vector, flatten it if needed
-                extractors[key] = th.nn.Flatten()
-                total_concat_size += get_flattened_obs_dim(subspace)
+    total_concat_size = 0
+    for key, subspace in observation_space.spaces.items():
+        if is_image_space(subspace):
+            extractors[key] = SbSOvRL_FeatureExtractor(observation_space=subspace, features_dim=cnn_output_dim, without_linear=without_linear, network_type=network_type, logger=logger)
+            total_concat_size += extractors[key]._features_dim
+        else:
+            # The observation key is a vector, flatten it if needed
+            extractors[key] = th.nn.Flatten()
+            total_concat_size += get_flattened_obs_dim(subspace)
 
-        self.extractors = th.nn.ModuleDict(extractors)
+    self.extractors = th.nn.ModuleDict(extractors)
 
-        # Update the features dim manually
-        self._features_dim = total_concat_size
+    # Update the features dim manually
+    self._features_dim = total_concat_size
 
-    def forward(self, observations: TensorDict) -> th.Tensor:
-        encoded_tensor_list = []
+  def forward(self, observations: TensorDict) -> th.Tensor:
+    """Forward pass of the Network defined.
 
-        for key, extractor in self.extractors.items():
-            encoded_tensor_list.append(extractor(observations[key]))
-        return th.cat(encoded_tensor_list, dim=1)
+    Args:
+        observations (th.Tensor): Input for the network
+
+    Returns:
+        th.Tensor: Output of the network
+    """
+    encoded_tensor_list = []
+
+    for key, extractor in self.extractors.items():
+        encoded_tensor_list.append(extractor(observations[key]))
+    return th.cat(encoded_tensor_list, dim=1)

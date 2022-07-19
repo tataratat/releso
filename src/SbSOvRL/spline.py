@@ -1,5 +1,6 @@
 """
-File holds all classes which define the spline and with that also the action definitio of the problem.
+File holds all classes which define the spline and with that also the action 
+definition of the problem.
 """
 from abc import abstractmethod
 from SbSOvRL.exceptions import SbSOvRLParserException
@@ -18,13 +19,14 @@ import datetime
 
 class VariableLocation(SbSOvRL_BaseModel):
     """
-    Object of this class defines the position and movement possibilities for a single dimensions of a single controll point of the spline.
+    Object of this class defines the position and movement possibilities for a 
+    single dimensions of a single control point of the spline.
     """
     current_position: float #: coordinate of the current position of the current control point in the dimension
     min_value: Optional[float] = None   #: lower bound of possible values which can be reached by this variable
     max_value: Optional[float] = None   #: upper bound  of possible values which can be reached by this variable
     n_steps: Optional[conint(ge=1)] = 10    #: number of steps the value range is divided into used to define the step if not given.
-    step: Optional[float] = None    #: If discrete actions are used the step is used to define the new current position by adding/substracting it from the current position. 
+    step: Optional[float] = None    #: If discrete actions are used the step is used to define the new current position by adding/subtracting it from the current position. 
     
     # non json variables
     _is_action: Optional[bool] = PrivateAttr(default=None)  #: Is true if min_value and max_value are not the same value
@@ -207,13 +209,13 @@ class SplineDefinition(SbSOvRL_BaseModel):
     Defines the spline. Base class for the NURBS and B-Spline implementations.
     """
     space_dimensions: List[SplineSpaceDimension]    #: Definition of the space dimensions of the spline
-    spline_dimension: conint(ge=1)  #: Non parameteric spline dimensions is currently not used.
-    control_point_variables: Optional[List[List[Union[VariableLocation, confloat(ge=0, le=1)]]]]    #: controll point grid of the spline needs to be converted into an  numpy.ndarray for 3D examples.
+    spline_dimension: conint(ge=1)  #: Non parametric spline dimensions is currently not used.
+    control_point_variables: Optional[List[List[Union[VariableLocation, confloat(ge=0, le=1)]]]]    #: control point grid of the spline needs to be converted into an  numpy.ndarray for 3D examples.
 
     @validator("control_point_variables", always=True)
     @classmethod
-    def make_default_controll_point_grid(cls, v, values) -> List[List[VariableLocation]]:
-        """If value is None a equidistant grid of controll points will be given with variability of half the space between the each control point.
+    def make_default_control_point_grid(cls, v, values) -> List[List[VariableLocation]]:
+        """If value is None a equidistant grid of control points will be given with variability of half the space between the each control point.
 
         Args:
             v ([type]): Value to validate.
@@ -224,7 +226,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
             SbSOvRLParserException: Emitted parser error.
 
         Returns:
-            List[List[VariableLocation]]: Definition of the controll_points
+            List[List[VariableLocation]]: Definition of the control_points
         """
         if v is None:
             if "space_dimensions" not in values.keys():
@@ -239,7 +241,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
             for n_p in n_points_in_dim:
                 dimension_lists.append(list(np.linspace(0.,1.,n_p)))
                 dim_spacings.append(1./((n_p-1)*2))
-            # create each controll point for by concatenating each value in each list with each value of all other lists
+            # create each control point for by concatenating each value in each list with each value of all other lists
             save_location = str(values["save_location"])
             for inner_dim, dim_spacing in zip(dimension_lists, dim_spacings):
                 if v is None: # first iteration the v vector must be initialized with the first dimension vector
@@ -251,7 +253,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
                             v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element, save_location=save_location))
                         else:
                             v.append(VariableLocation(current_position = element, min_value = element-dim_spacing, max_value=element+dim_spacing, save_location=save_location))
-                else: # for each successive dimension for each existing element in v each value in the new dimesion must be added
+                else: # for each successive dimension for each existing element in v each value in the new dimension must be added
                     temp_v = []
                     for current_list in v:
                         for element in inner_dim:
@@ -270,7 +272,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
     @validator("control_point_variables", each_item=True)
     @classmethod
     def convert_all_control_point_locations_to_variable_locations(cls, v, values):
-        """ Converts all controll points values into VariabelLocations if the value is given as a simple float. Simple float will be converted into VariableLocation with current_position=value and no variability.
+        """ Converts all control points values into VariableLocations if the value is given as a simple float. Simple float will be converted into VariableLocation with current_position=value and no variability.
 
         Args:
             v ([type]): value to validate
@@ -282,7 +284,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
         for element in v:
             new_list.append(VariableLocation(current_position=element, save_location=values["save_location"]) if type(element) is float else element)
             if not 0. <= new_list[-1].current_position <= 1.:
-                raise SbSOvRLParserException("SplineDefinition", "controll_point_variables", "The controll_point_variables need to be inside an unit hypercube. Found a values outside this unit hypercube.")
+                raise SbSOvRLParserException("SplineDefinition", "control_point_variables", "The control_point_variables need to be inside an unit hypercube. Found a values outside this unit hypercube.")
         return new_list
 
     def get_number_of_points(self) -> int:
@@ -293,13 +295,13 @@ class SplineDefinition(SbSOvRL_BaseModel):
         """
         return np.prod([dimension.number_of_points for dimension in self.space_dimensions])
 
-    def get_controll_points(self) -> List[List[float]]:
+    def get_control_points(self) -> List[List[float]]:
         """Returns the positions of all control points in a two deep list. 
 
         Returns:
             List[List[float]]: Positions of all control points.
         """
-        return [[controll_point.current_position for controll_point in sub_list] for sub_list in self.control_point_variables]
+        return [[control_point.current_position for control_point in sub_list] for sub_list in self.control_point_variables]
 
     def get_actions(self) -> List[VariableLocation]:
         """Returns list of VariableLocations but only if the variable location is actually variable.
@@ -331,23 +333,23 @@ class SplineDefinition(SbSOvRL_BaseModel):
 
 class BSplineDefinition(SplineDefinition):
     """
-    Defintion of the BSpline implementation of the SbSOvRL Toolbox
+    Definition of the BSpline implementation of the SbSOvRL Toolbox
     """
     def get_spline(self) -> BSpline:
-        """Creates the BSpline from the defintion given by the json file.
+        """Creates the BSpline from the definition given by the json file.
 
         Returns:
-            BSpline: given by the #degrees and knot_vector in each space_dimension and the current controll points.
+            BSpline: given by the #degrees and knot_vector in each space_dimension and the current control points.
         """
         self.get_logger().debug("Creating Gustav BSpline.")
         # self.get_logger().debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
         # self.get_logger().debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
-        self.get_logger().debug(f"With controll_points: {self.get_controll_points()}")
+        self.get_logger().debug(f"With control_points: {self.get_control_points()}")
         
         return BSpline(
             [space_dim.degree for space_dim in self.space_dimensions],
             [space_dim.get_knot_vector() for space_dim in self.space_dimensions],
-            self.get_controll_points()
+            self.get_control_points()
             )
     
     def draw_action_space(self, save_location: Optional[str] = None, no_axis: bool = False, fig_size: List[float] = [6,6], dpi: int = 400):
@@ -400,9 +402,9 @@ class BSplineDefinition(SplineDefinition):
 
 class NURBSDefinition(SplineDefinition):
     """
-    Defintion of the NURBS implementation of the SbSOvRL Toolbox, in comparision to the B-Spline implentation only an additional weights vector is added. 
+    Definition of the NURBS implementation of the SbSOvRL Toolbox, in comparison to the B-Spline implementation only an additional weights vector is added. 
     """
-    weights: List[Union[float, VariableLocation]] # TODO should weights also be changable?
+    weights: List[Union[float, VariableLocation]]   #: weights for the NURBS Spline definition. Other parameters are part of the spline definition class. Can be fixed or changeable
 
     @validator("weights")
     @classmethod
@@ -447,7 +449,7 @@ class NURBSDefinition(SplineDefinition):
         return v
 
     def get_spline(self) -> NURBS:
-        """Creates a NURBSSpline from the defintion given by the json file.
+        """Creates a NURBSSpline from the definition given by the json file.
 
         Returns:
             NURBS: NURBSSpline
@@ -455,17 +457,17 @@ class NURBSDefinition(SplineDefinition):
         self.get_logger().debug("Creating Gustav NURBS.")
         # self.get_logger().debug(f"degree vector: {[space_dim.degree for space_dim in self.space_dimensions]}")
         # self.get_logger().debug(f"knot vector: {[space_dim.get_knot_vector() for space_dim in self.space_dimensions]}")
-        # self.get_logger().debug(f"controll_points: {self.get_controll_points()}")
+        # self.get_logger().debug(f"control_points: {self.get_control_points()}")
         
         return NURBS(
             [space_dim.degree for space_dim in self.space_dimensions],
             [space_dim.get_knot_vector() for space_dim in self.space_dimensions],
-            self.get_controll_points(),
+            self.get_control_points(),
             self.weights
             )
     
     def get_actions(self) -> List[VariableLocation]:
-        """Extends the controll point actions with the weight actions.
+        """Extends the control point actions with the weight actions.
 
         Returns:
             List[VariableLocation]: List of possible actions for this NURBS spline.
@@ -484,7 +486,7 @@ class NURBSDefinition(SplineDefinition):
 SplineTypes = Union[NURBSDefinition, BSplineDefinition] # should always be a derivate of SplineDefinition
 
 class Spline(SbSOvRL_BaseModel):
-    """Defintion of the spline. Can be deleted in the next round of reworks.
+    """Definition of the spline. Can be deleted in the next round of reworks.
     
     Had a historical significance but had all its additional functions removed. Please remove in next rework.
     """

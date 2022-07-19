@@ -115,17 +115,27 @@ class Validation(SbSOvRL_BaseModel):
         Returns:
             EvalCallback: Validation callback parametrized by this object.
         """
+        # build the dictionary holding the variables needed to initialize the callback. See callback signature for variable explonation
         variable_dict = {
             "eval_env": eval_environment,
             "n_eval_episodes": len(self.validation_values),
             "eval_freq": int(self.validation_freq/normalizer_divisor)
         }
-        if self.save_best_agent and save_location:
+        if self.save_best_agent and save_location:  # add variables for the case if the best model is to be saved
             variable_dict["best_model_save_path"] = save_location/"eval/best_model"
             variable_dict["log_path"] = save_location/"eval/log"
         return EvalCallback(**variable_dict)
 
     def end_validation(self, agent: BaseAlgorithm, environment: GymEnv) -> Tuple[float, float]:
+        """Function is called at the end of a validation. All clean up and last evaluation is going in here.
+
+        Args:
+            agent (BaseAlgorithm): Agent which is to be used to validate.
+            environment (GymEnv): Validation environment
+
+        Returns:
+            Tuple[float, float]: See 'funct'evaluate_policy() for definition
+        """
         variable_dict = {
             "model": agent,
             "env": environment,

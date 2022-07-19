@@ -107,5 +107,5 @@ class SbSOvRL_BaseModel(BaseModel):
             return multiprocessing.get_logger()
         return logging.getLogger(self.logger_name)
 
-    class Config:
+    class Config:   # makes it that pydantic returns an error if unknown keywords are given
         extra = Extra.forbid

@@ -1,3 +1,7 @@
+"""
+    This file contains functions to read the binary files created by the xns solver.
+"""
+
 import numpy as np
 import os
 from struct import unpack

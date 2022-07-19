@@ -87,26 +87,56 @@ class MPIClusterMultiProcessor(MultiProcessor):
         return f"{self.command} {local_mpi_flags}"
 
 class ObservationDefinition(SbSOvRL_BaseModel):
-    name: str
-    value_min: float
-    value_max: float
+    """
+        Definition of a single Observations by providing the name of the value and the range in which the value is limited to. 
+
+        The range is necessary due to normalization of the input of the agent networks.
+    """
+    name: str   #: Name of the observation
+    value_min: float    #: minimum of the range in which the observation is bound b
+    value_max: float    #: maximum of the range in which the observation is bound b
 
     def get_observation_definition(self) -> Tuple[str, Space]:
+        """Returns a tuple of name and observation definition defined via the gym.observation interface
+
+        Returns:
+            Tuple[str, Space]: Tuple of the name of the observation and a gym.Box definition
+        """
         return (self.name, Box(self.value_min, self.value_max, shape=(1), dtype=np.float32))
     
     def get_default_observation(self) -> np.ndarray:
+        """Gives a default observations of the correct shape, purpose is when the observation fails that the observation can still be generated so that the training does not error out.
+
+        Returns:
+            np.ndarray: An array filled with ones in the correct shape and size of the observation.
+        """
         return np.ones((1,))*self.value_min
 
 class ObservationDefinitionMulti(ObservationDefinition):
+    """
+        Definition of a single Observations by providing the name of the value and the range in which the value is limited to. 
+
+        The range is necessary due to normalization of the input of the agent networks.
+    """
     observation_shape: List[int]
     value_type: Literal["float", "CNN"]
 
     def get_observation_definition(self) -> Tuple[str, Space]:
+        """Returns a tuple of name and observation definition defined via the gym.observation interface
+
+        Returns:
+            Tuple[str, Space]: Tuple of the name of the observation and a gym.Box definition
+        """
         if self.value_type == "CNN":
             return (self.name, Box(low=0, high=255, shape=self.observation_shape, dtype=np.uint8))
         return (self.name, Box(self.value_min, self.value_max, shape=(self.observation_shape), dtype=np.float32))
     
     def get_default_observation(self) -> np.ndarray:
+        """Gives a default observations of the correct shape, purpose is when the observation fails that the observation can still be generated so that the training does not error out.
+
+        Returns:
+            np.ndarray: An array filled with ones in the correct shape and size of the observation.
+        """
         if self.value_type == "CNN":
             return np.zeros(self.observation_shape, dtype=np.uint8)
         return np.ones(self.observation_shape, dtype=np.float32)*self.value_min
@@ -129,6 +159,17 @@ class SPORObject(SbSOvRL_BaseModel):
 
     @validator("additional_observations", pre=True)
     def validate_additional_observations(cls, v: str, values: Dict[str, Any]) -> Union[ObservationDefinition, ObservationDefinitionMulti, List[ObservationDefinition]]:
+        """Validates the the additional observations variable. This is a pre validation function only used for back compatibility reasons. See deprecation notice...
+
+            Deprecated functionality: Setting the value of the additional variable to an int value. This is an old option and is not supported anymore. Please define additional variable with the classes given.
+        
+        Args:
+            v (str): See pydantic
+            values (Dict[str, Any]):  See pydantic
+
+        Returns:
+            Union[ObservationDefinition, ObservationDefinitionMulti, List[ObservationDefinition]]: Pre validated values.
+        """
         if not isinstance(v, dict):
             if not int(v) == 0:
                 warnings.warn("Please do not use this method to register additional observations anymore. Please specify the exact type and number of observations and their limits via the ObservationDefinition, ObservationDefinitionMulti or as a List of ObservationDefinitions.", warnings.DeprecationWarning)
@@ -149,7 +190,15 @@ class SPORObject(SbSOvRL_BaseModel):
         """
         return self.additional_observations
 
-    def get_default_observation(self, observations: ObservationType):
+    def get_default_observation(self, observations: ObservationType) -> ObservationType:
+        """Generates default observations for all additional observations defined in this object.n.
+       
+        Args:
+            observations (ObservationType): Already defined observations to which the additional observations are added to.
+
+        Returns:
+            ObservationType: Observations with now the additional observations of this object added (values used are the default values)
+        """
         if self.additional_observations is None:
             pass # observation do not need to be changed
         elif isinstance(self.additional_observations, list):
@@ -198,8 +247,8 @@ class SPORObjectCommandLine(SPORObject):
 
     # communication_interface_variables
     _run_id: UUID4 = PrivateAttr(default=None)  #: If the communication interface is used this UUID will be used to identify the job/correct worker
-    _run_func: Optional[Any] = PrivateAttr(default=None)  #: 
-    _run_logger: Optional[Any] = PrivateAttr(default=None)  #: 
+    _run_func: Optional[Any] = PrivateAttr(default=None)  #: function handler used for python functions which are loaded inside the program envelop from the outside
+    _run_logger: Optional[Any] = PrivateAttr(default=None)  #: logger which is used for the internalized python functions
 
     @validator("working_directory")
     def validate_working_directory_path(cls, v: str):
@@ -360,12 +409,15 @@ class SPORObjectCommandLine(SPORObject):
                 if self.name == "main_solver":
                     shutil.copyfile(path.parent/"xns_multi.in", path/"xns.in")
                     self.get_logger().info(f"Copying file please.....")
+            # checks if the defined function is a python function and if it the function is loaded into the program envelop and internalized. This can bring big time savings if big libraries are loaded by the function.
             if len(self.command_options) == 1:
                 possible_file = pathlib.Path(self.command_options[0]).resolve().absolute()
                 if possible_file.exists() and possible_file.is_file() and possible_file.suffix == ".py":
+                    # cop python file so that changes to it during computation are not crashing the training run.
                     ret_path = shutil.copy(possible_file, self.save_location/possible_file.name)
                     self.get_logger().debug(f"Successfully copied the python file {str(ret_path)}.")
 
+                    # trying to internalize the function
                     try:
                         sys.path.insert(0, f'{possible_file.parent}{os.sep}')
                         func = importlib.import_module(possible_file.stem)
@@ -396,7 +448,7 @@ class SPORObjectCommandLine(SPORObject):
         else:   # executes the step
             multi_proc_prefix = self.get_multiprocessing_prefix(core_count=core_count)
             command_list = [multi_proc_prefix, self.execution_command, *self.command_options, *self.spor_com_interface(reset, environment_id, validation_id, step_information)]
-            if self._run_func is not None:
+            if self._run_func is not None:  # using internalized python function
                 args = spor_com_parse_arguments(command_list[3:])
                 exit_code = 0
                 output = None
@@ -408,14 +460,14 @@ class SPORObjectCommandLine(SPORObject):
                 except Exception as err:
                     self.get_logger().warning(f"Could not run the internalized python spor function without error. The follwing error was thrown {err}. Please check if this is a user error.")
                     exit_code = 404
-            else:
+            else:   # using command line to call the defined command
                 command = " ".join(command_list)
                 exit_code, output = call_commandline(command, self.working_directory, env_logger)
             step_return["info"][self.name] = {
                "output": output,
                "exit_code": int(exit_code)
             }
-            if exit_code != 0:
+            if exit_code != 0:  # error thrown during command execution
                 env_logger.info("SPOR Step thrown error.")
                 if self.stop_after_error:
                     env_logger.info("Will stop episode now, due to thrown error.")
@@ -452,15 +504,15 @@ class SPORList(SbSOvRL_BaseModel):
     If a step sends a stop signal all consecutive steps will be ignored and the 
     Each step can generate observations, rewards and info for the current episode step.  These are aggregated as follows.
     """
-    steps: List[SPORObjectTypes]  #: List of SPOR objects. Each SPOR object is a step in the environment.
-    reward_aggregation: Literal["sum", "min", "max", "mean", "minmax"]   #: Definition on how the reward should be aggregated. Definition for each option is given :doc:`here <spor>`.
+    steps: List[SPORObjectTypes]  #: List of SPOR objects. Each SPOR object is a step  in the environment.
+    reward_aggregation: Literal["sum", "min", "max", "mean", "minmax"]   #: Definition on how the reward should be aggregated. Definition for each option is given :doc:`/SPOR`.
 
     _rewards: List[RewardType] = PrivateAttr(default_factory=list)  #: internal data holder for the rewards collected during a single episode. Could be local variable but is object variable to have to option to read it out later on, if need be.
     # _observations: Any = PrivateAttr(default=None)
     # _info: InfoType = PrivateAttr(default_factory=dict)
 
     def get_number_of_observations(self) -> Optional[List[Union[ObservationDefinition, ObservationDefinitionMulti]]]:
-        """Aggregates the observations of all steps and returns the flattened list of observations spaces comming from the SPORSteps.
+        """Aggregates the observations of all steps and returns the flattened list of observations spaces coming from the SPORSteps.
 
         Returns:
             int: Number of observations.
@@ -531,7 +583,7 @@ class SPORList(SbSOvRL_BaseModel):
                     observations = step.get_default_observation(observations)
                     # print(observations, observations.shape)
             else:
-                if reset and not (step.run_on_reset):   # ignore if step should be skiped during reset procedure
+                if reset and not (step.run_on_reset):   # ignore if step should be skipped during reset procedure
                     continue
                 try:
                     observations, reward, done, info = step.run(step_information, environment_id, validation_id, core_count, reset)

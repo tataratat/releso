@@ -15,15 +15,15 @@ class Mesh(SbSOvRL_BaseModel):
     """
     Class used to read in the correct base mesh file and load it.
     """
-    mxyz_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think.") #: Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think. 
-    mien_path: Optional[FilePath] = Field(default=None, description="Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.") #: Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.
+    mxyz_path: Optional[FilePath] = Field(default=None, description="Please use either the path variable xor the mxyz variable, since if used both the used mxyz path might not be the one you think.") #: Please use either the path variable xor the mxyz variable, since if used both the used mxyz path might not be the one you think. 
+    mien_path: Optional[FilePath] = Field(default=None, description="Please use either the path variable xor the mien variable, since if used both the used mien path might not be the one you think.") #: Please use either the path variable xor the mien variable, since if used both the used mien path might not be the one you think.
 
     path: Optional[str] = None   #: after validation Tuple["mxyz_path", "mien_path"]
     export_path: str    #: Path to the default export location of the mesh during environment operations. (So that the solver can use it.)
     hypercube: bool = Field(description="If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).", default=True)    #: If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).
     dimensions: conint(ge=1)    #: Number of dimensions of the mesh.
 
-    _export_path_changed: Optional[str] = PrivateAttr(default=None)
+    _export_path_changed: Optional[str] = PrivateAttr(default=None) #: internal variable if the export path was changed from a different value. This is the value is returned when the export path is queried.
 
     @validator("export_path")
     @classmethod
@@ -44,9 +44,9 @@ class Mesh(SbSOvRL_BaseModel):
             if path.name == "xns":
                 path = path.with_name("_.xns")
             else:
-                raise SbSOvRLParserException("Mesh", "export_path", "Currently only the name xns without suffix is supported. If campiga should be added pls notify the author.")
+                raise SbSOvRLParserException("Mesh", "export_path", "Currently only the name xns without suffix is supported.")
         elif not path.suffix == ".xns":
-            raise SbSOvRLParserException("Mesh", "export_path", "Currently only the suffix xns is supported. If campiga should be added pls notify the author.")
+            raise SbSOvRLParserException("Mesh", "export_path", "Currently only the suffix xns is supported.")
         return path
         
     def get_mesh(self) -> Mesh:

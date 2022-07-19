@@ -18,11 +18,11 @@ sys.path.insert(0, os.path.abspath('../../src/'))
 # -- Project information -----------------------------------------------------
 
 project = 'SbSOvRL'
-copyright = '2021, Clemens Fricke'
+copyright = '2022, Clemens Fricke'
 author = 'Clemens Fricke'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0'
+release = '1.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -39,7 +39,9 @@ extensions = [
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym", "stable_baselines3", "pandas", "gustav", "numpy", "vedo"]
+autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym",
+                        "stable_baselines3", "pandas", "gustav", "numpy",
+                        "vedo", "matplotlib", "imageio"]
 # autodoc_typehints = 'description'  # show type hints in doc body instead of signature
 # autoclass_content = 'instance'  # get docstring from class level and init simultaneously
 

@@ -4,7 +4,7 @@ File holding the class defining the verbosity of the problem and defining the lo
 from pydantic import validator
 from pydantic.fields import PrivateAttr
 from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.logger import VerbosityLevel, get_parser_logger, set_up_logger, logging
+from SbSOvRL.util.logger import VerbosityLevel, set_up_logger, logging
 import pathlib
 from typing import Any, Literal
 import datetime
@@ -14,7 +14,7 @@ class Verbosity(SbSOvRL_BaseModel):
     """
         Defines the settings for the different loggers used in the current experiment. This class is the only class which is copied to all children. (this happens outside of the the standard channels and will hopefully not break with multiprocessing)
 
-        Please note, the parser logger only ever can have the following name ``SbSOvRL
+        Please note, the parser logger only ever can have the following name ``SbSOvRL_parser``
     """
     parser: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"   #: VerbosityLevel of the parser logger. This logger should only generate messages during the setup of the experiment.
     environment: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"  #: VerbosityLevel of the environment parsers. These loggers will generate messages during the execution of the experiments. (Training and Validation)
@@ -25,8 +25,8 @@ class Verbosity(SbSOvRL_BaseModel):
     
 
     # private fields
-    _environment_logger: str = PrivateAttr(default="")
-    _environment_validation_logger: str = PrivateAttr(default="")
+    _environment_logger: str = PrivateAttr(default="")  #: save different loggers for the different instances
+    _environment_validation_logger: str = PrivateAttr(default="")   #: save different loggers for the different instances
     
     @validator("parser", "environment", always=True)
     @classmethod
@@ -62,9 +62,9 @@ class Verbosity(SbSOvRL_BaseModel):
         """
         path: pathlib.Path = None
         if "save_location" in values:
-            path = values["save_location"]/v
+            path = values["save_location"]/v    # the path where the logger should write to is the save_location/SbSOvRL_logfile_location
         else:
-            path = pathlib.Path(v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))).expanduser().resolve()
+            path = pathlib.Path(v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))).expanduser().resolve() # the path where the logger should write to is the calling_folder/SbSOvRL_logfile_location
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -78,6 +78,7 @@ class Verbosity(SbSOvRL_BaseModel):
         # create base rl logger
         self._environment_logger = "_".join(filter(("").__ne__, [self.base_logger_name, self.environment_extension]))
         self.add_environment_logger_with_name_extension("")
+        #create base rl logger for validation environment
         self._environment_validation_logger = "_".join(filter(("").__ne__, [self.base_logger_name, self.environment_extension, "validation"]))
         self.add_environment_logger_with_name_extension("validation")
 
