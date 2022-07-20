@@ -25,6 +25,7 @@ For guidance on the installation process see :doc:`installation`.
    json_schema
    SbSOvRL
    SPOR
+   feature_extractor
 
 
 
