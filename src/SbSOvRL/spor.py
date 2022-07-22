@@ -172,7 +172,7 @@ class SPORObject(SbSOvRL_BaseModel):
         """
         if not isinstance(v, dict):
             if not int(v) == 0:
-                warnings.warn("Please do not use this method to register additional observations anymore. Please specify the exact type and number of observations and their limits via the ObservationDefinition, ObservationDefinitionMulti or as a List of ObservationDefinitions.", warnings.DeprecationWarning)
+                warnings.warn("Please do not use this method to register additional observations anymore. Please specify the exact type and number of observations and their limits via the ObservationDefinition, ObservationDefinitionMulti or as a List of ObservationDefinitions.", DeprecationWarning)
                 # if only a number of 
                 v = {"name": f"unnamed_{str(uuid4())}", "value_min": -10, "value_max": 10, "observation_shape": [int(v)], "value_type": "float", "save_location": values["save_location"]}
                 # v = {"name": f"unnamed_8a85bd74-d60b-4746-ae39-437de5774669", "value_min": -10, "value_max": 10, "observation_shape": [int(v)], "value_type": "float", "save_location": values["save_location"]}
@@ -268,6 +268,31 @@ class SPORObjectCommandLine(SPORObject):
         if not (path.is_dir() and path.exists()):
             raise SbSOvRLParserException("SPORObjectCommandline", "unknown", f"The work_directory path {v} is a valid directory. When using multiprocessing placeholder please make sure that the directory before the placeholder is valid.")
         return v
+    
+    @validator("execution_command", )
+    def validate_execution_command_path(cls, v: str):
+        """
+        Check if path to execution command exist.
+
+        Args:
+            v (str): Object to validate
+
+        Raises:
+            SbSOvRLParserException: If path is not correct, this error is thrown.
+
+        Returns:
+            str: original path if no validation error occurs.
+        """
+        # check if placeholder for multiprocessing is available if not use v to validate directory path
+        path = pathlib.Path(v)
+        if path.exists():
+            path = path.expanduser().resolve().as_posix()
+        else:
+            path = v
+        if shutil.which(path) is None:
+            raise SbSOvRLParserException("SPORObjectCommandline", "unknown",
+             f"The execution_command path {v} is not a valid executable.")
+        return path
 
     @validator("add_step_information")
     def validate_add_step_information_only_true_if_also_spor_com_is_true(cls, v: str, values: Dict[str, Any]):
@@ -431,9 +456,9 @@ class SPORObjectCommandLine(SPORObject):
                         else:
                             self._run_logger = set_up_logger(f"spor_step_logger_{self.name.replace(' ','_')}", pathlib.Path(self.save_location/"logging"), VerbosityLevel.INFO, console_logging=False)
                             self.get_logger().info(f"Initialized internal python function calling for step {self.name}.")
-
+            
             self._first_time_setup_not_done = False
-        # first set up done
+        # first set up done 
         
         env_logger = self.get_logger()
         step_return: Dict = {
@@ -452,14 +477,14 @@ class SPORObjectCommandLine(SPORObject):
                 args = spor_com_parse_arguments(command_list[3:])
                 exit_code = 0
                 output = None
+                current_dir = os.getcwd()
                 try:
-                    current_dir = os.getcwd()
                     os.chdir(self.working_directory)
                     output = self._run_func(args, self._run_logger)
-                    os.chdir(current_dir)
                 except Exception as err:
                     self.get_logger().warning(f"Could not run the internalized python spor function without error. The follwing error was thrown {err}. Please check if this is a user error.")
                     exit_code = 404
+                os.chdir(current_dir)
             else:   # using command line to call the defined command
                 command = " ".join(command_list)
                 exit_code, output = call_commandline(command, self.working_directory, env_logger)
@@ -467,6 +492,8 @@ class SPORObjectCommandLine(SPORObject):
                "output": output,
                "exit_code": int(exit_code)
             }
+            self.get_logger().debug(f"The return step return of the current "
+                                    f"command is: {step_return}")
             if exit_code != 0:  # error thrown during command execution
                 env_logger.info("SPOR Step thrown error.")
                 if self.stop_after_error:

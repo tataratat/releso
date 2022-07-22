@@ -1,7 +1,17 @@
 {
   "title": "BaseParser",
+  "description": "This class can be used to initialize the SbSOvRL Framework from the command line by reading in a json representation of the Spline based Shape Optimization problem which is to be solved via Reinforcement Learning.",
   "type": "object",
   "properties": {
+    "save_location": {
+      "title": "Save Location",
+      "type": "string",
+      "format": "path"
+    },
+    "logger_name": {
+      "title": "Logger Name",
+      "type": "string"
+    },
     "verbosity": {
       "$ref": "#/definitions/Verbosity"
     },
@@ -22,6 +32,9 @@
         },
         {
           "$ref": "#/definitions/DQNAgent"
+        },
+        {
+          "$ref": "#/definitions/A2CAgent"
         }
       ]
     },
@@ -38,26 +51,47 @@
       "minimum": 1,
       "type": "integer"
     },
-    "save_location": {
-      "title": "Save Location",
-      "type": "string"
-    },
     "validation": {
       "$ref": "#/definitions/Validation"
+    },
+    "n_environments": {
+      "title": "N Environments",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "normalize_training_values": {
+      "title": "Normalize Training Values",
+      "default": false,
+      "type": "boolean"
+    },
+    "multi_env_sequential": {
+      "title": "Multi Env Sequential",
+      "default": false,
+      "type": "boolean"
     }
   },
   "required": [
+    "save_location",
     "agent",
     "environment",
-    "number_of_timesteps",
-    "number_of_episodes"
+    "number_of_timesteps"
   ],
   "additionalProperties": false,
   "definitions": {
     "Verbosity": {
       "title": "Verbosity",
+      "description": "Defines the settings for the different loggers used in the current experiment. This class is the only class which is copied to all children. (this happens outside of the the standard channels and will hopefully not break with multiprocessing)\n\nPlease note, the parser logger only ever can have the following name ``SbSOvRL_parser``",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "parser": {
           "title": "Parser",
           "default": "INFO",
@@ -82,37 +116,80 @@
         },
         "SbSOvRL_logfile_location": {
           "title": "Sbsovrl Logfile Location",
-          "default": "training_{}/logging/",
+          "default": "logging/",
           "type": "string"
         },
         "console_logging": {
           "title": "Console Logging",
           "default": false,
           "type": "boolean"
+        },
+        "base_logger_name": {
+          "title": "Base Logger Name",
+          "default": "SbSOvRL",
+          "type": "string"
+        },
+        "environment_extension": {
+          "title": "Environment Extension",
+          "default": "rl",
+          "type": "string"
         }
       },
+      "required": [
+        "save_location"
+      ],
       "additionalProperties": false
     },
     "PPOAgent": {
       "title": "PPOAgent",
-      "description": "PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.\n    ",
+      "description": "PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
       "type": "object",
       "properties": {
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
           "type": "string"
         },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "PPO"
-          ],
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
           "type": "string"
         },
         "policy": {
           "title": "Policy",
           "enum": [
-            "MlpPolicy"
+            "MlpPolicy",
+            "CnnPolicy",
+            "MultiInputPolicy"
+          ],
+          "type": "string"
+        },
+        "use_custom_feature_extractor": {
+          "title": "Use Custom Feature Extractor",
+          "enum": [
+            "resnet18",
+            "mobilenetv2",
+            "mobilenetv3_small",
+            "mobilenetv3_large"
+          ],
+          "type": "string"
+        },
+        "cfe_without_linear": {
+          "title": "Cfe Without Linear",
+          "default": false,
+          "type": "boolean"
+        },
+        "policy_kwargs": {
+          "title": "Policy Kwargs",
+          "type": "object"
+        },
+        "type": {
+          "title": "Type",
+          "enum": [
+            "PPO"
           ],
           "type": "string"
         },
@@ -169,38 +246,65 @@
           "title": "Device",
           "default": "auto",
           "type": "string"
-        },
-        "policy_kwargs": {
-          "title": "Policy Kwargs",
-          "type": "object"
         }
       },
       "required": [
-        "type",
-        "policy"
+        "save_location",
+        "policy",
+        "type"
       ],
       "additionalProperties": false
     },
     "DDPGAgent": {
       "title": "DDPGAgent",
-      "description": "DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.\n    ",
+      "description": "DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
       "type": "object",
       "properties": {
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
           "type": "string"
         },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "DDPG"
-          ],
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
           "type": "string"
         },
         "policy": {
           "title": "Policy",
           "enum": [
-            "MlpPolicy"
+            "MlpPolicy",
+            "CnnPolicy",
+            "MultiInputPolicy"
+          ],
+          "type": "string"
+        },
+        "use_custom_feature_extractor": {
+          "title": "Use Custom Feature Extractor",
+          "enum": [
+            "resnet18",
+            "mobilenetv2",
+            "mobilenetv3_small",
+            "mobilenetv3_large"
+          ],
+          "type": "string"
+        },
+        "cfe_without_linear": {
+          "title": "Cfe Without Linear",
+          "default": false,
+          "type": "boolean"
+        },
+        "policy_kwargs": {
+          "title": "Policy Kwargs",
+          "type": "object"
+        },
+        "type": {
+          "title": "Type",
+          "enum": [
+            "DDPG"
           ],
           "type": "string"
         },
@@ -247,38 +351,65 @@
           "title": "Device",
           "default": "auto",
           "type": "string"
-        },
-        "policy_kwargs": {
-          "title": "Policy Kwargs",
-          "type": "object"
         }
       },
       "required": [
-        "type",
-        "policy"
+        "save_location",
+        "policy",
+        "type"
       ],
       "additionalProperties": false
     },
     "SACAgent": {
       "title": "SACAgent",
-      "description": "SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.\n    ",
+      "description": "SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
       "type": "object",
       "properties": {
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
           "type": "string"
         },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "SAC"
-          ],
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
           "type": "string"
         },
         "policy": {
           "title": "Policy",
           "enum": [
-            "MlpPolicy"
+            "MlpPolicy",
+            "CnnPolicy",
+            "MultiInputPolicy"
+          ],
+          "type": "string"
+        },
+        "use_custom_feature_extractor": {
+          "title": "Use Custom Feature Extractor",
+          "enum": [
+            "resnet18",
+            "mobilenetv2",
+            "mobilenetv3_small",
+            "mobilenetv3_large"
+          ],
+          "type": "string"
+        },
+        "cfe_without_linear": {
+          "title": "Cfe Without Linear",
+          "default": false,
+          "type": "boolean"
+        },
+        "policy_kwargs": {
+          "title": "Policy Kwargs",
+          "type": "object"
+        },
+        "type": {
+          "title": "Type",
+          "enum": [
+            "SAC"
           ],
           "type": "string"
         },
@@ -369,22 +500,29 @@
           "title": "Device",
           "default": "auto",
           "type": "string"
-        },
-        "policy_kwargs": {
-          "title": "Policy Kwargs",
-          "type": "object"
         }
       },
       "required": [
-        "type",
-        "policy"
+        "save_location",
+        "policy",
+        "type"
       ],
       "additionalProperties": false
     },
     "PretrainedAgent": {
       "title": "PretrainedAgent",
+      "description": "This class can be used to load pretrained agents, instead of using untrained agents. Can also be used to only validate this agent without training it further. Please see validation section for this use-case.",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "tensorboard_log": {
           "title": "Tensorboard Log",
           "type": "string"
@@ -394,7 +532,9 @@
           "enum": [
             "PPO",
             "SAC",
-            "DDPG"
+            "DDPG",
+            "A2C",
+            "DQN"
           ],
           "type": "string"
         },
@@ -409,6 +549,7 @@
         }
       },
       "required": [
+        "save_location",
         "type",
         "path"
       ],
@@ -416,24 +557,54 @@
     },
     "DQNAgent": {
       "title": "DQNAgent",
-      "description": "DQN definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 docu.\n    ",
+      "description": "DQN definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
       "type": "object",
       "properties": {
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
           "type": "string"
         },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "DQN"
-          ],
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
           "type": "string"
         },
         "policy": {
           "title": "Policy",
           "enum": [
-            "MlpPolicy"
+            "MlpPolicy",
+            "CnnPolicy",
+            "MultiInputPolicy"
+          ],
+          "type": "string"
+        },
+        "use_custom_feature_extractor": {
+          "title": "Use Custom Feature Extractor",
+          "enum": [
+            "resnet18",
+            "mobilenetv2",
+            "mobilenetv3_small",
+            "mobilenetv3_large"
+          ],
+          "type": "string"
+        },
+        "cfe_without_linear": {
+          "title": "Cfe Without Linear",
+          "default": false,
+          "type": "boolean"
+        },
+        "policy_kwargs": {
+          "title": "Policy Kwargs",
+          "type": "object"
+        },
+        "type": {
+          "title": "Type",
+          "enum": [
+            "DQN"
           ],
           "type": "string"
         },
@@ -515,38 +686,185 @@
           "title": "Device",
           "default": "auto",
           "type": "string"
+        }
+      },
+      "required": [
+        "save_location",
+        "policy",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "A2CAgent": {
+      "title": "A2CAgent",
+      "description": "PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
+      "type": "object",
+      "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
+        "tensorboard_log": {
+          "title": "Tensorboard Log",
+          "type": "string"
+        },
+        "policy": {
+          "title": "Policy",
+          "enum": [
+            "MlpPolicy",
+            "CnnPolicy",
+            "MultiInputPolicy"
+          ],
+          "type": "string"
+        },
+        "use_custom_feature_extractor": {
+          "title": "Use Custom Feature Extractor",
+          "enum": [
+            "resnet18",
+            "mobilenetv2",
+            "mobilenetv3_small",
+            "mobilenetv3_large"
+          ],
+          "type": "string"
+        },
+        "cfe_without_linear": {
+          "title": "Cfe Without Linear",
+          "default": false,
+          "type": "boolean"
         },
         "policy_kwargs": {
           "title": "Policy Kwargs",
           "type": "object"
+        },
+        "type": {
+          "title": "Type",
+          "enum": [
+            "A2C"
+          ],
+          "type": "string"
+        },
+        "learning_rate": {
+          "title": "Learning Rate",
+          "default": 0.0007,
+          "type": "number"
+        },
+        "n_steps": {
+          "title": "N Steps",
+          "default": 5,
+          "type": "integer"
+        },
+        "gamma": {
+          "title": "Gamma",
+          "default": 0.99,
+          "type": "number"
+        },
+        "gae_lambda": {
+          "title": "Gae Lambda",
+          "default": 1.0,
+          "type": "number"
+        },
+        "ent_coef": {
+          "title": "Ent Coef",
+          "default": 0.0,
+          "type": "number"
+        },
+        "vf_coef": {
+          "title": "Vf Coef",
+          "default": 0.5,
+          "type": "number"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "device": {
+          "title": "Device",
+          "default": "auto",
+          "type": "string"
+        },
+        "max_grad_norm": {
+          "title": "Max Grad Norm",
+          "default": 0.5,
+          "type": "number"
+        },
+        "rms_prop_eps": {
+          "title": "Rms Prop Eps",
+          "default": 1e-05,
+          "type": "number"
+        },
+        "use_rms_prop": {
+          "title": "Use Rms Prop",
+          "default": true,
+          "type": "boolean"
+        },
+        "use_sde": {
+          "title": "Use Sde",
+          "default": false,
+          "type": "boolean"
+        },
+        "sde_sample_freq": {
+          "title": "Sde Sample Freq",
+          "default": -1,
+          "type": "integer"
+        },
+        "normalize_advantage": {
+          "title": "Normalize Advantage",
+          "default": false,
+          "type": "boolean"
         }
       },
       "required": [
-        "type",
-        "policy"
+        "save_location",
+        "policy",
+        "type"
       ],
       "additionalProperties": false
     },
     "MultiProcessing": {
       "title": "MultiProcessing",
-      "description": "Defines if the Problem should use Multiprocessing and with how many cores the solver can work. Does not force Multiprocessing for example if the solver does not support it.\n    ",
+      "description": "Defines if the Problem should use Multiprocessing and with how many \ncores the solver can work. Does not force Multiprocessing for example \nif the solver does not support it.",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "number_of_cores": {
           "title": "Number Of Cores",
+          "default": 1,
           "minimum": 1,
           "type": "integer"
         }
       },
       "required": [
-        "number_of_cores"
+        "save_location"
       ],
       "additionalProperties": false
     },
     "SplineSpaceDimension": {
       "title": "SplineSpaceDimension",
+      "description": "Defines a single spline space dimension of the current spline. The dimension is a dimension of the parametric spline dimension.",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -570,6 +888,7 @@
         }
       },
       "required": [
+        "save_location",
         "name",
         "number_of_points",
         "degree"
@@ -578,8 +897,18 @@
     },
     "VariableLocation": {
       "title": "VariableLocation",
+      "description": "Object of this class defines the position and movement possibilities for a \nsingle dimensions of a single control point of the spline.",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "current_position": {
           "title": "Current Position",
           "type": "number"
@@ -604,14 +933,25 @@
         }
       },
       "required": [
+        "save_location",
         "current_position"
       ],
       "additionalProperties": false
     },
     "NURBSDefinition": {
       "title": "NURBSDefinition",
+      "description": "Definition of the NURBS implementation of the SbSOvRL Toolbox, in comparison to the B-Spline implementation only an additional weights vector is added. ",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "space_dimensions": {
           "title": "Space Dimensions",
           "type": "array",
@@ -659,6 +999,7 @@
         }
       },
       "required": [
+        "save_location",
         "space_dimensions",
         "spline_dimension",
         "weights"
@@ -667,8 +1008,18 @@
     },
     "BSplineDefinition": {
       "title": "BSplineDefinition",
+      "description": "Definition of the BSpline implementation of the SbSOvRL Toolbox",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "space_dimensions": {
           "title": "Space Dimensions",
           "type": "array",
@@ -702,6 +1053,7 @@
         }
       },
       "required": [
+        "save_location",
         "space_dimensions",
         "spline_dimension"
       ],
@@ -709,8 +1061,18 @@
     },
     "Spline": {
       "title": "Spline",
+      "description": "Definition of the spline. Can be deleted in the next round of reworks.\n\nHad a historical significance but had all its additional functions removed. Please remove in next rework.",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "spline_definition": {
           "title": "Spline Definition",
           "anyOf": [
@@ -724,23 +1086,34 @@
         }
       },
       "required": [
+        "save_location",
         "spline_definition"
       ],
       "additionalProperties": false
     },
     "Mesh": {
       "title": "Mesh",
+      "description": "Class used to read in the correct base mesh file and load it.",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "mxyz_path": {
           "title": "Mxyz Path",
-          "description": "Please use either the path variabel xor the mxyz variable, since if used both the used mxyz path might not be the one you think.",
+          "description": "Please use either the path variable xor the mxyz variable, since if used both the used mxyz path might not be the one you think.",
           "format": "file-path",
           "type": "string"
         },
         "mien_path": {
           "title": "Mien Path",
-          "description": "Please use either the path variabel xor the mien variable, since if used both the used mien path might not be the one you think.",
+          "description": "Please use either the path variable xor the mien variable, since if used both the used mien path might not be the one you think.",
           "format": "file-path",
           "type": "string"
         },
@@ -765,16 +1138,113 @@
         }
       },
       "required": [
-        "path",
+        "save_location",
         "export_path",
         "dimensions"
       ],
       "additionalProperties": false
     },
-    "MultiProcessor": {
-      "title": "MultiProcessor",
+    "ObservationDefinition": {
+      "title": "ObservationDefinition",
+      "description": "Definition of a single Observations by providing the name of the value and the range in which the value is limited to. \n\nThe range is necessary due to normalization of the input of the agent networks.",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "value_min": {
+          "title": "Value Min",
+          "type": "number"
+        },
+        "value_max": {
+          "title": "Value Max",
+          "type": "number"
+        }
+      },
+      "required": [
+        "save_location",
+        "name",
+        "value_min",
+        "value_max"
+      ],
+      "additionalProperties": false
+    },
+    "ObservationDefinitionMulti": {
+      "title": "ObservationDefinitionMulti",
+      "description": "Definition of a single Observations by providing the name of the value and the range in which the value is limited to. \n\nThe range is necessary due to normalization of the input of the agent networks.",
+      "type": "object",
+      "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "value_min": {
+          "title": "Value Min",
+          "type": "number"
+        },
+        "value_max": {
+          "title": "Value Max",
+          "type": "number"
+        },
+        "observation_shape": {
+          "title": "Observation Shape",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "value_type": {
+          "title": "Value Type",
+          "enum": [
+            "float",
+            "CNN"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "save_location",
+        "name",
+        "value_min",
+        "value_max",
+        "observation_shape",
+        "value_type"
+      ],
+      "additionalProperties": false
+    },
+    "MultiProcessor": {
+      "title": "MultiProcessor",
+      "description": "The MultiProcessor gives access to command prefixes which can enable parallelization. Currently only tested for MPI. \n\nNote: \n    The cluster uses PATH variables to correctly call mpi. IF you want to use MPI multiprocessing on the cluster please use :py:class:`SbSOvRL.spor.MPIClusterMultiProcessor`.",
+      "type": "object",
+      "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "command": {
           "title": "Command",
           "default": "mpiexec -np",
@@ -787,14 +1257,25 @@
         }
       },
       "required": [
+        "save_location",
         "max_core_count"
       ],
       "additionalProperties": false
     },
     "MPIClusterMultiProcessor": {
       "title": "MPIClusterMultiProcessor",
+      "description": "Multi-processor extension for the cluster MPI call. ",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "command": {
           "title": "Command",
           "default": "$MPIEXEC",
@@ -819,42 +1300,65 @@
         }
       },
       "required": [
+        "save_location",
         "max_core_count",
         "location"
       ],
       "additionalProperties": false
     },
-    "PythonRewardFunction": {
-      "title": "PythonRewardFunction",
+    "SPORObjectCommandLine": {
+      "title": "SPORObjectCommandLine",
+      "description": "Base class for all possible SPOR object classes which use the command line. This class is meant to add some default functionality, so that users do not need to add them themselfs. These are:\n\n1. access to the (MPI) Multi-processors via :py:class:`SbSOvRL.spor.MultiProcessor`\n2. command line command\n3. additional flags\n4. working directory\n5. whether or not to use the :ref:`SPOR Communication Interface <sporcominterface>`",
       "type": "object",
       "properties": {
-        "working_directory": {
-          "title": "Working Directory",
-          "description": "Directory in which the reward function script should be called.",
-          "format": "directory-path",
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
           "type": "string"
         },
-        "reward_script": {
-          "title": "Reward Script",
-          "format": "file-path",
+        "name": {
+          "title": "Name",
           "type": "string"
         },
-        "calling_function": {
-          "title": "Calling Function",
-          "default": "python",
-          "type": "string"
-        }
-      },
-      "required": [
-        "working_directory",
-        "reward_script"
-      ],
-      "additionalProperties": false
-    },
-    "CommandLineSolver": {
-      "title": "CommandLineSolver",
-      "type": "object",
-      "properties": {
+        "stop_after_error": {
+          "title": "Stop After Error",
+          "default": true,
+          "type": "boolean"
+        },
+        "reward_on_error": {
+          "title": "Reward On Error",
+          "type": "number"
+        },
+        "reward_on_completion": {
+          "title": "Reward On Completion",
+          "type": "number"
+        },
+        "run_on_reset": {
+          "title": "Run On Reset",
+          "default": true,
+          "type": "boolean"
+        },
+        "additional_observations": {
+          "title": "Additional Observations",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ObservationDefinition"
+            },
+            {
+              "$ref": "#/definitions/ObservationDefinitionMulti"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ObservationDefinition"
+              }
+            }
+          ]
+        },
         "multi_processor": {
           "title": "Multi Processor",
           "anyOf": [
@@ -866,13 +1370,19 @@
             }
           ]
         },
+        "use_communication_interface": {
+          "title": "Use Communication Interface",
+          "default": false,
+          "type": "boolean"
+        },
+        "add_step_information": {
+          "title": "Add Step Information",
+          "default": false,
+          "type": "boolean"
+        },
         "working_directory": {
           "title": "Working Directory",
-          "format": "directory-path",
           "type": "string"
-        },
-        "reward_output": {
-          "$ref": "#/definitions/PythonRewardFunction"
         },
         "execution_command": {
           "title": "Execution Command",
@@ -888,17 +1398,68 @@
         }
       },
       "required": [
+        "save_location",
+        "name",
+        "reward_on_error",
         "working_directory",
-        "reward_output",
         "execution_command"
+      ],
+      "additionalProperties": false
+    },
+    "SPORList": {
+      "title": "SPORList",
+      "description": "The SPORList defines the steps which need to be taken for after the FFD is done. These can include the fluid solver, post-processing steps, reward generation, additional logging, etc. \n\nIf a step sends a stop signal all consecutive steps will be ignored and the \nEach step can generate observations, rewards and info for the current episode step.  These are aggregated as follows.",
+      "type": "object",
+      "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
+        "steps": {
+          "title": "Steps",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SPORObjectCommandLine"
+          }
+        },
+        "reward_aggregation": {
+          "title": "Reward Aggregation",
+          "enum": [
+            "sum",
+            "min",
+            "max",
+            "mean",
+            "minmax"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "save_location",
+        "steps",
+        "reward_aggregation"
       ],
       "additionalProperties": false
     },
     "Environment": {
       "title": "Environment",
-      "description": "Parser Environment object is created by pydantic during the parsing of the json object defining the Spline base Shape optimization. Each object can create a gym environment that represents the given problem.",
+      "description": "Parser Environment object is created by pydantic during the parsing of the \njson object defining the Spline base Shape optimization. Each object can \ncreate a gym environment that represents the given problem.",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "multi_processing": {
           "$ref": "#/definitions/MultiProcessing"
         },
@@ -908,32 +1469,80 @@
         "mesh": {
           "$ref": "#/definitions/Mesh"
         },
-        "solver": {
-          "$ref": "#/definitions/CommandLineSolver"
+        "spor": {
+          "$ref": "#/definitions/SPORList"
         },
         "discrete_actions": {
           "title": "Discrete Actions",
           "default": true,
           "type": "boolean"
         },
-        "additional_observations": {
-          "title": "Additional Observations",
-          "minimum": 0,
+        "reset_with_random_control_points": {
+          "title": "Reset With Random Control Points",
+          "default": false,
+          "type": "boolean"
+        },
+        "max_timesteps_in_episode": {
+          "title": "Max Timesteps In Episode",
+          "minimum": 1,
           "type": "integer"
+        },
+        "end_episode_on_spline_not_changed": {
+          "title": "End Episode On Spline Not Changed",
+          "default": false,
+          "type": "boolean"
+        },
+        "reward_on_spline_not_changed": {
+          "title": "Reward On Spline Not Changed",
+          "type": "number"
+        },
+        "reward_on_episode_exceeds_max_timesteps": {
+          "title": "Reward On Episode Exceeds Max Timesteps",
+          "type": "number"
+        },
+        "use_cnn_observations": {
+          "title": "Use Cnn Observations",
+          "default": false,
+          "type": "boolean"
+        },
+        "save_good_episode_results": {
+          "title": "Save Good Episode Results",
+          "default": false,
+          "type": "boolean"
+        },
+        "save_random_good_episode_results": {
+          "title": "Save Random Good Episode Results",
+          "default": false,
+          "type": "boolean"
+        },
+        "save_random_good_episode_mesh": {
+          "title": "Save Random Good Episode Mesh",
+          "default": false,
+          "type": "boolean"
         }
       },
       "required": [
+        "save_location",
         "spline",
         "mesh",
-        "solver",
-        "additional_observations"
+        "spor"
       ],
       "additionalProperties": false
     },
     "Validation": {
       "title": "Validation",
+      "description": "This class is used for the configuration of how validation is to be performed during training. ",
       "type": "object",
       "properties": {
+        "save_location": {
+          "title": "Save Location",
+          "type": "string",
+          "format": "path"
+        },
+        "logger_name": {
+          "title": "Logger Name",
+          "type": "string"
+        },
         "validation_freq": {
           "title": "Validation Freq",
           "minimum": 1,
@@ -959,20 +1568,32 @@
           "title": "Mesh Base Path Extension",
           "type": "string"
         },
-        "max_timesteps_per_episode": {
-          "title": "Max Timesteps Per Episode",
-          "description": "Maximum number of steps in an episode during validation. If zero no maximum number of steps.",
-          "default": 0,
+        "max_timesteps_in_episode": {
+          "title": "Max Timesteps In Episode",
+          "minimum": 1,
           "type": "integer"
         },
         "end_episode_on_spline_not_changed": {
           "title": "End Episode On Spline Not Changed",
-          "description": "End episode if spline has not changed from one step to the next.",
+          "default": false,
+          "type": "boolean"
+        },
+        "reward_on_spline_not_changed": {
+          "title": "Reward On Spline Not Changed",
+          "type": "number"
+        },
+        "reward_on_episode_exceeds_max_timesteps": {
+          "title": "Reward On Episode Exceeds Max Timesteps",
+          "type": "number"
+        },
+        "save_image_in_validation": {
+          "title": "Save Image In Validation",
           "default": false,
           "type": "boolean"
         }
       },
       "required": [
+        "save_location",
         "validation_values",
         "save_best_agent",
         "validate_on_training_end"
