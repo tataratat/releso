@@ -541,10 +541,10 @@ class Environment(SbSOvRL_BaseModel):
         return self.check_observations(observations), reward, done, info
 
     def check_observations(self, observations: ObservationType) -> ObservationType:
-        self.get_logger().warning(f"The observations are as follows: {observations}")
+        self.get_logger().debug(f"The observations are as follows: {observations}")
         new_observation = []
         if len(observations.keys()) == 1:
-            new_observation = observations[observations.keys()[0]]
+            new_observation = observations[next(iter(observations.keys()))]
         else:
             if self._flatten_observations:
                 for key in observations.keys():
@@ -635,8 +635,7 @@ class Environment(SbSOvRL_BaseModel):
                 sol_len=3).T
         else:
             observations["base_observation"] = self._get_spline_observations()
-        if len(observations.keys()) == 1:
-            observations = observations["base_observation"]
+
         return self.check_observations(observations)
 
     def set_validation(self, validation_values: List[float],
