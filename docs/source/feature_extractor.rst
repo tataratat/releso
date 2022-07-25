@@ -16,3 +16,6 @@ Both functionalities come from the feature extractors. Please see the class
 definitions of :py:class:`SbSOvRL.feature_extractor.SbSOvRL_FeatureExtractor` 
 and :py:class:`SbSOvRL.feature_extractor.SbSOvRL_CombinedExtractor` for the 
 possible parameters.
+
+The image based observations are explained in more detail on the page 
+:doc:`Image based Observations<image_based_observations>`.

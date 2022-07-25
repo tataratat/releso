@@ -26,6 +26,7 @@ For guidance on the installation process see :doc:`installation`.
    SbSOvRL
    SPOR
    feature_extractor
+   image_based_observations
 
 
 
