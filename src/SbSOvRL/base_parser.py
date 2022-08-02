@@ -74,7 +74,7 @@ class BaseParser(SbSOvRL_BaseModel):
             train_env = DummyVecEnv([lambda: self.environment.get_gym_environment()])
 
         self._agent = self.agent.get_agent(train_env, normalizer_divisor)
-
+        self.get_logger().info(f"Agent is of type {type(self._agent)}")
         callbacks = [
             EpisodeLogCallback(
                 episode_log_location=self.save_location / "episode_log.csv", verbose=1

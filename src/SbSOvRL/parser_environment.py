@@ -329,7 +329,7 @@ class Environment(SbSOvRL_BaseModel):
                                 observation_space in observation_spaces}
             self.get_logger().info(
                 f"Observation space is of type Dict and"
-                 " has the following description:")
+                f" has the following description:")
             for name, subspace in observation_spaces:
                 self.get_logger().info(f"{name} has shape {subspace.shape}")
             return spaces.Dict(observation_dict)

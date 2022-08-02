@@ -9,6 +9,7 @@ To use SbSOvRL the following packages have to be installed:
  - pydantic
  - stable-baselines3
  - tensorboard
+ - torchvision
  - hjson
  - gustav
 
@@ -26,6 +27,7 @@ The first two/three packages can be installed via pip and/or conda with the foll
 
    (base) $ conda create -n SbSOvRL python=3.9 pydantic tensorboard
    (base) $ conda activate SbSOvRL
+   (SbSOvRL) $ conda install -c pytorch torchvision 
    (SbSOvRL) $ pip install stable-baselines3 hjson
 
 The next step is to install the ``gustav`` package which is a python interface for the c++ library SplineLib.
@@ -44,7 +46,7 @@ The this can be done via:
 Framework
 ---------
 
-After installing all prerequisites the framework itself can be installed by running the command below in the repository folder 05-Code/SORL/ 
+After installing all prerequisites the framework itself can be installed by running the command below in the main repository folder 
 
 **Non-development**
 
