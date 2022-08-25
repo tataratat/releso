@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-    File defines the main entry point of the framework if it is called via the command line. (via python -m SbSOvRL)
+    File defines the main entry point of the framework if it is called via the
+    command line. (via python -m SbSOvRL)
 """
 import shutil
 from SbSOvRL.base_parser import BaseParser
@@ -12,7 +13,9 @@ import pprint
 
 
 def main(args) -> None:
-    """Functions control how the framework works when called from the command line. 
+    """
+    Functions control how the framework works when called from the command
+    line.
 
     Args:
         args ([type]): Command line arguments
@@ -20,7 +23,7 @@ def main(args) -> None:
     Raises:
         ValueError: Thrown if the json file could not be found.
     """
-    
+
     ###########################
     #                         #
     #   Loading and parsing   #
@@ -35,7 +38,7 @@ def main(args) -> None:
         raise ValueError(f"Could not find the given file: {file_path}.")
 
     optimization_object = BaseParser(**json_content)
-    
+
     ###########################
     #                         #
     #  Save json definition   #
@@ -49,7 +52,7 @@ def main(args) -> None:
     #   Validate json file    #
     #                         #
     ###########################
-    
+
     if args.json_validate:
         pprint.pprint(optimization_object.dict())
         return
@@ -63,7 +66,6 @@ def main(args) -> None:
         optimization_object.evaluate_model(throw_error_if_None=True)
         return
 
-
     ###########################
     #                         #
     #  Training the RL Agent  #
@@ -71,41 +73,25 @@ def main(args) -> None:
     ###########################
     optimization_object.learn()
 
-    # ###########################
-    # #                         #
-    # #    exporting spline     #
-    # #                         #
-    # ###########################
-    # if args.export_spline is not None:
-    #     optimization_object.export_spline(args.export_spline)
-
-    # ###########################
-    # #                         #
-    # #     exporting mesh      #
-    # #                         #
-    # ###########################
-    # if args.export_mesh is not None:
-    #     optimization_object.export_mesh(args.export_mesh)
-
-    # ###########################
-    # #                         #
-    # #      saving model       #
-    # #                         #
-    # ###########################
-    # if args.save_model is not None:
-    #     optimization_object.export_mesh(args.export_mesh)
 
 if __name__ == '__main__':  # pragma: no cover
-    parser = argparse.ArgumentParser(description="Spline base Shape Optimization via Reinforcement Learning Toolbox. This python program loads a problem definition and trains the resulting problem. Futher the model can be evaluated")
-    parser.add_argument("-i", "--input_file", action="store", required=True, help="Path to the json file storing the optimization definition.")
-    # # parser.add_argument("--export_spline", action="store", help="Path to the file location where the resulting spline should be exported to. Suffix can be [.iges | .xml | .itd]")
-    # # parser.add_argument("--export_mesh", action="store", help="Path to the file location where the resulting spline should be exported to.  Suffix can be [`.grd` | `.xns` | `.campiga` | `.h5`]")
-    # # parser.add_argument("--save_model", action="store", help="Path to the file location where the resulting model should be saved to.")
-    # # parser.add_argument("--evaluate_values", action="extend", nargs="+", type=float, help="Will either be run after training or for the model defined in model_path.")
-    # # parser.add_argument("-p", "--path", action="store", help="Base path for the results of the evaluation")
-    # parser.add_argument("-m", "--model_load_path", action="store", help="Path to the location a previously trained model. If this is given no training will be performed. Currently there is no way to continue training of a model.")
-    parser.add_argument("-v", "--validate_only", action="store_true", help="If this is set only validation on this configuration is run. Please configure the validation object in the json file so that this option can be correctly executed.")
-    parser.add_argument("-j", "--json_only", dest="json_validate", action="store_true", help="If this is set only the json validation is performed, nothing else.")
+    parser = argparse.ArgumentParser(
+        description="Spline base Shape Optimization via Reinforcement "
+                    "Learning Toolbox. This python program loads a problem "
+                    "definition and trains the resulting problem. Further the "
+                    "model can be evaluated")
+    parser.add_argument(
+        "-i", "--input_file", action="store", required=True,
+        help="Path to the json file storing the optimization definition.")
+    parser.add_argument(
+        "-v", "--validate_only", action="store_true",
+        help="If this is set only validation on this configuration is run. "
+        "Please configure the validation object in the json file so that this "
+        "option can be correctly executed.")
+    parser.add_argument(
+        "-j", "--json_only", dest="json_validate", action="store_true",
+        help="If this is set only the json validation is performed, nothing "
+        "else.")
     args = parser.parse_args()
     print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     main(args)
