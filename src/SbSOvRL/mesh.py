@@ -95,15 +95,15 @@ class Mesh(SbSOvRL_BaseModel):
                 f"mien file ({self.mien_path}) ...")
             mesh = load(
                 volume=True,
-                dim=self.dimensions, mxyz=self.mxyz_path,
-                mien=self.mien_path, hexa=self.hypercube)
+                mxyz=self.mxyz_path,
+                mien=self.mien_path, simplex=not self.hypercube)
             self.get_logger().info("Done loading volume mesh.")
         else:
             self.get_logger().debug(
                 f"Loading mesh with mxyz file ({self.mxyz_path}) and mien "
                 f"file ({self.mien_path}) ...")
-            mesh = load(dim=self.dimensions, mxyz=self.mxyz_path,
-                             mien=self.mien_path, quad=self.hypercube)
+            mesh = load(mxyz=self.mxyz_path,
+                             mien=self.mien_path, simplex=not self.hypercube)
             self.get_logger().info("Done loading mesh.")
         return mesh
 

@@ -367,7 +367,7 @@ class Environment(SbSOvRL_BaseModel):
                                   exported to. If None try to get path from
                                   mesh definition.
         """
-        self._FFD.spline(self.spline.get_spline())
+        self._FFD.spline = self.spline.get_spline()
         # FFD will be applied the first time the mesh is accessed
         # which will happen in the export function
         self.export_mesh(
@@ -727,7 +727,7 @@ class Environment(SbSOvRL_BaseModel):
                 "and not before.")
 
         self._actions = self.spline.get_actions()
-        self._FFD.mesh(self.mesh.get_mesh())
+        self._FFD.mesh = self.mesh.get_mesh()
         self.mesh.adapt_export_path(self._id)
         env = GymEnvironment(self._set_up_actions(),
                              self._define_observation_space())
