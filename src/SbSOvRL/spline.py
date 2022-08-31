@@ -4,9 +4,8 @@ definition of the problem.
 """
 from abc import abstractmethod
 from SbSOvRL.exceptions import SbSOvRLParserException
-import logging
 from SbSOvRL.util.logger import get_parser_logger
-from gustav import BSpline, NURBS
+from gustaf import BSpline, NURBS
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from typing import List, Union, Optional, Dict, Any
 import numpy as np

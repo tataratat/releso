@@ -4,7 +4,8 @@
   plotting function exist but are not part of the library.
 """
 from typing import List, Optional, Tuple
-import gustav as gus
+import gustaf as gus
+from gustaf._typing import MESH_TYPES
 import pathlib
 from copy import deepcopy
 import numpy as np
@@ -108,7 +109,7 @@ def create_gif_mp4_delete_images(
         files = []
 
 
-def normalize_mesh(mesh: gus.Mesh) -> gus.Mesh:
+def normalize_mesh(mesh: MESH_TYPES) -> MESH_TYPES:
     _mesh = deepcopy(mesh)
     min_: np.ndarray = _mesh.vertices.min(axis=0)
     _mesh.vertices -= min_
@@ -119,7 +120,7 @@ def normalize_mesh(mesh: gus.Mesh) -> gus.Mesh:
 
 # TODO this is gustav specific
 def get_face_boundaries_and_vertices(
-      mesh: gus.Mesh,
+      mesh: MESH_TYPES,
       optional=False) -> Tuple[List[List[List[float]]], pd.DataFrame]:
     # create vertices dataframe
     vertice_df = pd.DataFrame(mesh.vertices)
@@ -146,7 +147,7 @@ def get_face_boundaries_and_vertices(
 
 
 def plot_mesh(
-      mesh: gus.Mesh, save_name: str, no_axis: bool = False,
+      mesh: MESH_TYPES, save_name: str, no_axis: bool = False,
       tight: bool = False):
     plt.rcParams["figure.figsize"] = (20, 20)
     plt.rcParams.update({'font.size': 22})
@@ -175,7 +176,7 @@ def plot_mesh(
 
 
 def plot_spline(
-      spline: gus.nurbs.Spline, axis: Optional[plt.Axes] = None,
+      spline: gus.spline.base.GustafSpline, axis: Optional[plt.Axes] = None,
       export_path: Optional[str] = None, close: bool = False,
       control_point_marker: str = "*", control_point_marker_size: int = 120,
       control_point_color: str = "r", spline_path_color: str = "g",

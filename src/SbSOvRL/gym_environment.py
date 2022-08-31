@@ -23,12 +23,11 @@ Note:
     fix for this problem is currently worked on.
 """
 
-import gym
-from gym import spaces
+from gym import Env
 from typing import Dict, Any, Tuple, Union, List
 
 
-class GymEnvironment(gym.Env):
+class GymEnvironment(Env):
     """
     This class is a placeholder class which complies with the OpenAI gym
     Interface. The real functionality is infused into the class after creation

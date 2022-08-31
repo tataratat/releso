@@ -21,7 +21,8 @@ import gym
 from gym import spaces
 from stable_baselines3.common.monitor import Monitor
 
-from gustav import FreeFormDeformation
+from gustaf import FFD
+from gustaf.io import mixd
 
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.spline import Spline, VariableLocation
@@ -101,8 +102,8 @@ class Environment(SbSOvRL_BaseModel):
     #: spline has changed between episodes
     _last_observation: Optional[ObservationType] = PrivateAttr(default=None)
     #: FreeFormDeformation used for the spline based shape optimization
-    _FFD: FreeFormDeformation = PrivateAttr(
-        default_factory=FreeFormDeformation)
+    _FFD: FFD = PrivateAttr(
+        default_factory=FFD)
     _last_step_results: Dict[str, Any] = PrivateAttr(
         default={})    #: StepReturn values from last step
     #: path where the mesh should be saved to for validation
@@ -366,8 +367,9 @@ class Environment(SbSOvRL_BaseModel):
                                   exported to. If None try to get path from
                                   mesh definition.
         """
-        self._FFD.set_deformed_spline(self.spline.get_spline())
-        self._FFD.deform_mesh()
+        self._FFD.spline(self.spline.get_spline())
+        # FFD will be applied the first time the mesh is accessed
+        # which will happen in the export function
         self.export_mesh(
             path if path is not None else self.mesh.get_export_path())
 
@@ -725,7 +727,7 @@ class Environment(SbSOvRL_BaseModel):
                 "and not before.")
 
         self._actions = self.spline.get_actions()
-        self._FFD.set_mesh(self.mesh.get_mesh())
+        self._FFD.mesh(self.mesh.get_mesh())
         self.mesh.adapt_export_path(self._id)
         env = GymEnvironment(self._set_up_actions(),
                              self._define_observation_space())
@@ -763,7 +765,7 @@ class Environment(SbSOvRL_BaseModel):
         Args:
             file_name (str): [description]
         """
-        self._FFD.deformed_spline.export(file_name)
+        self._FFD.spline.export(file_name)
 
     def export_mesh(self, file_name: str, space_time: bool = False) -> None:
         """
@@ -782,7 +784,7 @@ class Environment(SbSOvRL_BaseModel):
                 export. Currently during the import it is assumed no space
                 time mesh is given.
         """
-        self._FFD.deformed_mesh.export(file_name, space_time=space_time)
+        mixd.export(self._FFD.mesh, file_name, space_time=space_time)
 
     def close(self):
         """Function is called when training is stopped.
@@ -872,7 +874,7 @@ class Environment(SbSOvRL_BaseModel):
                 "The given mesh has a dimension unequal two. This function "
                 "was designed to work only with meshes of dimension two.")
         solution = read_mixd_double(solution_location/"ins.out", 3)
-        coordinates = self._FFD.deformed_unit_mesh_.vertices
+        coordinates = self._FFD.mesh.vertices
         # Plotting and creating resulting array
         limits_max = [1, 1, 0.2e8]
         limits_min = [-1, -1, -0.2e8]

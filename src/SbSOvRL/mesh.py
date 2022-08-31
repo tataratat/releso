@@ -6,10 +6,12 @@ from pydantic import Field, PrivateAttr
 from typing import Optional, Dict, Any
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.util.logger import get_parser_logger
-from gustav import Mesh, load_mixd, load_volume_mixd
 from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
 from SbSOvRL.base_model import SbSOvRL_BaseModel
+
+from gustaf.io.mixd import load
+from gustaf._typing import MESH_TYPES
 
 
 class Mesh(SbSOvRL_BaseModel):
@@ -76,7 +78,7 @@ class Mesh(SbSOvRL_BaseModel):
                 "Currently only the suffix xns is supported.")
         return path
 
-    def get_mesh(self) -> Mesh:
+    def get_mesh(self) -> MESH_TYPES:
         """Calls the correct method to load the mesh for the gustav library.
 
         Note:
@@ -91,7 +93,8 @@ class Mesh(SbSOvRL_BaseModel):
             self.get_logger().debug(
                 f"Loading volume mesh with mxyz file ({self.mxyz_path}) and "
                 f"mien file ({self.mien_path}) ...")
-            mesh = load_volume_mixd(
+            mesh = load(
+                volume=True,
                 dim=self.dimensions, mxyz=self.mxyz_path,
                 mien=self.mien_path, hexa=self.hypercube)
             self.get_logger().info("Done loading volume mesh.")
@@ -99,7 +102,7 @@ class Mesh(SbSOvRL_BaseModel):
             self.get_logger().debug(
                 f"Loading mesh with mxyz file ({self.mxyz_path}) and mien "
                 f"file ({self.mien_path}) ...")
-            mesh = load_mixd(dim=self.dimensions, mxyz=self.mxyz_path,
+            mesh = load(dim=self.dimensions, mxyz=self.mxyz_path,
                              mien=self.mien_path, quad=self.hypercube)
             self.get_logger().info("Done loading mesh.")
         return mesh

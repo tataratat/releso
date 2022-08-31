@@ -35,19 +35,25 @@ To use SbSOvRL the following packages have to be installed:
  - torchvision
  - hjson
  - gustav
+ - imageio
 
 The first two/three packages can be installed via pip and/or conda with the following command:
+
+Optional `vedo` can also be installed. This will only be used if, extra 
+visualization is utilized. During normal operation of the package it should
+never be needed.
+
 
 **pip** (activation of the venv should be done beforehand)
 
 ``` console
-(.venv) $ pip install pydantic stable-baselines3 tensorboard hjson
+(.venv) $ pip install pydantic stable-baselines3 tensorboard hjson imageio
 ```
 
 **conda**
 
 ``` console
-(base) $ conda create -n SbSOvRL python=3.9 pydantic tensorboard
+(base) $ conda create -n SbSOvRL python=3.9 pydantic tensorboard imageio
 (base) $ conda activate SbSOvRL
 (SbSOvRL) $ conda install -c pytorch torchvision 
 (SbSOvRL) $ pip install stable-baselines3 hjson
