@@ -17,6 +17,8 @@ from pydantic.class_validators import validator
 from pydantic.fields import Field, PrivateAttr
 from pydantic import conint, UUID4
 
+from pympler import tracker
+
 import gym
 from gym import spaces
 from stable_baselines3.common.monitor import Monitor
@@ -129,6 +131,7 @@ class Environment(SbSOvRL_BaseModel):
     #: space. If the observation space is flattened the agents feature
     #: extractor is more compact
     _flatten_observations: bool = PrivateAttr(default=False)
+    _tracker: tracker.SummaryTracker = PrivateAttr(default=None)
 
     @validator("reward_on_spline_not_changed", always=True)
     @classmethod
@@ -450,8 +453,13 @@ class Environment(SbSOvRL_BaseModel):
         self.get_logger().info(f"Action {action}")
         self.apply_action(action)
 
+        self.get_logger().debug(
+            f"End of action took {timer()-start} seconds.")
         # apply Free Form Deformation
         self._apply_FFD()
+
+        self.get_logger().debug(
+            f"End of FFD took {timer()-start} seconds.")
 
         observations = {}
         done = False
@@ -459,7 +467,6 @@ class Environment(SbSOvRL_BaseModel):
         info = {
             "mesh_path": str(self.mesh.mxyz_path)
         }
-
         # run solver
         observations, reward, done, info = self.spor.run(step_information=(
             observations, done, reward, info),
@@ -467,6 +474,7 @@ class Environment(SbSOvRL_BaseModel):
             core_count=self.is_multiprocessing(), reset=False,
             environment_id=self._id)
 
+        self.get_logger().debug(f"End of spor took {timer()-start} seconds.")
         # check if spline has not changed. But only in validation phase to exit
         # episodes that are always repeating the same action without breaking.
         if not done:
@@ -537,6 +545,9 @@ class Environment(SbSOvRL_BaseModel):
                 / str(self._current_validation_idx)
                 / f"{self._validation_timestep}.png")
 
+        self.get_logger().debug(
+            f"Before observations took {timer()-start} seconds.")
+
         if self.use_cnn_observations:
             # Need to transpose because torch wants
             # channel first representation
@@ -544,9 +555,8 @@ class Environment(SbSOvRL_BaseModel):
                 sol_len=3).T
         else:
             observations["base_observation"] = self._get_spline_observations()
-        end = timer()
-        self.get_logger().debug(f"Step took {end-start} seconds.")
 
+        self.get_logger().debug(f"Step took {timer()-start} seconds.")
         return self.check_observations(observations), reward, done, info
 
     def check_observations(
@@ -608,6 +618,12 @@ class Environment(SbSOvRL_BaseModel):
         # obs = self._get_observations(observations, done=done)
 
         if self._validation_ids:
+            with open(
+                        self.save_location/"pympler"/
+                        f"{self._current_validation_idx}.txt",
+                        "w"
+                    ) as file:
+                file.writelines('\n'.join(self._tracker.format_diff()) + '\n')
             # export mesh at end of validation
             if self._current_validation_idx > 0 and \
                     self._validation_base_mesh_path:
@@ -685,6 +701,8 @@ class Environment(SbSOvRL_BaseModel):
             max_timesteps_per_episode (int, optional): [description].
                 Defaults to 0.
         """
+        self._tracker = tracker.SummaryTracker()
+        (self.save_location/"pympler").mkdir(parents=True, exist_ok=True)
         self._validation_ids = validation_values
         self._current_validation_idx = 0
         self._validation_base_mesh_path = base_mesh_path
