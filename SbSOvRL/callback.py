@@ -8,6 +8,7 @@ import pandas as pd
 from pathlib import Path
 from typing import List, Optional, Dict, Union
 from itertools import count
+import os, psutil
 
 
 class EpisodeLogCallback(BaseCallback):
@@ -41,6 +42,8 @@ class EpisodeLogCallback(BaseCallback):
         self.episode_wall_time: List[str] = []
         self.episode_end: List[Optional[str]] = []
         self.environment_id: List[int] = []
+        self.memory: List[int] = []
+        self.process = psutil.Process(os.getpid())
 
     def _export(self):
         """
@@ -52,7 +55,8 @@ class EpisodeLogCallback(BaseCallback):
             "episode_end_reason": self.episode_end,
             "total_timesteps": self.episode_steps_total,
             "environment_id": self.environment_id,
-            "wall_time": self.episode_wall_time
+            "wall_time": self.episode_wall_time,
+            "memory": self.memory
         })
         df.to_csv(self.episode_log_location)
 
@@ -92,6 +96,7 @@ class EpisodeLogCallback(BaseCallback):
                     else info["reset_reason"]
                 self.episode_end.append(reset_reason)
                 self.environment_id.append(idx)
+                self.memory.append(self.process.memory_info().rss)
                 if reset_reason == "srunError-main_solver":
                     continue_training = False
         if any(
