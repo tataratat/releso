@@ -2,16 +2,17 @@
 File holds defintion classes for the mesh
 """
 import pathlib
+from typing import Any, Dict, Optional
+
+from gustaf._typing import MESH_TYPES
+from gustaf.io.mixd import load
 from pydantic import Field, PrivateAttr
-from typing import Optional, Dict, Any
-from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.util.logger import get_parser_logger
 from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
-from SbSOvRL.base_model import SbSOvRL_BaseModel
 
-from gustaf.io.mixd import load
-from gustaf._typing import MESH_TYPES
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.exceptions import SbSOvRLParserException
+from SbSOvRL.util.logger import get_parser_logger
 
 
 class Mesh(SbSOvRL_BaseModel):
@@ -21,13 +22,15 @@ class Mesh(SbSOvRL_BaseModel):
     #: Please use either the path variable xor the mxyz variable, since if
     #: used both the used mxyz path might not be the one you think.
     mxyz_path: Optional[FilePath] = Field(
-        default=None, description="Please use either the path variable xor the"
+        default=None,
+        description="Please use either the path variable xor the"
         " mxyz variable, since if used both the used mxyz path might not be "
         "the one you think.")
     #: Please use either the path variable xor the mien variable, since if
     #: used both the used mien path might not be the one you think.
     mien_path: Optional[FilePath] = Field(
-        default=None, description="Please use either the path variable xor the"
+        default=None,
+        description="Please use either the path variable xor the"
         " mien variable, since if used both the used mien path might not be "
         "the one you think.")
     #: after validation Tuple["mxyz_path", "mien_path"]
@@ -39,7 +42,8 @@ class Mesh(SbSOvRL_BaseModel):
     #: (triangles).
     hypercube: bool = Field(
         description="If True Mesh is made of hypercubes. If False Mesh is made"
-        " of simplexes (triangles).", default=True)
+        " of simplexes (triangles).",
+        default=True)
     #: Number of dimensions of the mesh.
     dimensions: conint(ge=1)
 
@@ -93,17 +97,18 @@ class Mesh(SbSOvRL_BaseModel):
             self.get_logger().debug(
                 f"Loading volume mesh with mxyz file ({self.mxyz_path}) and "
                 f"mien file ({self.mien_path}) ...")
-            mesh = load(
-                volume=True,
-                mxyz=self.mxyz_path,
-                mien=self.mien_path, simplex=not self.hypercube)
+            mesh = load(volume=True,
+                        mxyz=self.mxyz_path,
+                        mien=self.mien_path,
+                        simplex=not self.hypercube)
             self.get_logger().info("Done loading volume mesh.")
         else:
             self.get_logger().debug(
                 f"Loading mesh with mxyz file ({self.mxyz_path}) and mien "
                 f"file ({self.mien_path}) ...")
             mesh = load(mxyz=self.mxyz_path,
-                             mien=self.mien_path, simplex=not self.hypercube)
+                        mien=self.mien_path,
+                        simplex=not self.hypercube)
             self.get_logger().info("Done loading mesh.")
         return mesh
 
@@ -242,11 +247,11 @@ class Mesh(SbSOvRL_BaseModel):
                             " file path.")
                 # If mien or mxyz file path are not complete throw error.
                 if mxyz_path is None:
-                    SbSOvRLParserException(
-                        "Mesh", "path", "Could not locate mxyz file path.")
+                    SbSOvRLParserException("Mesh", "path",
+                                           "Could not locate mxyz file path.")
                 if mien_path is None:
-                    SbSOvRLParserException(
-                        "Mesh", "path", "Could not locate mien file path.")
+                    SbSOvRLParserException("Mesh", "path",
+                                           "Could not locate mien file path.")
             values["mien_path"] = mien_path
             values["mxyz_path"] = mxyz_path
             values["path"] = mxyz_path.parent

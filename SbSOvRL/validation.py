@@ -2,17 +2,18 @@
 File holds the definition class for the validation.
 """
 import pathlib
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.logger import get_parser_logger
+from typing import Any, Dict, List, Optional, Tuple
+
 from pydantic.class_validators import validator
-from pydantic.fields import Field
 from pydantic.types import conint, conlist
-from typing import Any, Optional, List, Tuple, Dict
-from SbSOvRL.exceptions import SbSOvRLParserException
-from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.type_aliases import GymEnv
-from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.base_class import BaseAlgorithm
+from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.type_aliases import GymEnv
+
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.exceptions import SbSOvRLParserException
+from SbSOvRL.util.logger import get_parser_logger
 
 
 class Validation(SbSOvRL_BaseModel):
@@ -21,8 +22,7 @@ class Validation(SbSOvRL_BaseModel):
     performed during training.
     """
     #: How many timesteps should pass by learning between validation runs
-    validation_freq: Optional[conint(
-        ge=1)]
+    validation_freq: conint(ge=1) = 2000
     #: List of validation items. This will be revised later on #TODO
     validation_values: conlist(float, min_items=1)
     #: Whether or not to save the best agent. If agent is not saved only
@@ -78,8 +78,8 @@ class Validation(SbSOvRL_BaseModel):
                 "variable since otherwise this variable would have no "
                 "function.")
         if value is not None and (
-            values["end_episode_on_spline_not_changed"] is None or
-                not values["end_episode_on_spline_not_changed"]):
+                values["end_episode_on_spline_not_changed"] is None
+                or not values["end_episode_on_spline_not_changed"]):
             raise SbSOvRLParserException(
                 "Validation", "reward_on_spline_not_changed",
                 "Reward can only be set if end_episode_on_spline_not_changed "
@@ -120,9 +120,8 @@ class Validation(SbSOvRL_BaseModel):
                 "Could not find definition of parameter "
                 "max_timesteps_in_episode, please define this variable since "
                 "otherwise this variable would have no function.")
-        if value is not None and (
-            values["max_timesteps_in_episode"] is None or
-                not values["max_timesteps_in_episode"]):
+        if value is not None and (values["max_timesteps_in_episode"] is None
+                                  or not values["max_timesteps_in_episode"]):
             raise SbSOvRLParserException(
                 "Validation", "reward_on_episode_exceeds_max_timesteps",
                 "Reward can only be set if max_timesteps_in_episode is a "
@@ -137,8 +136,8 @@ class Validation(SbSOvRL_BaseModel):
 
     @validator("validation_values")
     @classmethod
-    def validate_validation_values_list_not_empty(
-            cls, value: List[float], field: str) -> List[float]:
+    def validate_validation_values_list_not_empty(cls, value: List[float],
+                                                  field: str) -> List[float]:
         """
         Checks that the validation_values list is not empty.
 
@@ -167,10 +166,10 @@ class Validation(SbSOvRL_BaseModel):
             return True
         return False
 
-    def get_callback(
-            self, eval_environment: GymEnv,
-            save_location: Optional[pathlib.Path] = None,
-            normalizer_divisor: int = 1) -> EvalCallback:
+    def get_callback(self,
+                     eval_environment: GymEnv,
+                     save_location: Optional[pathlib.Path] = None,
+                     normalizer_divisor: int = 1) -> EvalCallback:
         """Creates the EvalCallback with the values given in this object.
 
         Args:
@@ -188,18 +187,17 @@ class Validation(SbSOvRL_BaseModel):
         variable_dict = {
             "eval_env": eval_environment,
             "n_eval_episodes": len(self.validation_values),
-            "eval_freq": int(self.validation_freq/normalizer_divisor)
+            "eval_freq": int(self.validation_freq / normalizer_divisor)
         }
         # add variables for the case if the best model is to be saved
         if self.save_best_agent and save_location:
             variable_dict["best_model_save_path"] = save_location / \
                 "eval/best_model"
-            variable_dict["log_path"] = save_location/"eval/log"
+            variable_dict["log_path"] = save_location / "eval/log"
         return EvalCallback(**variable_dict)
 
-    def end_validation(
-            self, agent: BaseAlgorithm,
-            environment: GymEnv) -> Tuple[float, float]:
+    def end_validation(self, agent: BaseAlgorithm,
+                       environment: GymEnv) -> Tuple[float, float]:
         """
         Function is called at the end of a validation. All clean up and last
         evaluation is going in here.
@@ -262,4 +260,5 @@ class Validation(SbSOvRL_BaseModel):
             "reward_on_episode_exceeds_max_timesteps":
             self.reward_on_episode_exceeds_max_timesteps,
             "reward_on_spline_not_changed": self.reward_on_spline_not_changed,
-            "save_image_in_validation": self.save_image_in_validation}
+            "save_image_in_validation": self.save_image_in_validation
+        }

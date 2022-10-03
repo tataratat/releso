@@ -3,15 +3,15 @@ File defines the FeatureExtractors currently implemented in this framework.
 These are implemented in a more or less slapdash fashion. Use at own Risk.
 """
 import logging
-from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.type_aliases import TensorDict
+from typing import Literal, Optional
+
 import torch as th
 from gym import Space, spaces
-from typing import Dict, Any, Literal, Optional
-import numpy as np
+from stable_baselines3.common.preprocessing import (get_flattened_obs_dim,
+                                                    is_image_space)
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from stable_baselines3.common.type_aliases import TensorDict
 from torchvision import models, transforms
-from stable_baselines3.common.preprocessing import get_flattened_obs_dim
-from stable_baselines3.common.preprocessing import is_image_space
 
 
 class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
@@ -21,11 +21,12 @@ class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
     :py:class:`SbSOvRL.feature_extractor.SbSOvRL_CombinedExtractor`
     """
 
-    def __init__(
-            self, observation_space: Space, features_dim=512,
-            without_linear: bool = False,
-            network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
-            logger: Optional[logging.Logger] = None):
+    def __init__(self,
+                 observation_space: Space,
+                 features_dim=512,
+                 without_linear: bool = False,
+                 network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
+                 logger: Optional[logging.Logger] = None):
         """
         The feature extractor is used to also be able to handle image based
         observations better and to give the option to used pretrained networks
@@ -55,29 +56,36 @@ class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
         if network_type == "resnet18":
             pre_network = models.resnet18(pretrained=True)
             self.model = th.nn.Sequential(*[
-                transforms.Normalize((0.485, 0.456, 0.406),
-                                     (0.229, 0.224, 0.225)),
-                pre_network.conv1, pre_network.bn1, pre_network.relu,
-                pre_network.maxpool, pre_network.layer1, pre_network.layer2,
-                pre_network.layer3, pre_network.layer4, th.nn.Flatten()])
+                transforms.Normalize((0.485, 0.456, 0.406), (
+                    0.229, 0.224, 0.225)), pre_network.conv1, pre_network.bn1,
+                pre_network.relu, pre_network.maxpool, pre_network.layer1,
+                pre_network.layer2, pre_network.layer3, pre_network.layer4,
+                th.nn.Flatten()
+            ])
         elif network_type == "mobilenetv2":
             pre_network = models.mobilenet_v2(pretrained=True)
             self.model = th.nn.Sequential(*[
-                transforms.Normalize((0.485, 0.456, 0.406),
-                                     (0.229, 0.224, 0.225)),
-                pre_network.features, th.nn.Flatten()])
+                transforms.Normalize((0.485, 0.456,
+                                      0.406), (0.229, 0.224,
+                                               0.225)), pre_network.features,
+                th.nn.Flatten()
+            ])
         elif network_type == "mobilenetv3_small":
             pre_network = models.mobilenet_v3_small(pretrained=True)
             self.model = th.nn.Sequential(*[
-                transforms.Normalize((0.485, 0.456, 0.406),
-                                     (0.229, 0.224, 0.225)),
-                pre_network.features, th.nn.Flatten()])
+                transforms.Normalize((0.485, 0.456,
+                                      0.406), (0.229, 0.224,
+                                               0.225)), pre_network.features,
+                th.nn.Flatten()
+            ])
         elif network_type == "mobilenetv3_large":
             pre_network = models.mobilenet_v3_large(pretrained=True)
             self.model = th.nn.Sequential(*[
-                transforms.Normalize((0.485, 0.456, 0.406),
-                                     (0.229, 0.224, 0.225)),
-                pre_network.features, th.nn.Flatten()])
+                transforms.Normalize((0.485, 0.456,
+                                      0.406), (0.229, 0.224,
+                                               0.225)), pre_network.features,
+                th.nn.Flatten()
+            ])
         elif network_type == "inception_v3":
             if self.without_linear:
                 if logger:
@@ -108,20 +116,20 @@ class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
 
         # Compute shape by doing one forward pass
         with th.no_grad():
-            n_flatten = self.model(th.as_tensor(
-                observation_space.sample()[None]).float()).shape
+            n_flatten = self.model(
+                th.as_tensor(observation_space.sample()[None]).float()).shape
         if self.without_linear:
             features_dim = n_flatten[1]
         else:
             if network_type == "inception_v3":
-                self.model.fc = th.nn.Linear(
-                    self.model.fc.in_features, features_dim, th.nn.ReLU())
+                self.model.fc = th.nn.Linear(self.model.fc.in_features,
+                                             features_dim, th.nn.ReLU())
                 # only so that forward correctly works. Actually uses the
                 # linear layer but it is included inside the model itself.
                 self.without_linear = True
             else:
-                self.linear = th.nn.Sequential(th.nn.Linear(
-                    n_flatten[1], features_dim), th.nn.ReLU())
+                self.linear = th.nn.Sequential(
+                    th.nn.Linear(n_flatten[1], features_dim), th.nn.ReLU())
         if logger:
             logger.warning(
                 f"FeatureExtractor: Used pretrained {network_type} results in "
@@ -159,11 +167,12 @@ class SbSOvRL_CombinedExtractor(BaseFeaturesExtractor):
         the image feature extractor.
     """
 
-    def __init__(
-      self, observation_space: spaces.Dict, cnn_output_dim: int = 256,
-      without_linear: bool = False,
-      network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
-      logger: Optional[logging.Logger] = None):
+    def __init__(self,
+                 observation_space: spaces.Dict,
+                 cnn_output_dim: int = 256,
+                 without_linear: bool = False,
+                 network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
+                 logger: Optional[logging.Logger] = None):
         """
           The feature extractor is used to also be able to handle image based
           observations better and to give the option to used pretrained
@@ -201,8 +210,10 @@ class SbSOvRL_CombinedExtractor(BaseFeaturesExtractor):
         for key, subspace in observation_space.spaces.items():
             if is_image_space(subspace):
                 extractors[key] = SbSOvRL_FeatureExtractor(
-                    observation_space=subspace, features_dim=cnn_output_dim,
-                    without_linear=without_linear, network_type=network_type,
+                    observation_space=subspace,
+                    features_dim=cnn_output_dim,
+                    without_linear=without_linear,
+                    network_type=network_type,
                     logger=logger)
                 total_concat_size += extractors[key]._features_dim
             else:

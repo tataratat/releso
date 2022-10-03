@@ -10,30 +10,32 @@ SbSOvRL communication protocol.
 A more in depth documentation of the SPOR concept is given here
 :ref:`SPOR Communication Interface <sporcominterface>`
 """
-from SbSOvRL.util.reward_helpers import spor_com_parse_arguments
 import importlib
-import warnings
-from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
 import json
-import shutil
-from pydantic.fields import PrivateAttr
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.sbsovrl_types import ObservationType, RewardType
-from SbSOvRL.util.sbsovrl_types import StepReturnType
-from SbSOvRL.exceptions import SbSOvRLParserException
 import os
 import pathlib
+import shutil
+import sys
+import warnings
+from ast import literal_eval
+from timeit import default_timer as timer
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from uuid import uuid4
+
 import numpy as np
-from typing import List, Literal, Optional, Any, Dict, Union, Tuple
 from gym import Space
 from gym.spaces import Box
-from pydantic import NoneBytes, conint, validator, UUID4
-from uuid import uuid4
-import sys
-from ast import literal_eval
-from SbSOvRL.util.util_funcs import call_commandline, join_infos
-from SbSOvRL.util.util_funcs import SbSOvRL_JSONEncoder
-from timeit import default_timer as timer
+from pydantic import UUID4, conint, validator
+from pydantic.fields import PrivateAttr
+
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.exceptions import SbSOvRLParserException
+from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
+from SbSOvRL.util.reward_helpers import spor_com_parse_arguments
+from SbSOvRL.util.sbsovrl_types import (ObservationType, RewardType,
+                                        StepReturnType)
+from SbSOvRL.util.util_funcs import (SbSOvRL_JSONEncoder, call_commandline,
+                                     join_infos)
 
 
 class MultiProcessor(SbSOvRL_BaseModel):
@@ -136,7 +138,7 @@ class ObservationDefinition(SbSOvRL_BaseModel):
         The range is necessary due to normalization of the input of the agent
         networks.
     """
-    name: str   #: Name of the observation
+    name: str  #: Name of the observation
     #: minimum of the range in which the observation is bound
     value_min: float
     #: maximum of the range in which the observation is bound
@@ -151,10 +153,11 @@ class ObservationDefinition(SbSOvRL_BaseModel):
             Tuple[str, Space]:
                 Tuple of the name of the observation and a gym.Box definition
         """
-        return (
-            self.name,
-            Box(
-                self.value_min, self.value_max, shape=(1), dtype=np.float32))
+        return (self.name,
+                Box(self.value_min,
+                    self.value_max,
+                    shape=(1),
+                    dtype=np.float32))
 
     def get_default_observation(self) -> np.ndarray:
         """
@@ -167,7 +170,7 @@ class ObservationDefinition(SbSOvRL_BaseModel):
                 An array filled with ones in the correct shape and size of the
                 observation.
         """
-        return np.ones((1,))*self.value_min
+        return np.ones((1, )) * self.value_min
 
 
 class ObservationDefinitionMulti(ObservationDefinition):
@@ -191,16 +194,16 @@ class ObservationDefinitionMulti(ObservationDefinition):
                 Tuple of the name of the observation and a gym.Box definition
         """
         if self.value_type == "CNN":
-            return (
-                self.name,
-                Box(
-                    low=0, high=255, shape=self.observation_shape,
-                    dtype=np.uint8))
-        return (
-            self.name,
-            Box(
-                self.value_min, self.value_max, shape=(self.observation_shape),
-                dtype=np.float32))
+            return (self.name,
+                    Box(low=0,
+                        high=255,
+                        shape=self.observation_shape,
+                        dtype=np.uint8))
+        return (self.name,
+                Box(self.value_min,
+                    self.value_max,
+                    shape=(self.observation_shape),
+                    dtype=np.float32))
 
     def get_default_observation(self) -> np.ndarray:
         """
@@ -215,7 +218,8 @@ class ObservationDefinitionMulti(ObservationDefinition):
         """
         if self.value_type == "CNN":
             return np.zeros(self.observation_shape, dtype=np.uint8)
-        return np.ones(self.observation_shape, dtype=np.float32)*self.value_min
+        return np.ones(self.observation_shape,
+                       dtype=np.float32) * self.value_min
 
 
 class SPORObject(SbSOvRL_BaseModel):
@@ -258,9 +262,9 @@ class SPORObject(SbSOvRL_BaseModel):
 
     @validator("additional_observations", pre=True)
     def validate_additional_observations(
-            cls, v: str, values: Dict[str, Any]) -> Union[
-                ObservationDefinition, ObservationDefinitionMulti,
-                List[ObservationDefinition]]:
+        cls, v: str, values: Dict[str, Any]
+    ) -> Union[ObservationDefinition, ObservationDefinitionMulti,
+               List[ObservationDefinition]]:
         """
         Validates the the additional observations variable. This is a pre
         validation function only used for back compatibility reasons.
@@ -289,19 +293,21 @@ class SPORObject(SbSOvRL_BaseModel):
                     " List of ObservationDefinitions.", DeprecationWarning)
                 # if only a number of
                 v = {
-                    "name": f"unnamed_{str(uuid4())}", "value_min": -10,
-                    "value_max": 10, "observation_shape": [
-                        int(v)],
+                    "name": f"unnamed_{str(uuid4())}",
+                    "value_min": -10,
+                    "value_max": 10,
+                    "observation_shape": [int(v)],
                     "value_type": "float",
-                    "save_location": values["save_location"]}
+                    "save_location": values["save_location"]
+                }
             else:
                 v = None
         return v
 
     def get_number_of_observations(
-        self) -> Union[
-            ObservationDefinition, ObservationDefinitionMulti,
-            List[ObservationDefinition], None]:
+        self
+    ) -> Union[ObservationDefinition, ObservationDefinitionMulti,
+               List[ObservationDefinition], None]:
         """
         Returns the number of observations which are generated by this
         SPORStep.
@@ -340,9 +346,11 @@ class SPORObject(SbSOvRL_BaseModel):
                 self.additional_observations.get_default_observation()
         return observations
 
-    def run(
-            self, step_information: StepReturnType, environment_id: UUID4,
-            validation_id: Optional[int] = None, core_count: int = 1,
+    def run(self,
+            step_information: StepReturnType,
+            environment_id: UUID4,
+            validation_id: Optional[int] = None,
+            core_count: int = 1,
             reset: bool = False) -> StepReturnType:
         """
         This function is called to complete the defined step of the current
@@ -393,8 +401,8 @@ class SPORObjectCommandLine(SPORObject):
 
     """
     #: Definition of the multi-processor. Defaults to *None*.
-    multi_processor: Optional[Union[MultiProcessor, MPIClusterMultiProcessor]
-                              ] = None
+    multi_processor: Optional[Union[MultiProcessor,
+                                    MPIClusterMultiProcessor]] = None
     #: whether or not to use the SPOR communication interface.
     #: Defaults to *False*.
     use_communication_interface: bool = False
@@ -451,7 +459,8 @@ class SPORObjectCommandLine(SPORObject):
                 "directory before the placeholder is valid.")
         return v
 
-    @validator("execution_command", )
+    @validator(
+        "execution_command", )
     def validate_execution_command_path(cls, v: str):
         """
         Check if path to execution command exist.
@@ -504,7 +513,7 @@ class SPORObjectCommandLine(SPORObject):
             else:
                 raise SbSOvRLParserException(
                     "SPORObjectCommandline", "add_step_information",
-                    f"Please only set the add_step_information variable to "
+                    "Please only set the add_step_information variable to "
                     "True if the variable use_communication_interface is also "
                     "True.")
         return v
@@ -526,10 +535,9 @@ class SPORObjectCommandLine(SPORObject):
             ret_str = self.multi_processor.get_command(core_count)
         return ret_str
 
-    def spor_com_interface(
-            self, reset: bool, environment_id: UUID4,
-            validation_id: Optional[int],
-            step_information: StepReturnType) -> List[str]:
+    def spor_com_interface(self, reset: bool, environment_id: UUID4,
+                           validation_id: Optional[int],
+                           step_information: StepReturnType) -> List[str]:
         """
         Generates the additional command line argument options used for the
         spor com interface.
@@ -558,13 +566,15 @@ class SPORObjectCommandLine(SPORObject):
         # collect all parts of the communication interface
         interface_options: List[str] = ["--run_id", str(self._run_id)]
         interface_options.extend(
-            ["--base_save_location", str(self.save_location)])
+            ["--base_save_location",
+             str(self.save_location)])
         interface_options.extend(["--environment_id", str(environment_id)])
         if reset:
             interface_options.append("--reset")
         if validation_id is not None:
             interface_options.extend(
-                ["--validation_value", str(validation_id)])
+                ["--validation_value",
+                 str(validation_id)])
         if self.add_step_information:
             json_step_information = {
                 "observations": step_information[0],
@@ -573,9 +583,11 @@ class SPORObjectCommandLine(SPORObject):
                 "info": step_information[3]
             }
             # print(json_step_information)
-            interface_options.extend(
-                ["--json_object", "'"+json.dumps(
-                    json_step_information, cls=SbSOvRL_JSONEncoder)+"'"])
+            interface_options.extend([
+                "--json_object", "'" +
+                json.dumps(json_step_information, cls=SbSOvRL_JSONEncoder) +
+                "'"
+            ])
         return interface_options
 
     def spor_com_interface_read(self, output: bytes, step_dict: Dict):
@@ -602,9 +614,8 @@ class SPORObjectCommandLine(SPORObject):
             raise err
         self.spor_com_interface_add(returned_step_dict, step_dict)
 
-    def spor_com_interface_add(
-            self, returned_step_dict: Dict[str, Any],
-            step_dict: Dict[str, Any]):
+    def spor_com_interface_add(self, returned_step_dict: Dict[str, Any],
+                               step_dict: Dict[str, Any]):
         """
         Add the newly returned values to the observation, reward, done and
         info return values.
@@ -626,17 +637,19 @@ class SPORObjectCommandLine(SPORObject):
             step_dict["observation"][self.additional_observations.name] = \
                 np.array(returned_step_dict["observations"])
 
-        join_infos(step_dict["info"][self.name],
-                   returned_step_dict["info"], self.logger_name)
+        join_infos(step_dict["info"][self.name], returned_step_dict["info"],
+                   self.logger_name)
         if step_dict["info"][self.name].get("reset_reason"):
             step_dict["info"]["reset_reason"] =\
                 step_dict["info"][self.name].get("reset_reason")
         step_dict["done"] = step_dict["done"] or returned_step_dict["done"]
         step_dict["reward"] = returned_step_dict["reward"]
 
-    def run(
-            self, step_information: StepReturnType, environment_id: UUID4,
-            validation_id: Optional[int] = None, core_count: int = 1,
+    def run(self,
+            step_information: StepReturnType,
+            environment_id: UUID4,
+            validation_id: Optional[int] = None,
+            core_count: int = 1,
             reset: bool = False) -> StepReturnType:
         """
         This function runs the defined command line command with the defined
@@ -684,8 +697,9 @@ class SPORObjectCommandLine(SPORObject):
                     path.mkdir(parents=True, exist_ok=True)
 
                 if self.name == "main_solver":
-                    shutil.copyfile(path.parent/"xns_multi.in", path/"xns.in")
-                    self.get_logger().info(f"Copying file please.....")
+                    shutil.copyfile(path.parent / "xns_multi.in",
+                                    path / "xns.in")
+                    self.get_logger().info("Copying file please.....")
             # checks if the defined function is a python function and if it the
             # function is loaded into the program envelop and internalized.
             # This can bring big time savings if big libraries are loaded by
@@ -698,7 +712,7 @@ class SPORObjectCommandLine(SPORObject):
                     # cop python file so that changes to it during computation
                     # are not crashing the training run.
                     ret_path = shutil.copy(
-                        possible_file, self.save_location/possible_file.name)
+                        possible_file, self.save_location / possible_file.name)
                     self.get_logger().debug(
                         f"Successfully copied the python file {str(ret_path)}")
 
@@ -706,7 +720,7 @@ class SPORObjectCommandLine(SPORObject):
                     try:
                         sys.path.insert(0, f'{possible_file.parent}{os.sep}')
                         func = importlib.import_module(possible_file.stem)
-                    except ModuleNotFoundError as err:
+                    except ModuleNotFoundError:
                         self.get_logger().warning(
                             f"Could not load the python file at "
                             f"{str(possible_file)}. This means the python file"
@@ -715,7 +729,7 @@ class SPORObjectCommandLine(SPORObject):
                     else:
                         try:
                             self._run_func = func.main
-                        except AttributeError as err:
+                        except AttributeError:
                             self.get_logger().warning(
                                 f"Could not get main function from python file"
                                 f" {str(possible_file)}. This means the python"
@@ -725,8 +739,9 @@ class SPORObjectCommandLine(SPORObject):
                             self._run_logger = set_up_logger(
                                 f"spor_step_logger_"
                                 f"{self.name.replace(' ','_')}",
-                                pathlib.Path(self.save_location/"logging"),
-                                VerbosityLevel.INFO, console_logging=False)
+                                pathlib.Path(self.save_location / "logging"),
+                                VerbosityLevel.INFO,
+                                console_logging=False)
                             self.get_logger().info(
                                 f"Initialized internal python function calling"
                                 f" for step {self.name}.")
@@ -747,14 +762,14 @@ class SPORObjectCommandLine(SPORObject):
             if self.additional_observations is not None:
                 step_return["observation"] = self.get_default_observation(
                     step_return["observation"])
-        else:   # executes the step
+        else:  # executes the step
             multi_proc_prefix = self.get_multiprocessing_prefix(
                 core_count=core_count)
             command_list = [
                 multi_proc_prefix, self.execution_command,
-                *self.command_options,
-                *self.spor_com_interface(
-                    reset, environment_id, validation_id, step_information)]
+                *self.command_options, *self.spor_com_interface(
+                    reset, environment_id, validation_id, step_information)
+            ]
             if self._run_func is not None:
                 # using internalized python function
                 args = spor_com_parse_arguments(command_list[3:])
@@ -771,10 +786,11 @@ class SPORObjectCommandLine(SPORObject):
                         " Please check if this is a user error.")
                     exit_code = 404
                 os.chdir(current_dir)
-            else:   # using command line to call the defined command
+            else:  # using command line to call the defined command
                 command = " ".join(command_list)
-                exit_code, output = call_commandline(
-                    command, self.working_directory, env_logger)
+                exit_code, output = call_commandline(command,
+                                                     self.working_directory,
+                                                     env_logger)
             step_return["info"][self.name] = {
                 "output": output,
                 "exit_code": int(exit_code)
@@ -853,9 +869,9 @@ class SPORList(SbSOvRL_BaseModel):
     _rewards: List[RewardType] = PrivateAttr(default_factory=list)
 
     def get_number_of_observations(
-            self) -> Optional[
-                List[
-                    Union[ObservationDefinition, ObservationDefinitionMulti]]]:
+        self
+    ) -> Optional[List[Union[ObservationDefinition,
+                             ObservationDefinitionMulti]]]:
         """
         Aggregates the observations of all steps and returns the flattened
         list of observations spaces coming from the SPORSteps.
@@ -911,9 +927,11 @@ class SPORList(SbSOvRL_BaseModel):
                 " reward should be given but did not register.")
             return 0
 
-    def run(
-            self, step_information: StepReturnType, environment_id: UUID4,
-            validation_id: Optional[int] = None, core_count: int = 1,
+    def run(self,
+            step_information: StepReturnType,
+            environment_id: UUID4,
+            validation_id: Optional[int] = None,
+            core_count: int = 1,
             reset: bool = False) -> StepReturnType:
         """
         Runs through all steps of the list and handles each output. When done
@@ -967,7 +985,8 @@ class SPORList(SbSOvRL_BaseModel):
                 except Exception as exp:
                     self.get_logger().warning(
                         f"The current step with name {step.name} has thrown an"
-                        f" error: {exp}.", exc_info=1)
+                        f" error: {exp}.",
+                        exc_info=1)
                     if step.stop_after_error:
                         done = True
                         self.get_logger().warning(

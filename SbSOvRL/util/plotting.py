@@ -1,25 +1,34 @@
+# flake8: noqa
 """
   This file contains some plotting functions these are very limited and should
   were created for the seminar and master thesis of clemens fricke. Other
   plotting function exist but are not part of the library.
 """
-from typing import List, Optional, Tuple
-import gustaf as gus
-from gustaf._typing import MESH_TYPES
+import itertools
 import pathlib
 from copy import deepcopy
-import numpy as np
-from matplotlib import pyplot as plt
+from typing import List, Optional, Tuple
+
+import gustaf as gus
 import imageio
+import numpy as np
 import pandas as pd
+from gustaf._typing import MESH_TYPES
+from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
-import itertools
 
 
 def get_tricontour_solution(
-      width: int, height: int, dpi: int, coordinates: np.ndarray,
-      connectivity: np.ndarray, solution: np.ndarray, sol_len: int,
-      limits_min: List[float], limits_max: List[float], ) -> np.ndarray:
+    width: int,
+    height: int,
+    dpi: int,
+    coordinates: np.ndarray,
+    connectivity: np.ndarray,
+    solution: np.ndarray,
+    sol_len: int,
+    limits_min: List[float],
+    limits_max: List[float],
+) -> np.ndarray:
     """_summary_
 
     Args:
@@ -41,15 +50,21 @@ def get_tricontour_solution(
         fig = plt.figure(figsize=(width, height), dpi=dpi)
         if i == 2:
             mappable = plt.gca().tricontourf(
-              coordinates[:, 0], coordinates[:, 1],
-              np.clip(solution[:, i], limits_min[i], limits_max[i])-1,
-              triangles=connectivity, cmap="Greys", vmin=limits_min[i],
-              vmax=limits_max[i])
+                coordinates[:, 0],
+                coordinates[:, 1],
+                np.clip(solution[:, i], limits_min[i], limits_max[i]) - 1,
+                triangles=connectivity,
+                cmap="Greys",
+                vmin=limits_min[i],
+                vmax=limits_max[i])
         else:
-            mappable = plt.gca().tricontourf(
-              coordinates[:, 0], coordinates[:, 1], solution[:, i],
-              triangles=connectivity, cmap="Greys", vmin=limits_min[i],
-              vmax=limits_max[i])
+            mappable = plt.gca().tricontourf(coordinates[:, 0],
+                                             coordinates[:, 1],
+                                             solution[:, i],
+                                             triangles=connectivity,
+                                             cmap="Greys",
+                                             vmin=limits_min[i],
+                                             vmax=limits_max[i])
         ax = plt.gca()
         ax.set_xlim((0, 1))
         ax.set_ylim((0, 1))
@@ -59,39 +74,41 @@ def get_tricontour_solution(
         fig.canvas.draw()
         # Now we can save it to a numpy array.
         data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3, ))
         arrays.append(data)
         plt.close()
     arr = np.array(arrays[0])
-    for i in range(sol_len-1):
-        arr[:, :, i+1] = arrays[i+1][:, :, 0]
+    for i in range(sol_len - 1):
+        arr[:, :, i + 1] = arrays[i + 1][:, :, 0]
     return arr
 
 
-def create_open_knot_vector(
-      degrees: List[int], n_cps: List[int]) -> List[List[float]]:
+def create_open_knot_vector(degrees: List[int],
+                            n_cps: List[int]) -> List[List[float]]:
     knot_vectors = []
 
     for degree, n_cp in zip(degrees, n_cps):
-        n_middle = (degree+n_cp+1)-(2*(1+degree))
+        n_middle = (degree + n_cp + 1) - (2 * (1 + degree))
         if n_middle < 0:
             raise ValueError(
                 "The n_cp needs to be high enough to actually make an open "
                 "knot vector. Which is not the case.")
-        start = [0 for _ in range(1+degree)]
-        end = [1 for _ in range(1+degree)]
+        start = [0 for _ in range(1 + degree)]
+        end = [1 for _ in range(1 + degree)]
         middle = []
         if n_middle > 0:
-            middle = np.linspace(0, 1, n_middle+2)[1:-1].tolist()
+            middle = np.linspace(0, 1, n_middle + 2)[1:-1].tolist()
         start.extend(middle)
         start.extend(end)
         knot_vectors.append(start)
     return knot_vectors
 
 
-def create_gif_mp4_delete_images(
-      files: List[str], save_path: str, fps: int = 5,
-      delete_used: bool = True, cut=True):
+def create_gif_mp4_delete_images(files: List[str],
+                                 save_path: str,
+                                 fps: int = 5,
+                                 delete_used: bool = True,
+                                 cut=True):
     images = []
     for file_name in files:
         if cut:
@@ -120,8 +137,8 @@ def normalize_mesh(mesh: MESH_TYPES) -> MESH_TYPES:
 
 # TODO this is gustav specific
 def get_face_boundaries_and_vertices(
-      mesh: MESH_TYPES,
-      optional=False) -> Tuple[List[List[List[float]]], pd.DataFrame]:
+        mesh: MESH_TYPES,
+        optional=False) -> Tuple[List[List[List[float]]], pd.DataFrame]:
     # create vertices dataframe
     vertice_df = pd.DataFrame(mesh.vertices)
 
@@ -146,9 +163,10 @@ def get_face_boundaries_and_vertices(
     return face_boundaries, vertice_df
 
 
-def plot_mesh(
-      mesh: MESH_TYPES, save_name: str, no_axis: bool = False,
-      tight: bool = False):
+def plot_mesh(mesh: MESH_TYPES,
+              save_name: str,
+              no_axis: bool = False,
+              tight: bool = False):
     plt.rcParams["figure.figsize"] = (20, 20)
     plt.rcParams.update({'font.size': 22})
 
@@ -175,14 +193,18 @@ def plot_mesh(
     plt.close()
 
 
-def plot_spline(
-      spline: gus.spline.base.GustafSpline, axis: Optional[plt.Axes] = None,
-      export_path: Optional[str] = None, close: bool = False,
-      control_point_marker: str = "*", control_point_marker_size: int = 120,
-      control_point_color: str = "r", spline_path_color: str = "g",
-      spline_path_alpha: float = 0.2, num_points: int = 100,
-      spline_grid_plot_step: int = 1,
-      lims: List[List[float]] = None) -> Optional[plt.Axes]:
+def plot_spline(spline: gus.spline.base.GustafSpline,
+                axis: Optional[plt.Axes] = None,
+                export_path: Optional[str] = None,
+                close: bool = False,
+                control_point_marker: str = "*",
+                control_point_marker_size: int = 120,
+                control_point_color: str = "r",
+                spline_path_color: str = "g",
+                spline_path_alpha: float = 0.2,
+                num_points: int = 100,
+                spline_grid_plot_step: int = 1,
+                lims: List[List[float]] = None) -> Optional[plt.Axes]:
     raise NotImplemented
     if not axis:
         # max 2D projection dimension
@@ -210,14 +232,16 @@ def plot_spline(
     # currently only 2D
     # horizontal lines
     for i in range(0, num_points, spline_grid_plot_step):
-        ax.plot(df_items[0][i::num_points], df_items[1][i::num_points],
-                c=spline_path_color, alpha=spline_path_alpha)
+        ax.plot(df_items[0][i::num_points],
+                df_items[1][i::num_points],
+                c=spline_path_color,
+                alpha=spline_path_alpha)
     # horizontal lines
     for i in range(0, num_points, spline_grid_plot_step):
-        ax.plot(
-          df_items[0][num_points*i:num_points*(i+1)],
-          df_items[1][num_points * i:num_points*(i+1)],
-          c=spline_path_color, alpha=spline_path_alpha)
+        ax.plot(df_items[0][num_points * i:num_points * (i + 1)],
+                df_items[1][num_points * i:num_points * (i + 1)],
+                c=spline_path_color,
+                alpha=spline_path_alpha)
     # ax.scatter(df_items[0], df_items[1])
 
     # 1D case control_mesh in spline is differently configured so this has to
@@ -225,15 +249,20 @@ def plot_spline(
     if spline.para_dim_ == 1:
         cp = spline.control_points
         df_cp = pd.DataFrame(cp)
-        ax.scatter(df_cp[0], df_cp[1], marker=control_point_marker,
-                   c=control_point_color, s=control_point_marker_size)
+        ax.scatter(df_cp[0],
+                   df_cp[1],
+                   marker=control_point_marker,
+                   c=control_point_color,
+                   s=control_point_marker_size)
         ax.plot(df_cp[0], df_cp[1], "--", c=control_point_color)
-        evaluated_knots = spline.evaluate(
-            [[item] for item in spline.knot_vectors[0]])
+        evaluated_knots = spline.evaluate([[item]
+                                           for item in spline.knot_vectors[0]])
         colors = ["lightgray", "darkgray"]
-        for knot in range(len(spline.knot_vectors[0])-1):
-            ax.axvspan(evaluated_knots[knot][0], evaluated_knots[knot+1]
-                       [0], facecolor=colors[knot % 2], alpha=0.2)
+        for knot in range(len(spline.knot_vectors[0]) - 1):
+            ax.axvspan(evaluated_knots[knot][0],
+                       evaluated_knots[knot + 1][0],
+                       facecolor=colors[knot % 2],
+                       alpha=0.2)
     # create polygon or cube to show boundary deformations of spline
     elif spline.para_dim_ > 1:
         control_mesh = spline.control_mesh_()
@@ -241,7 +270,7 @@ def plot_spline(
             control_mesh)
         b_min = control_mesh.vertices.min(axis=0)
         b_max = control_mesh.vertices.max(axis=0)
-    # print(b_min)
+        # print(b_min)
         lines = []
         for i in range(spline.para_dim_):
             lines.append(np.linspace(b_min[i], b_max[i], 100))
@@ -254,7 +283,8 @@ def plot_spline(
         max_x_yline = [[b_max[0], y] for y in y_lin]
         max_y_xline = [[x, b_max[1]] for x in x_lin]
 
-        boundary = min_x_yline+max_y_xline+max_x_yline[::-1]+min_y_xline[::-1]
+        boundary = \
+            min_x_yline + max_y_xline + max_x_yline[::-1] + min_y_xline[::-1]
         boundary = spline.evaluate(boundary)
         pol = Polygon(boundary, alpha=0.4)
         ax.add_patch(pol)

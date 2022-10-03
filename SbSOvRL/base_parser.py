@@ -2,24 +2,25 @@
 File defines the base json object which is needed to define the problem setting
 for the command line based usage of the SbSOvRL toolbox/framework.
 """
+import datetime
+import pathlib
 from copy import deepcopy
-from SbSOvRL.agent import AgentTypeDefinition
-from SbSOvRL.parser_environment import Environment
-from SbSOvRL.validation import Validation
-from SbSOvRL.callback import EpisodeLogCallback
-from SbSOvRL.verbosity import Verbosity
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.exceptions import SbSOvRLValidationNotSet
-from SbSOvRL.parser_environment import Environment
-from typing import Union, Optional, Any
+from typing import Any, Optional, Union
+
+import numpy as np
 from pydantic.fields import Field, PrivateAttr
 from pydantic.types import conint
-from stable_baselines3.common.callbacks import StopTrainingOnMaxEpisodes
 from stable_baselines3.common.base_class import BaseAlgorithm
+from stable_baselines3.common.callbacks import StopTrainingOnMaxEpisodes
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
-import pathlib
-import datetime
-import numpy as np
+
+from SbSOvRL.agent import AgentTypeDefinition
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.callback import EpisodeLogCallback
+from SbSOvRL.exceptions import SbSOvRLValidationNotSet
+from SbSOvRL.parser_environment import Environment
+from SbSOvRL.validation import Validation
+from SbSOvRL.verbosity import Verbosity
 
 
 class BaseParser(SbSOvRL_BaseModel):
@@ -37,15 +38,11 @@ class BaseParser(SbSOvRL_BaseModel):
     #: case
     environment: Environment
     #: Number of timesteps the training process should run for
-    number_of_timesteps: conint(
-        ge=1
-    )
+    number_of_timesteps: conint(ge=1)
     #: Number of episodes the training process should run for. If given both
     #: timesteps and max episodes can stop the trainings progress.
     #: Default: None
-    number_of_episodes: Optional[conint(
-        ge=1
-    )] = None
+    number_of_episodes: Optional[conint(ge=1)] = None
     #: Definition of the validation parameters
     validation: Optional[Validation]
     #: Number of environments to train in parallel
@@ -60,9 +57,7 @@ class BaseParser(SbSOvRL_BaseModel):
     #: Holds the trainable agent for the RL use case. The
     #: SbSOvRL.base_parser.BaseParser.agent defines the type and parameters of
     #: the agent this is the actual trainable agent.
-    _agent: Optional[BaseAlgorithm] = PrivateAttr(
-        default=None
-    )
+    _agent: Optional[BaseAlgorithm] = PrivateAttr(default=None)
 
     def __init__(__pydantic_self__, **data: Any) -> None:
         """
@@ -71,8 +66,7 @@ class BaseParser(SbSOvRL_BaseModel):
         """
         super().__init__(**data)
         __pydantic_self__.set_logger_name_recursively(
-            __pydantic_self__.verbosity._environment_logger
-        )
+            __pydantic_self__.verbosity._environment_logger)
 
     def learn(self) -> None:
         """
@@ -85,8 +79,9 @@ class BaseParser(SbSOvRL_BaseModel):
         if self.n_environments and self.n_environments > 1:
             env_create_list = []
             for idx in range(self.n_environments):
-                env_create_list.append(self._create_new_environment(
-                    self.get_logger().name+f"_{idx}"))
+                env_create_list.append(
+                    self._create_new_environment(self.get_logger().name +
+                                                 f"_{idx}"))
             if self.multi_env_sequential:
                 train_env = DummyVecEnv(env_create_list)
             else:
@@ -98,15 +93,14 @@ class BaseParser(SbSOvRL_BaseModel):
         self._agent = self.agent.get_agent(train_env, normalizer_divisor)
         self.get_logger().info(f"Agent is of type {type(self._agent)}")
         callbacks = [
-            EpisodeLogCallback(
-                episode_log_location=self.save_location / "episode_log.csv",
-                verbose=1
-            ),
+            EpisodeLogCallback(episode_log_location=self.save_location /
+                               "episode_log.csv",
+                               verbose=1),
         ]
         if self.number_of_episodes is not None:
             num = self.number_of_episodes
             if self.normalize_training_values:
-                num = int(num/normalizer_divisor)
+                num = int(num / normalizer_divisor)
             callbacks.append(StopTrainingOnMaxEpisodes(max_episodes=num))
 
         if self.validation:
@@ -115,14 +109,11 @@ class BaseParser(SbSOvRL_BaseModel):
                     self.validation.get_callback(
                         validation_environment.get_gym_environment(),
                         save_location=self.save_location,
-                        normalizer_divisor=normalizer_divisor
-                    )
-                )
+                        normalizer_divisor=normalizer_divisor))
 
         self.get_logger().info(
             f"The environment is now trained for {self.number_of_episodes} "
-            f"episodes or {self.number_of_timesteps} timesteps."
-        )
+            f"episodes or {self.number_of_timesteps} timesteps.")
         self._agent.env.reset()
         self._agent.learn(
             self.number_of_timesteps,
@@ -171,8 +162,7 @@ class BaseParser(SbSOvRL_BaseModel):
         else:
             path = pathlib.Path(
                 f"default_model_safe_location/"
-                f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
-            )
+                f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}")
         path.parent.mkdir(parents=True, exist_ok=True)
         self._agent.save(path / "model_end.save")
 
@@ -208,12 +198,11 @@ class BaseParser(SbSOvRL_BaseModel):
                     validation_env.get_gym_environment())
             reward, episode_length = self.validation.end_validation(
                 agent=self._agent,
-                environment=validation_env.get_gym_environment()
-            )
+                environment=validation_env.get_gym_environment())
             reward_array = np.array(reward)
             mean_reward = reward_array.mean()
             reward_std = reward_array.std()
-            log_str = f"The end validation had the following results: "
+            log_str = "The end validation had the following results: "
             f"mean_reward = {mean_reward}; reward_std = {reward_std}"
             self.get_logger().info(log_str)
             self.get_logger().info(f"The reward per episode was: {reward}.")
@@ -231,6 +220,7 @@ class BaseParser(SbSOvRL_BaseModel):
                 name of the logger used for the rl_logger used for this
                 specific environment.
         """
+
         def _init():
             c_env = deepcopy(self.environment)
             logging_information = {
@@ -239,13 +229,13 @@ class BaseParser(SbSOvRL_BaseModel):
                 "logging_level": self.verbosity.environment
             }
             return c_env.get_gym_environment(
-                logging_information=logging_information
-            )
+                logging_information=logging_information)
+
         return _init
 
-    def _create_validation_environment(
-        self, throw_error_if_None: bool = False
-    ) -> Environment:
+    def _create_validation_environment(self,
+                                       throw_error_if_None: bool = False
+                                       ) -> Environment:
         """Creates a validation environment.
 
         Args:
@@ -274,12 +264,10 @@ class BaseParser(SbSOvRL_BaseModel):
         validation_environment = deepcopy(self.environment)
 
         validation_environment.set_logger_name_recursively(
-            self.verbosity._environment_validation_logger
-        )
+            self.verbosity._environment_validation_logger)
         validation_environment._id = None
         validation_environment.set_validation(
             **self.validation.get_environment_validation_parameters(
-                self.save_location)
-        )
+                self.save_location))
 
         return validation_environment

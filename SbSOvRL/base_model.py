@@ -4,15 +4,17 @@ command line based application of this toolbox.
 """
 import multiprocessing
 import pathlib
-from typing import Dict, Optional, List, Any
+from collections import OrderedDict
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Extra
+
 from SbSOvRL.util.logger import logging
 from SbSOvRL.util.util_funcs import get_path_extension
-from collections import OrderedDict
 
 
-def add_save_location_if_elem_is_o_dict(
-        possible_value: Any, save_location: pathlib.Path):
+def add_save_location_if_elem_is_o_dict(possible_value: Any,
+                                        save_location: pathlib.Path):
     """
     This function adds the save_location to all ordered dicts in possible_value
     if it is not already present. This function is used to forward the
@@ -65,8 +67,8 @@ class SbSOvRL_BaseModel(BaseModel):
             #  add this save_location also to all object definition which are
             #  direct dependents
             for name, value in data.items():
-                add_save_location_if_elem_is_o_dict(
-                    value, data["save_location"])
+                add_save_location_if_elem_is_o_dict(value,
+                                                    data["save_location"])
         super().__init__(**data)
 
     @classmethod
@@ -87,8 +89,8 @@ class SbSOvRL_BaseModel(BaseModel):
         Returns:
             pathlib.Path: Path like object. If applicable with identifications.
         """
-        path = pathlib.Path(v.format(get_path_extension())
-                            ).expanduser().resolve()
+        path = pathlib.Path(v.format(
+            get_path_extension())).expanduser().resolve()
         path.mkdir(parents=True, exist_ok=True)
         return path
 

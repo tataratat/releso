@@ -26,18 +26,20 @@ Author:
     Clemens Fricke (clemens.david.fricke@tuwien.ac.at)
 
 """
-from typing import Literal, Optional, Union, Dict, Any
+import datetime
+from typing import Any, Dict, Literal, Optional, Union
+
+from pydantic.types import FilePath
+from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC
+from stable_baselines3.common.base_class import BaseAlgorithm
+
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.exceptions import SbSOvRLAgentUnknownException
+from SbSOvRL.feature_extractor import (SbSOvRL_CombinedExtractor,
+                                       SbSOvRL_FeatureExtractor)
 # import numpy as np
 # from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.gym_environment import GymEnvironment
-from pydantic.types import FilePath
-from stable_baselines3 import A2C, PPO, DDPG, SAC, DQN
-from stable_baselines3.common.base_class import BaseAlgorithm
-import datetime
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.exceptions import SbSOvRLAgentUnknownException
-from SbSOvRL.feature_extractor import SbSOvRL_FeatureExtractor
-from SbSOvRL.feature_extractor import SbSOvRL_CombinedExtractor
 
 # TODO dynamic agent detection via https://stackoverflow.com/a/3862957
 ####################################
@@ -88,10 +90,9 @@ class BaseTrainingAgent(BaseAgent):
     #: policy defines the network structure which the agent uses
     policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]
     #: If given the str identifies the Custom Feature Extractor to be added.
-    use_custom_feature_extractor: Optional[
-        Literal[
-            "resnet18", "mobilenetv2", "mobilenetv3_small", "mobilenetv3_large"
-        ]] = None
+    use_custom_feature_extractor: Optional[Literal["resnet18", "mobilenetv2",
+                                                   "mobilenetv3_small",
+                                                   "mobilenetv3_large"]] = None
     #: use the custom feature extractor with out a final linear layer
     cfe_without_linear: bool = False
     #: additional arguments to be passed to the policy on creation
@@ -145,9 +146,13 @@ class BaseTrainingAgent(BaseAgent):
                     "network_type"] = self.use_custom_feature_extractor
                 self.policy_kwargs["features_extractor_kwargs"]["logger"] = \
                     self.get_logger()
-        return_dict = {k: v for k, v in self.__dict__.items() if k not in [
-            'type', 'logger_name', 'save_location',
-            'use_custom_feature_extractor', "cfe_without_linear"]}
+        return_dict = {
+            k: v
+            for k, v in self.__dict__.items() if k not in [
+                'type', 'logger_name', 'save_location',
+                'use_custom_feature_extractor', "cfe_without_linear"
+            ]
+        }
         return return_dict
 
 
@@ -159,8 +164,7 @@ class PretrainedAgent(BaseAgent):
     """
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
-    type: Literal["PPO", "SAC", "DDPG", "A2C",
-                  "DQN"]
+    type: Literal["PPO", "SAC", "DDPG", "A2C", "DQN"]
     #: Path to the save files of the pretrained agent.
     path: FilePath
     #: If the agent is to be trained further the results can be added to the
@@ -168,9 +172,9 @@ class PretrainedAgent(BaseAgent):
     # tensorboard experiment
     tesorboard_run_directory: Union[str, None] = None
 
-    def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
-    ) -> BaseAlgorithm:
+    def get_agent(self,
+                  environment: GymEnvironment,
+                  normalizer_divisor: int = 1) -> BaseAlgorithm:
         """Tries to locate the agent defined and to load it correctly.
 
         Args:
@@ -255,7 +259,7 @@ class A2CAgent(BaseTrainingAgent):
     use_sde = False
     #: Sample a new noise matrix every n steps when using gSDE Default: -1
     #: (sample only at beginning of roll)
-    sde_sample_freq = - 1
+    sde_sample_freq = -1
     #: Whether to normalize or not the advantage
     normalize_advantage = False
     #: Seed for the pseudo random generators
@@ -264,9 +268,9 @@ class A2CAgent(BaseTrainingAgent):
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
 
-    def get_agent(
-            self, environment: GymEnvironment,
-            normalizer_divisor: int = 1) -> A2C:
+    def get_agent(self,
+                  environment: GymEnvironment,
+                  normalizer_divisor: int = 1) -> A2C:
         """
         Creates the stable_baselines version of the wanted Agent. Uses all
         Variables given in the object (except type) as the input parameters of
@@ -290,7 +294,7 @@ class A2CAgent(BaseTrainingAgent):
             A2C: Initialized A2C agent.
         """
         self.get_logger().info(f"Using agent of type {self.type}.")
-        self.n_steps = int(self.n_steps/normalizer_divisor)
+        self.n_steps = int(self.n_steps / normalizer_divisor)
         return A2C(env=environment, **self.get_additional_kwargs())
 
 
@@ -333,9 +337,9 @@ class PPOAgent(BaseTrainingAgent):
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
 
-    def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
-    ) -> PPO:
+    def get_agent(self,
+                  environment: GymEnvironment,
+                  normalizer_divisor: int = 1) -> PPO:
         """
         Creates the stable_baselines version of the wanted Agent. Uses all
         Variables given in the object (except type) as the input parameters of
@@ -359,7 +363,7 @@ class PPOAgent(BaseTrainingAgent):
             PPO: Initialized PPO agent.
         """
         self.get_logger().info(f"Using agent of type {self.type}.")
-        self.n_steps = int(self.n_steps/normalizer_divisor)
+        self.n_steps = int(self.n_steps / normalizer_divisor)
         return PPO(env=environment, **self.get_additional_kwargs())
 
 
@@ -397,9 +401,9 @@ class DDPGAgent(BaseTrainingAgent):
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
 
-    def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
-    ) -> DDPG:
+    def get_agent(self,
+                  environment: GymEnvironment,
+                  normalizer_divisor: int = 1) -> DDPG:
         """
         Creates the stable_baselines version of the wanted Agent. Uses all
         Variables given in the object (except type) as the input parameters of
@@ -469,9 +473,9 @@ class SACAgent(BaseTrainingAgent):
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
 
-    def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
-    ) -> SAC:
+    def get_agent(self,
+                  environment: GymEnvironment,
+                  normalizer_divisor: int = 1) -> SAC:
         """
         Creates the stable_baselines version of the wanted Agent. Uses all
         Variables given in the object (except type) as the input parameters of
@@ -540,9 +544,9 @@ class DQNAgent(BaseTrainingAgent):
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
 
-    def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
-    ) -> DQN:
+    def get_agent(self,
+                  environment: GymEnvironment,
+                  normalizer_divisor: int = 1) -> DQN:
         """
         Creates the stable_baselines version of the wanted Agent. Uses all
         Variables given in the object (except type) as the input parameters of
@@ -561,5 +565,5 @@ class DQNAgent(BaseTrainingAgent):
         return DQN(env=environment, **self.get_additional_kwargs())
 
 
-AgentTypeDefinition = Union[PPOAgent, DDPGAgent,
-                            SACAgent, PretrainedAgent, DQNAgent, A2CAgent]
+AgentTypeDefinition = Union[PPOAgent, DDPGAgent, SACAgent, PretrainedAgent,
+                            DQNAgent, A2CAgent]

@@ -6,8 +6,8 @@ This repository holds a Library/Framework written by Clemens Fricke for Spline b
 Documentation generation
 ========================
 
-Install and usage instructions are provided in the documentation of the project. The documentation can build with the use of sphinx which is a python tool to generate documentation. 
-> The sphinx packages can either be installed in the project python environment or in a separate environment. If it does not matter in which python environment sphinx is installed ignore the first two lines. 
+Install and usage instructions are provided in the documentation of the project. The documentation can build with the use of sphinx which is a python tool to generate documentation.
+> The sphinx packages can either be installed in the project python environment or in a separate environment. If it does not matter in which python environment sphinx is installed ignore the first two lines.
 
 The following command line calls create a conda environment with all necessary dependency for building the documentation.
 ``` console
@@ -24,7 +24,7 @@ The documentation is build by executing the following command inside the folder 
 Installation
 ============
 
-This page covers the installation process of the framework and its prerequisites. 
+This page covers the installation process of the framework and its prerequisites.
 
 Prerequisites
 -------------
@@ -39,7 +39,7 @@ To use SbSOvRL the following packages have to be installed:
 
 The first two/three packages can be installed via pip and/or conda with the following command:
 
-Optional `vedo` can also be installed. This will only be used if, extra 
+Optional `vedo` can also be installed. This will only be used if, extra
 visualization is utilized. During normal operation of the package it should
 never be needed.
 
@@ -55,7 +55,7 @@ never be needed.
 ``` console
 (base) $ conda create -n SbSOvRL python=3.9 pydantic tensorboard imageio
 (base) $ conda activate SbSOvRL
-(SbSOvRL) $ conda install -c pytorch torchvision 
+(SbSOvRL) $ conda install -c pytorch torchvision
 (SbSOvRL) $ pip install stable-baselines3 hjson
 ```
 
@@ -65,7 +65,7 @@ To install ``gustav`` the following repository must be downloaded into an extern
 
 **Development**
 
-To develop the framework further the sphinx package should also be installed with the currently used sphinx html theme ``sphinx_rtd_theme``. 
+To develop the framework further the sphinx package should also be installed with the currently used sphinx html theme ``sphinx_rtd_theme``.
 The this can be done via:
 
 ``` console
@@ -75,7 +75,7 @@ The this can be done via:
 Framework
 ---------
 
-After installing all prerequisites the framework itself can be installed by running the command below in the main repository folder 
+After installing all prerequisites the framework itself can be installed by running the command below in the main repository folder
 
 **Non-development**
 

@@ -2,7 +2,7 @@ Usage
 =====
 
 This framework can be used in two modes:
-1. Command line based program 
+1. Command line based program
 2. Python library
 
 The first mode is the intended use case. The usage of this mode is shown below.
@@ -46,6 +46,6 @@ The base json object has the following attributes:
       - Number of episodes the agent should be trained it supersedes by the number of time steps the agent is trained for. Must be of type (int).
     * - save_location
       - Path to the directory where the log and validation results are to be stored. If {} is inside the string a timestamp is added to distinguish different training runs. Must be of type (str).
-  
+
 
 The package uses the Python library ``pydantic`` to parse the json file into Python classes. It tries to match the json attributes in each object to the Python attributes of the corresponding class. So when looking at the Python class :doc:`_autosummary/SbSOvRL.base_parser.BaseParser` the listed attributes of this class are also the attributes of the base json object. This also holds recursively for all referenced types.

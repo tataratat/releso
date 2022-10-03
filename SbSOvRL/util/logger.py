@@ -1,16 +1,16 @@
-"""
+"""Verbosity and logger definitions.
+
 This file holds the verbosity definitions and helper functions for the logger
 used in this package.
 """
+import enum
 import logging
 import pathlib
-import enum
 from typing import Optional
 
 
 def get_parser_logger() -> logging.Logger:
-    """
-    Gets the logger which is to be used during the parsing of the json file.
+    """Logger used during the parsing of the json file.
 
     Returns:
         logging.Logger: requested logger
@@ -19,8 +19,8 @@ def get_parser_logger() -> logging.Logger:
 
 
 class VerbosityLevel(enum.IntEnum):
-    """Defines the verbosity level of the logger.
-    """
+    """Defines the verbosity level of the logger."""
+
     #: Writes only errors to the log
     ERROR = logging.ERROR
     #: Writes errors and warning to the log
@@ -31,14 +31,12 @@ class VerbosityLevel(enum.IntEnum):
     DEBUG = logging.DEBUG
 
 
-def set_up_logger(
-        loggerName: str = '',
-        log_file_location: pathlib.Path = pathlib.Path("."),
-        verbosity: VerbosityLevel = VerbosityLevel.INFO,
-        console_logging: bool = False,
-        logger: Optional[logging.Logger] = None) -> logging.Logger:
-    """
-    Create a logger instance with a specified name
+def set_up_logger(loggerName: str = '',
+                  log_file_location: pathlib.Path = pathlib.Path("."),
+                  verbosity: VerbosityLevel = VerbosityLevel.INFO,
+                  console_logging: bool = False,
+                  logger: Optional[logging.Logger] = None) -> logging.Logger:
+    """Create a logger instance with a specified name.
 
     Author:
         Daniel Wolff (wolff@cats.rwth-aachen.de),

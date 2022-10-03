@@ -3,40 +3,37 @@
      hold the functionality for the Reinforcement Learning environment are
      defined here.
 """
+import datetime
 import multiprocessing
 import pathlib
-import datetime
-from typing import Optional, Any, List, Dict, Tuple, Union
-import numpy as np
 from copy import copy
-from uuid import uuid4
 from timeit import default_timer as timer
-import matplotlib.pyplot as plt
-
-from pydantic.class_validators import validator
-from pydantic.fields import Field, PrivateAttr
-from pydantic import conint, UUID4
-
-from pympler import tracker
+from typing import Any, Dict, List, Optional, Tuple, Union
+from uuid import uuid4
 
 import gym
-from gym import spaces
-from stable_baselines3.common.monitor import Monitor
-
+import matplotlib.pyplot as plt
+import numpy as np
 from gustaf import FFD
 from gustaf.io import mixd
+from gym import spaces
+from pydantic import UUID4, conint
+from pydantic.class_validators import validator
+from pydantic.fields import Field, PrivateAttr
+from pympler import tracker
+from stable_baselines3.common.monitor import Monitor
 
-from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.spline import Spline, VariableLocation
-from SbSOvRL.util.logger import get_parser_logger
-from SbSOvRL.mesh import Mesh
-from SbSOvRL.spor import MultiProcessor, SPORList
-from SbSOvRL.gym_environment import GymEnvironment
 from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.sbsovrl_types import ObservationType
-from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
+from SbSOvRL.exceptions import SbSOvRLParserException
+from SbSOvRL.gym_environment import GymEnvironment
+from SbSOvRL.mesh import Mesh
+from SbSOvRL.spline import Spline, VariableLocation
+from SbSOvRL.spor import MultiProcessor, SPORList
 from SbSOvRL.util.load_binary import read_mixd_double
+from SbSOvRL.util.logger import (VerbosityLevel, get_parser_logger,
+                                 set_up_logger)
 from SbSOvRL.util.plotting import get_tricontour_solution
+from SbSOvRL.util.sbsovrl_types import ObservationType
 
 
 class MultiProcessing(SbSOvRL_BaseModel):
@@ -93,7 +90,7 @@ class Environment(SbSOvRL_BaseModel):
     # object variables
     #: id if the environment, important for multi-environment learning
     _id: UUID4 = PrivateAttr(default=None)
-    _actions: List[VariableLocation] = PrivateAttr()    #: list of actions
+    _actions: List[VariableLocation] = PrivateAttr()  #: list of actions
     #: if validation environment validation ids are stored here
     _validation_ids: Optional[List[float]] = PrivateAttr(default=None)
     _current_validation_idx: Optional[int] = PrivateAttr(
@@ -104,14 +101,13 @@ class Environment(SbSOvRL_BaseModel):
     #: spline has changed between episodes
     _last_observation: Optional[ObservationType] = PrivateAttr(default=None)
     #: FreeFormDeformation used for the spline based shape optimization
-    _FFD: FFD = PrivateAttr(
-        default_factory=FFD)
+    _FFD: FFD = PrivateAttr(default_factory=FFD)
     _last_step_results: Dict[str, Any] = PrivateAttr(
-        default={})    #: StepReturn values from last step
+        default={})  #: StepReturn values from last step
     #: path where the mesh should be saved to for validation
     _validation_base_mesh_path: Optional[str] = PrivateAttr(default=None)
     _validation_iteration: Optional[int] = PrivateAttr(
-        default=0)   #: How many validations were already evaluated
+        default=0)  #: How many validations were already evaluated
     _connectivity: Optional[np.ndarray] = PrivateAttr(
         default=None)  #: The triangular connectivity of the
     #: Please check validation definition to see what this does
@@ -120,8 +116,8 @@ class Environment(SbSOvRL_BaseModel):
     _validation_timestep: int = PrivateAttr(default=0)
     _observation_is_dict: bool = PrivateAttr(default=False)
     #: At these values the validation results are saved
-    _result_values_to_save: List[float] = PrivateAttr(default=list(
-        [0.2, 0.6, 0.9, 1.4, 1.8]))
+    _result_values_to_save: List[float] = PrivateAttr(
+        default=list([0.2, 0.6, 0.9, 1.4, 1.8]))
     #: Approximate validation episode can be slightly wrong
     _approximate_episode: int = PrivateAttr(default=-1)
     #: Number of validation results which are already exported please check
@@ -160,9 +156,9 @@ class Environment(SbSOvRL_BaseModel):
                 "end_episode_on_spline_not_changed, please defines this "
                 "variable since otherwise this variable would have no "
                 "function.")
-        if value is not None and (values["end_episode_on_spline_not_changed"]
-                                  is None or not
-                                  values["end_episode_on_spline_not_changed"]):
+        if value is not None and (
+                values["end_episode_on_spline_not_changed"] is None
+                or not values["end_episode_on_spline_not_changed"]):
             raise SbSOvRLParserException(
                 "Environment", "reward_on_spline_not_changed",
                 "Reward can only be set if end_episode_on_spline_not_changed "
@@ -177,8 +173,8 @@ class Environment(SbSOvRL_BaseModel):
 
     @validator("reward_on_episode_exceeds_max_timesteps", always=True)
     @classmethod
-    def check_if_reward_given_if_max_steps_killer_activated(cls, value,
-                                                            values) -> int:
+    def check_if_reward_given_if_max_steps_killer_activated(
+            cls, value, values) -> int:
         """
             Checks that 1) if a reward is set, also the boolean value for the
             max_timesteps_in_episode is True. 2) If max_timesteps_in_episode
@@ -215,6 +211,7 @@ class Environment(SbSOvRL_BaseModel):
                 "might not be your intention.")
             value = 0.
         return value
+
     # object functions
 
     def __init__(self, **data: Any) -> None:
@@ -230,13 +227,11 @@ class Environment(SbSOvRL_BaseModel):
         if self.discrete_actions:
             return spaces.Discrete(len(self._actions) * 2)
         else:
-            return spaces.Box(low=-1, high=1, shape=(len(self._actions),))
+            return spaces.Box(low=-1, high=1, shape=(len(self._actions), ))
 
     def _compress_observation_space_definition(
-        self,
-        observation_spaces: List[Tuple[str, ObservationType]],
-        has_cnn_observations: bool
-    ) -> List[Tuple[str, ObservationType]]:
+            self, observation_spaces: List[Tuple[str, ObservationType]],
+            has_cnn_observations: bool) -> List[Tuple[str, ObservationType]]:
         """
         If possible will compress the observation space into a single
         :py:`gym.spaces.Box` observation space. This is not possible if cnn
@@ -275,21 +270,16 @@ class Environment(SbSOvRL_BaseModel):
                         break
                     else:
                         # adding up shapes
-                        new_space_shape[0] = (
-                            x+y for x, y in zip(
-                                new_space_shape[-1],
-                                new_space_shape[-2]))
+                        new_space_shape[0] = (x + y for x, y in zip(
+                            new_space_shape[-1], new_space_shape[-2]))
                         new_space_shape.pop()
             else:
                 # for loop completed so compression is possible
                 self._flatten_observations = True
-                observation_spaces = [
-                    ("flattened_observation_space",
-                     spaces.Box(
-                         low=np.array(new_space_min),
-                         high=np.array(new_space_max),
-                         shape=new_space_shape[0]
-                     ))]
+                observation_spaces = [("flattened_observation_space",
+                                       spaces.Box(low=np.array(new_space_min),
+                                                  high=np.array(new_space_max),
+                                                  shape=new_space_shape[0]))]
         else:
             self.get_logger().info("Did not find any potential for a "
                                    "compressed observation space.")
@@ -308,13 +298,17 @@ class Environment(SbSOvRL_BaseModel):
         observation_spaces: List[Tuple[str, gym.Space]] = []
         # define base observation
         if self.use_cnn_observations:
-            observation_spaces.append(("base_observation", spaces.Box(
-                low=0, high=255, shape=(3, 200, 200), dtype=np.uint8)))
+            observation_spaces.append(("base_observation",
+                                       spaces.Box(low=0,
+                                                  high=255,
+                                                  shape=(3, 200, 200),
+                                                  dtype=np.uint8)))
         else:
-            observation_spaces.append(
-                ("base_observation", spaces.Box(low=0, high=1,
-                                                shape=(len(self._actions), ),
-                                                dtype=np.float32)))
+            observation_spaces.append(("base_observation",
+                                       spaces.Box(low=0,
+                                                  high=1,
+                                                  shape=(len(self._actions), ),
+                                                  dtype=np.float32)))
 
         # define spor observations
         has_cnn_observations = False
@@ -327,25 +321,25 @@ class Environment(SbSOvRL_BaseModel):
 
         # check if dict is actually necessary
         observation_spaces = self._compress_observation_space_definition(
-            observation_spaces, has_cnn_observations
-        )
+            observation_spaces, has_cnn_observations)
 
         if len(observation_spaces) > 1:
             # Observation space dict necessary
             self._observation_is_dict = True
-            observation_dict = {key: observation_space for key,
-                                observation_space in observation_spaces}
-            self.get_logger().info(
-                f"Observation space is of type Dict and"
-                f" has the following description:")
+            observation_dict = {
+                key: observation_space
+                for key, observation_space in observation_spaces
+            }
+            self.get_logger().info("Observation space is of type Dict and"
+                                   " has the following description:")
             for name, subspace in observation_spaces:
                 self.get_logger().info(f"{name} has shape {subspace.shape}")
             return spaces.Dict(observation_dict)
         else:
             # single observation space necessary
             self.get_logger().info(
-                f"Observation space is NOT of type Dict and has the following"
-                " description: {observation_spaces[0][1].shape}")
+                "Observation space is NOT of type Dict and has the following"
+                f" description: {observation_spaces[0][1].shape}")
             # no dict space is needed so only the base observation space is
             # returned without a name
             return observation_spaces[0][1]
@@ -357,8 +351,7 @@ class Environment(SbSOvRL_BaseModel):
             List[float]: Observation vector containing only the spline values.
         """
         return np.array(
-            [variable.current_position for variable in self._actions]
-        )
+            [variable.current_position for variable in self._actions])
 
     def _apply_FFD(self, path: Optional[str] = None) -> None:
         """
@@ -388,7 +381,7 @@ class Environment(SbSOvRL_BaseModel):
         # self.get_logger().debug(f"Applying action {action}")
         if self.discrete_actions:
             increasing: bool = (action % 2 == 0)
-            action_index: int = int(action/2)
+            action_index: int = int(action / 2)
             self.get_logger().debug(
                 f"Setting discrete action, of variable {action_index}.")
             self._actions[action_index].apply_discrete_action(increasing)
@@ -429,9 +422,8 @@ class Environment(SbSOvRL_BaseModel):
             #                                "the first validation value 0. If"
             #                                " this happens please investigate"
             #                                " why this happens.")
-            return self._validation_ids[
-                self._current_validation_idx % len(self._validation_ids)
-            ]
+            return self._validation_ids[self._current_validation_idx %
+                                        len(self._validation_ids)]
         return None
 
     def step(self, action: Any) -> Tuple[Any, float, bool, Dict[str, Any]]:
@@ -453,25 +445,22 @@ class Environment(SbSOvRL_BaseModel):
         self.get_logger().info(f"Action {action}")
         self.apply_action(action)
 
-        self.get_logger().debug(
-            f"End of action took {timer()-start} seconds.")
+        self.get_logger().debug(f"End of action took {timer()-start} seconds.")
         # apply Free Form Deformation
         self._apply_FFD()
 
-        self.get_logger().debug(
-            f"End of FFD took {timer()-start} seconds.")
+        self.get_logger().debug(f"End of FFD took {timer()-start} seconds.")
 
         observations = {}
         done = False
         reward = 0.
-        info = {
-            "mesh_path": str(self.mesh.mxyz_path)
-        }
+        info = {"mesh_path": str(self.mesh.mxyz_path)}
         # run solver
-        observations, reward, done, info = self.spor.run(step_information=(
-            observations, done, reward, info),
+        observations, reward, done, info = self.spor.run(
+            step_information=(observations, done, reward, info),
             validation_id=self.get_validation_id(),
-            core_count=self.is_multiprocessing(), reset=False,
+            core_count=self.is_multiprocessing(),
+            reset=False,
             environment_id=self._id)
 
         self.get_logger().debug(f"End of spor took {timer()-start} seconds.")
@@ -491,8 +480,7 @@ class Environment(SbSOvRL_BaseModel):
             if self.end_episode_on_spline_not_changed and \
                self._last_observation is not None:
                 if np.allclose(np.array(self._last_observation),
-                               np.array(observations)
-                               ):  # check
+                               np.array(observations)):  # check
                     self.get_logger().info("The Spline observation have"
                                            " not changed will exit episode.")
                     reward += self.reward_on_spline_not_changed
@@ -503,28 +491,32 @@ class Environment(SbSOvRL_BaseModel):
             if reward >= 5.:
                 if self.save_good_episode_results:
                     for elem in self._result_values_to_save:
-                        if np.isclose(
-                            list(observations.values())[0][1],
-                            elem, atol=0.05
-                        ):
+                        if np.isclose(list(observations.values())[0][1],
+                                      elem,
+                                      atol=0.05):
                             self.save_current_solution_as_png(
-                                self.save_location/"episode_end_results"
-                                ""/str(elem)/f""
+                                self.save_location / "episode_end_results"
+                                "" / str(elem) / f""
                                 f"{list(observations.values())[0][1]}"
                                 f"_{self._approximate_episode}.png",
-                                height=2, width=2, dpi=400)
+                                height=2,
+                                width=2,
+                                dpi=400)
                             break
                 if self.save_random_good_episode_results:
                     if self._number_exported < 200:
                         if np.random.default_rng().random() < 5:
                             self.save_current_solution_as_png(
-                                self.save_location/"episode_end_results" /
+                                self.save_location / "episode_end_results" /
                                 f"{self._approximate_episode}.png",
-                                height=2, width=2, dpi=400)
+                                height=2,
+                                width=2,
+                                dpi=400)
                             if self.save_random_good_episode_mesh:
                                 self.export_mesh(
-                                    self.save_location/"episode_end_results" /
-                                    "mesh"/f"{self._approximate_episode}.xns")
+                                    self.save_location /
+                                    "episode_end_results" / "mesh" /
+                                    f"{self._approximate_episode}.xns")
                             self._number_exported += 1
 
         self.get_logger().info(
@@ -540,10 +532,10 @@ class Environment(SbSOvRL_BaseModel):
         if self._validation_ids and self._save_image_in_validation:
             self._validation_timestep += 1
             self.save_current_solution_as_png(
-                self.save_location/"validation"
-                / str(self._validation_iteration)
-                / str(self._current_validation_idx)
-                / f"{self._validation_timestep}.png")
+                self.save_location / "validation" /
+                str(self._validation_iteration) /
+                str(self._current_validation_idx) /
+                f"{self._validation_timestep}.png")
 
         self.get_logger().debug(
             f"Before observations took {timer()-start} seconds.")
@@ -559,8 +551,8 @@ class Environment(SbSOvRL_BaseModel):
         self.get_logger().debug(f"Step took {timer()-start} seconds.")
         return self.check_observations(observations), reward, done, info
 
-    def check_observations(
-            self, observations: ObservationType) -> ObservationType:
+    def check_observations(self,
+                           observations: ObservationType) -> ObservationType:
         self.get_logger().debug(
             f"The observations are as follows: {observations}")
         new_observation = []
@@ -601,9 +593,7 @@ class Environment(SbSOvRL_BaseModel):
 
         done = False
         reward = 0
-        info = {
-            "mesh_path": str(self.mesh.mxyz_path)
-        }
+        info = {"mesh_path": str(self.mesh.mxyz_path)}
 
         self._timesteps_in_episode = 0
         self._approximate_episode += 1
@@ -613,16 +603,15 @@ class Environment(SbSOvRL_BaseModel):
             step_information=(observations, done, reward, info),
             validation_id=self.get_validation_id(),
             core_count=self.is_multiprocessing(),
-            reset=True, environment_id=self._id)
+            reset=True,
+            environment_id=self._id)
 
         # obs = self._get_observations(observations, done=done)
 
         if self._validation_ids:
             with open(
-                        self.save_location/"pympler"/
-                        f"{self._current_validation_idx}.txt",
-                        "w"
-                    ) as file:
+                    self.save_location / "pympler" /
+                    f"{self._current_validation_idx}.txt", "w") as file:
                 file.writelines('\n'.join(self._tracker.format_diff()) + '\n')
             # export mesh at end of validation
             if self._current_validation_idx > 0 and \
@@ -630,9 +619,9 @@ class Environment(SbSOvRL_BaseModel):
                 # validation is performed in single environment
                 # with no multi threading so this is not necessary.
                 base_path = pathlib.Path(
-                    self._validation_base_mesh_path).parents[0]/str(
-                    self._validation_iteration)/str(
-                    self._current_validation_idx)
+                    self._validation_base_mesh_path).parents[0] / str(
+                        self._validation_iteration) / str(
+                            self._current_validation_idx)
                 file_name = pathlib.Path(self._validation_base_mesh_path).name
                 if "_." in self._validation_base_mesh_path:
                     validation_mesh_path = base_path / str(file_name).replace(
@@ -653,7 +642,7 @@ class Environment(SbSOvRL_BaseModel):
         if self._validation_ids and self._save_image_in_validation:
             self._validation_timestep = 0
             self.save_current_solution_as_png(
-                self.save_location/"validation" /
+                self.save_location / "validation" /
                 str(self._validation_iteration) /
                 str(self._current_validation_idx) /
                 f"{self._validation_timestep}.png")
@@ -678,10 +667,12 @@ class Environment(SbSOvRL_BaseModel):
         if not self._last_step_results['info'].get('reset_reason'):
             return ""
         else:
-            return str(self._last_step_results['info'].get('reset_reason'))+'_'
+            return str(
+                self._last_step_results['info'].get('reset_reason')) + '_'
 
     def set_validation(
-            self, validation_values: List[float],
+            self,
+            validation_values: List[float],
             base_mesh_path: Optional[str] = None,
             end_episode_on_spline_not_change: bool = False,
             max_timesteps_in_episode: int = 0,
@@ -702,7 +693,7 @@ class Environment(SbSOvRL_BaseModel):
                 Defaults to 0.
         """
         self._tracker = tracker.SummaryTracker()
-        (self.save_location/"pympler").mkdir(parents=True, exist_ok=True)
+        (self.save_location / "pympler").mkdir(parents=True, exist_ok=True)
         self._validation_ids = validation_values
         self._current_validation_idx = 0
         self._validation_base_mesh_path = base_mesh_path
@@ -720,8 +711,8 @@ class Environment(SbSOvRL_BaseModel):
 
     def get_gym_environment(
         self,
-        logging_information: Optional[
-            Dict[str, Union[str, pathlib.Path, VerbosityLevel]]] = None
+        logging_information: Optional[Dict[str, Union[str, pathlib.Path,
+                                                      VerbosityLevel]]] = None
     ) -> gym.Env:
         """
         Creates and configures the gym environment so it can be used
@@ -767,8 +758,10 @@ class Environment(SbSOvRL_BaseModel):
             logging_level (VerbosityLevel): logger level to write up to
         """
         logger = multiprocessing.get_logger()
-        resulting_logger = set_up_logger(
-            logger_name, log_file_location, logging_level, logger=logger)
+        resulting_logger = set_up_logger(logger_name,
+                                         log_file_location,
+                                         logging_level,
+                                         logger=logger)
         self.set_logger_name_recursively(resulting_logger.name)
 
     def export_spline(self, file_name: str) -> None:
@@ -822,22 +815,28 @@ class Environment(SbSOvRL_BaseModel):
                 possible. If None (default) a random seed will be used and
                 the action will be different each time. Defaults to None.
         """
+
         def _parse_string_to_int(string: str) -> int:
             chars_as_ints = [ord(char) for char in str(string)]
             string_as_int = sum(chars_as_ints)
             return string_as_int
+
         seed = _parse_string_to_int(str(seed)) if seed is not None else seed
         self.get_logger().debug(
             f"A random action is applied during reset with the following "
             f"seed {str(seed)}")
         rng_gen = np.random.default_rng(seed)
-        random_action = (rng_gen.random((len(self._actions),))*2)-1
+        random_action = (rng_gen.random((len(self._actions), )) * 2) - 1
         for new_value, action_obj in zip(random_action, self._actions):
             action_obj.apply_continuos_action(new_value)
         return random_action
 
-    def get_visual_representation(self, /, *, sol_len: int = 3,
-                                  height: int = 10, width: int = 10,
+    def get_visual_representation(self,
+                                  /,
+                                  *,
+                                  sol_len: int = 3,
+                                  height: int = 10,
+                                  width: int = 10,
                                   dpi: int = 20):
         """
         Returns an array representing the calculated solution. This function
@@ -871,8 +870,8 @@ class Environment(SbSOvRL_BaseModel):
         # Loading the correct data and checking if correct attributes are set.
         if self._connectivity is None:
             self._connectivity = read_mixd_double(
-                self.mesh.get_export_path().parent/"mien",
-                3, 4, ">i").astype(int)-1
+                self.mesh.get_export_path().parent / "mien", 3, 4,
+                ">i").astype(int) - 1
         solution_location = next(
             (x for x in self.spor.steps if x.name == "main_solver"), None)
         if solution_location:
@@ -891,7 +890,7 @@ class Environment(SbSOvRL_BaseModel):
             raise RuntimeError(
                 "The given mesh has a dimension unequal two. This function "
                 "was designed to work only with meshes of dimension two.")
-        solution = read_mixd_double(solution_location/"ins.out", 3)
+        solution = read_mixd_double(solution_location / "ins.out", 3)
         coordinates = self._FFD.mesh.vertices
         # Plotting and creating resulting array
         limits_max = [1, 1, 0.2e8]
@@ -901,10 +900,12 @@ class Environment(SbSOvRL_BaseModel):
                                        self._connectivity, solution, sol_len,
                                        limits_min, limits_max)
 
-    def save_current_solution_as_png(
-            self, save_location: Union[pathlib.Path, str],
-            include_pressure: bool = True, height: int = 10,
-            width: int = 10, dpi: int = 400):
+    def save_current_solution_as_png(self,
+                                     save_location: Union[pathlib.Path, str],
+                                     include_pressure: bool = True,
+                                     height: int = 10,
+                                     width: int = 10,
+                                     dpi: int = 400):
         """
         Save the current solver solution as an image at the given location.
         Additional parameters for size can be used.
@@ -921,7 +922,9 @@ class Environment(SbSOvRL_BaseModel):
         """
         image_arr = self.get_visual_representation(
             sol_len=3 if include_pressure else 2,
-            width=height, height=width, dpi=dpi)
+            width=height,
+            height=width,
+            dpi=dpi)
         meta_data_dict = {
             "Author": "Clemens Fricke",
             "Software": "SbSOvRL",

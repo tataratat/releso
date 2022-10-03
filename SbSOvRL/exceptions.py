@@ -1,11 +1,11 @@
 """
 File defines the exceptions of the SbSOvRL toolbox/library.
 """
+import enum
 import logging
-import sys
 import os
 import platform
-import enum
+import sys
 from typing import List
 
 from SbSOvRL.util.logger import get_parser_logger
@@ -73,8 +73,8 @@ def red(message):
 
     For more information please see SbSOvRL.exceptions.output_styling().
     """
-    return output_styling(
-        message=message, stylings=[Stylings.Red, Stylings.Bold])
+    return output_styling(message=message,
+                          stylings=[Stylings.Red, Stylings.Bold])
 
 
 def underline(message):
@@ -84,8 +84,8 @@ def underline(message):
 
     For more information please see SbSOvRL.exceptions.output_styling().
     """
-    return output_styling(
-        message=message, stylings=[Stylings.Underline, Stylings.Bold])
+    return output_styling(message=message,
+                          stylings=[Stylings.Underline, Stylings.Bold])
 
 
 class SbSOvRLParserException(ValueError):
@@ -119,8 +119,9 @@ class SbSOvRLAgentUnknownException(Exception):
             Defaults to: 'SbSOvRL_environment'
     """
 
-    def __init__(
-            self, agent: str, logger: str = "SbSOvRL_environment") -> None:
+    def __init__(self,
+                 agent: str,
+                 logger: str = "SbSOvRL_environment") -> None:
         mes_str: str = f"The {agent} is unknown. Check the spelling or"
         " put in a request to add this agent."
         logging.getLogger(logger).exception(mes_str)
@@ -140,7 +141,7 @@ class SbSOvRLValidationNotSet(Exception):
     """
 
     def __init__(self, logger: str = "SbSOvRL_validation_environment") -> None:
-        mes_str: str = f"Could not create a validation environment due to"
+        mes_str: str = "Could not create a validation environment due to"
         "unavailability of validation parameters. Please add the validation "
         "parameters to the json file."
         logging.getLogger(logger).exception(

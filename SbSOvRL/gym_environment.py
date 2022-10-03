@@ -23,8 +23,9 @@ Note:
     fix for this problem is currently worked on.
 """
 
+from typing import Any, Dict, List, Tuple, Union
+
 from gym import Env
-from typing import Dict, Any, Tuple, Union, List
 
 
 class GymEnvironment(Env):
@@ -42,9 +43,8 @@ class GymEnvironment(Env):
         self.observation_space = observation_space
 
     def step(
-            self,
-            action: Union[int, List[float]]
-            ) -> Tuple[Any, float, bool, Dict[str, Any]]:
+        self, action: Union[int, List[float]]
+    ) -> Tuple[Any, float, bool, Dict[str, Any]]:
         pass
 
     def reset(self) -> Any:

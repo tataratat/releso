@@ -10,13 +10,13 @@ setuptools.setup(
     author_email="clemens.fricke@tuwien.ac.at",
     description="""
     Spline based Shape Optimization via Reinforcement Learning is a framework
-    and library which implements a new way to optimize geometries with 
+    and library which implements a new way to optimize geometries with
     Reinforcement Learning. The parameterization of the geometry is done via
     Splines. Please check in the documentation for more information on how this
      library functions.
 
-    The authors also wrote a seminar and master thesis during the development 
-    of this library in which the underling functionality is given. If this is 
+    The authors also wrote a seminar and master thesis during the development
+    of this library in which the underling functionality is given. If this is
     needed please contact either clemens.fricke@rwth-aachen.de,
     clemens.fricke@tuwien.ac.at or wolff@cats.rwth-aachen.de.
     """,
@@ -36,9 +36,5 @@ setuptools.setup(
     license="MIT",
     packages=setuptools.find_packages(),
     python_requires=">=3.8",
-    entry_points ={
-        'console_scripts': [
-            'SbSOvRL = SbSOvRL.__main__:main'
-        ]
-    },
+    entry_points={'console_scripts': ['SbSOvRL = SbSOvRL.__main__:main']},
 )

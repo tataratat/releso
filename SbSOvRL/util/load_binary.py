@@ -3,15 +3,17 @@
     created by the xns solver.
 """
 
-import numpy as np
 import os
 from struct import unpack
 from typing import Tuple
 
+import numpy as np
 
-def read_mixd_double(
-        filename: str, col: int, element_size: int = 8,
-        element: str = ">d") -> np.ndarray:
+
+def read_mixd_double(filename: str,
+                     col: int,
+                     element_size: int = 8,
+                     element: str = ">d") -> np.ndarray:
     """Read a double array from a mixd file.
 
     Author: Daniel Wolff (wolff@avt.rwth-aachen.de)
@@ -25,10 +27,10 @@ def read_mixd_double(
     """
     with open(filename, "rb") as fHandle:
         size = os.stat(filename).st_size
-        if (size % (col*element_size) != 0):
+        if (size % (col * element_size) != 0):
             raise RuntimeError("Not enough columns in the requested file!")
 
-        rows = size//(element_size*col)
+        rows = size // (element_size * col)
         retValues = np.zeros((rows, col))
         for i in range(rows):
             for j in range(col):
@@ -38,9 +40,8 @@ def read_mixd_double(
     # _read_mixd_double()
 
 
-def load_mixd(
-        mesh_file: str, mesh_dim: int, solution_file: str,
-        ndof: int) -> Tuple[np.ndarray, np.ndarray]:
+def load_mixd(mesh_file: str, mesh_dim: int, solution_file: str,
+              ndof: int) -> Tuple[np.ndarray, np.ndarray]:
     """Read in the mesh and the solution of an XNS simulation and store
     them in the `coordinates` and `solution` attributes
 

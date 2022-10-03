@@ -2,14 +2,15 @@
 This files includes multiple functions and classes which are used in this
 package but can not be directly associated to a single sub module.
 """
-from typing import Optional, Any
-import subprocess
-import os
-import numpy as np
-from SbSOvRL.util.logger import logging
-from SbSOvRL.util.sbsovrl_types import InfoType, ObservationType
-import json
 import datetime
+import json
+import os
+import subprocess
+from typing import Any, Optional
+
+import numpy as np
+
+from SbSOvRL.util.sbsovrl_types import InfoType
 
 
 class SbSOvRL_JSONEncoder(json.JSONEncoder):
@@ -27,8 +28,8 @@ class SbSOvRL_JSONEncoder(json.JSONEncoder):
             return o.decode("utf-8")
         try:
             return json.JSONEncoder.default(self, o)
-        except TypeError as err:
-            print(type(o), o)
+        except TypeError:
+            print("Found missing type:", type(o), o)
             return json.JSONEncoder.default(self, "")
 
 
@@ -45,6 +46,7 @@ def which(program: str) -> Optional[str]:
     Returns:
         Optional[str]: None if not found else execution file.
     """
+
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
@@ -132,5 +134,5 @@ def get_path_extension() -> str:
             ret_str = os.getenv("SLURM_ARRAY_JOB_ID")+"/" + \
                 os.getenv("SLURM_ARRAY_TASK_ID")+"_"+ret_str
         elif os.getenv("SLURM_JOB_ID"):  # default slurm job running
-            ret_str += "_"+os.getenv("SLURM_JOB_ID")
+            ret_str += "_" + os.getenv("SLURM_JOB_ID")
     return ret_str

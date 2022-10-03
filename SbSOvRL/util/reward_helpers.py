@@ -2,11 +2,12 @@
 This files holds functions which can be used in custom command line spor object
 scripts.
 """
-from typing import List, Optional, Union, Any, Dict
+import argparse
 import json
 from os import PathLike
 from pathlib import Path
-import argparse
+from typing import Any, Dict, List, Optional, Union
+
 from pydantic.types import UUID4
 
 
@@ -24,33 +25,59 @@ def spor_com_parse_arguments(
         " Toolbox. This is the basic script that can load a json file and run"
         " the resulting optimization problem.")
     parser.add_argument(
-        "-i", "--initialize", "--reset", dest="reset", action="store_true",
+        "-i",
+        "--initialize",
+        "--reset",
+        dest="reset",
+        action="store_true",
         help="Should the script perform the step necessary for a reset.")
+    parser.add_argument("-r",
+                        "--run",
+                        "--run_id",
+                        dest="run_id",
+                        action="store",
+                        type=UUID4,
+                        required=True,
+                        help="Id of the SPOR_Communication interface for this "
+                        "specific spor object.")
     parser.add_argument(
-        "-r", "--run", "--run_id", dest="run_id", action="store", type=UUID4,
-        required=True, help="Id of the SPOR_Communication interface for this "
-        "specific spor object.")
-    parser.add_argument(
-        "-v", "--validation_value", dest="validation_value", action="store",
-        type=float, required=False,
+        "-v",
+        "--validation_value",
+        dest="validation_value",
+        action="store",
+        type=float,
+        required=False,
         help="If during validation the current validation value is passed to "
         "the script by the variable. If not present not currently in "
         "validation.")
     parser.add_argument(
-        "-j", "--additional_values", "--json_object", dest="json_object",
-        action="store", type=str, required=False,
+        "-j",
+        "--additional_values",
+        "--json_object",
+        dest="json_object",
+        action="store",
+        type=str,
+        required=False,
         help="Currently available step information including observations, "
         "done, reward, info. Will automatically be parsed into a dict. Only "
         "present if spor step is configured to sent it.")
     parser.add_argument(
-        "-l", "--base_save_location", dest="base_save_location",
-        action="store", type=str, required=True,
+        "-l",
+        "--base_save_location",
+        dest="base_save_location",
+        action="store",
+        type=str,
+        required=True,
         help="Path pointing to the save location of all permanent records of "
         "this trainings run. Please save the logs here.")
-    parser.add_argument(
-        "-e", "--environment_id", dest="environment_id", action="store",
-        type=str, required=True, help="ID of the environment this call is "
-        "coming from. NOT unique to this spor object.")
+    parser.add_argument("-e",
+                        "--environment_id",
+                        dest="environment_id",
+                        action="store",
+                        type=str,
+                        required=True,
+                        help="ID of the environment this call is "
+                        "coming from. NOT unique to this spor object.")
     if own_arguments is not None:
         args = parser.parse_args(own_arguments)
     else:
@@ -90,7 +117,7 @@ def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
         Dict[str, Any]: Data loaded from the given file.
     """
     path = Path(f_n)
-    if not(path.exists() and path.is_file()):
+    if not (path.exists() and path.is_file()):
         empty_dict = {}
         with open(path, "w") as wf:
             json.dump(empty_dict, wf)

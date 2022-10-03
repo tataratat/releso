@@ -12,8 +12,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../src/'))
 
+sys.path.insert(0, os.path.abspath('../../src/'))
 
 # -- Project information -----------------------------------------------------
 
@@ -24,24 +24,22 @@ author = 'Clemens Fricke'
 # The full version, including alpha/beta/rc tags
 release = '1.1'
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.duration',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
+    'sphinx.ext.duration', 'sphinx.ext.autodoc', 'sphinx.ext.autosummary',
     'sphinx.ext.napoleon'
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym",
-                        "stable_baselines3", "pandas", "gustav", "numpy",
-                        "vedo", "matplotlib", "imageio"]
+autodoc_mock_imports = [
+    "pydantic", "tensorboard", "hjson", "gym", "stable_baselines3", "pandas",
+    "gustav", "numpy", "vedo", "matplotlib", "imageio", "torch", "gustaf"
+]
 # autodoc_typehints = 'description'  # show type hints in doc body instead of signature
 # autoclass_content = 'instance'  # get docstring from class level and init simultaneously
 
@@ -49,7 +47,6 @@ autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym",
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
 
 # -- Options for HTML output -------------------------------------------------
 

@@ -2,13 +2,15 @@
 File holding the class defining the verbosity of the problem and defining the
 loggers.
 """
-from pydantic import validator
-from pydantic.fields import PrivateAttr
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.logger import VerbosityLevel, set_up_logger, logging
+import datetime
 import pathlib
 from typing import Any, Literal
-import datetime
+
+from pydantic import validator
+from pydantic.fields import PrivateAttr
+
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.util.logger import VerbosityLevel, logging, set_up_logger
 
 
 class Verbosity(SbSOvRL_BaseModel):
@@ -23,8 +25,7 @@ class Verbosity(SbSOvRL_BaseModel):
     """
     #: VerbosityLevel of the parser logger. This logger should only generate
     #: messages during the setup of the experiment.
-    parser: Literal["ERROR", "WARNING", "DEBUG",
-                    "INFO"] = "INFO"
+    parser: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"
     #: VerbosityLevel of the environment parsers. These loggers will generate
     #: messages during the execution of the experiments.
     #: (Training and Validation)
@@ -88,12 +89,13 @@ class Verbosity(SbSOvRL_BaseModel):
         if "save_location" in values:
             # the path where the logger should write to is the
             # save_location/SbSOvRL_logfile_location
-            path = values["save_location"]/v
+            path = values["save_location"] / v
         else:
             # the path where the logger should write to is the
             # calling_folder/SbSOvRL_logfile_location
-            path = pathlib.Path(v.format(datetime.datetime.now().strftime(
-                "%Y-%m-%d_%H-%M-%S"))).expanduser().resolve()
+            path = pathlib.Path(
+                v.format(datetime.datetime.now().strftime(
+                    "%Y-%m-%d_%H-%M-%S"))).expanduser().resolve()
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -102,20 +104,20 @@ class Verbosity(SbSOvRL_BaseModel):
         # create parser logger
         parser_name = "SbSOvRL_parser"
         if not logging.getLogger(parser_name).hasHandlers():
-            parser_logger = set_up_logger(
-                parser_name, self.SbSOvRL_logfile_location,
-                self.parser, self.console_logging)
+            parser_logger = set_up_logger(parser_name,
+                                          self.SbSOvRL_logfile_location,
+                                          self.parser, self.console_logging)
 
         # create base rl logger
         self._environment_logger = "_".join(
-            filter(
-                ("").__ne__,
-                [self.base_logger_name, self.environment_extension]))
+            filter(("").__ne__,
+                   [self.base_logger_name, self.environment_extension]))
         self.add_environment_logger_with_name_extension("")
         # create base rl logger for validation environment
-        self._environment_validation_logger = "_".join(filter(
-            ("").__ne__,
-            [self.base_logger_name, self.environment_extension, "validation"]))
+        self._environment_validation_logger = "_".join(
+            filter(("").__ne__, [
+                self.base_logger_name, self.environment_extension, "validation"
+            ]))
         self.add_environment_logger_with_name_extension("validation")
 
         parser_logger.debug(
@@ -143,14 +145,15 @@ class Verbosity(SbSOvRL_BaseModel):
                 Logger of the name defined name. The name definition is
                 explained in the main documentation of the function.
         """
-        logger_name = "_".join(filter(
-            ("").__ne__,
-            [self.base_logger_name, self.environment_extension, extension]))
+        logger_name = "_".join(
+            filter(
+                ("").__ne__,
+                [self.base_logger_name, self.environment_extension, extension
+                 ]))
         if not logging.getLogger(logger_name).hasHandlers() or \
                 not (len(logging.getLogger(logger_name).handlers) > 0):
-            logger = set_up_logger(
-                logger_name, self.SbSOvRL_logfile_location, self.environment,
-                self.console_logging)
+            logger = set_up_logger(logger_name, self.SbSOvRL_logfile_location,
+                                   self.environment, self.console_logging)
         else:
             logger = logging.getLogger(logger_name)
         return logger

@@ -3,13 +3,15 @@
     File defines the main entry point of the framework if it is called via the
     command line. (via python -m SbSOvRL)
 """
-import shutil
-from SbSOvRL.base_parser import BaseParser
 import argparse
-import pathlib
-import hjson
 import datetime
+import pathlib
 import pprint
+import shutil
+
+import hjson
+
+from SbSOvRL.base_parser import BaseParser
 
 
 def main(args) -> None:
@@ -45,7 +47,7 @@ def main(args) -> None:
     #                         #
     ###########################
 
-    shutil.copy(file_path, optimization_object.save_location/file_path.name)
+    shutil.copy(file_path, optimization_object.save_location / file_path.name)
 
     ###########################
     #                         #
@@ -77,19 +79,27 @@ def main(args) -> None:
 if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser(
         description="Spline base Shape Optimization via Reinforcement "
-                    "Learning Toolbox. This python program loads a problem "
-                    "definition and trains the resulting problem. Further the "
-                    "model can be evaluated")
+        "Learning Toolbox. This python program loads a problem "
+        "definition and trains the resulting problem. Further the "
+        "model can be evaluated")
     parser.add_argument(
-        "-i", "--input_file", action="store", required=True,
+        "-i",
+        "--input_file",
+        action="store",
+        required=True,
         help="Path to the json file storing the optimization definition.")
     parser.add_argument(
-        "-v", "--validate_only", action="store_true",
+        "-v",
+        "--validate_only",
+        action="store_true",
         help="If this is set only validation on this configuration is run. "
         "Please configure the validation object in the json file so that this "
         "option can be correctly executed.")
     parser.add_argument(
-        "-j", "--json_only", dest="json_validate", action="store_true",
+        "-j",
+        "--json_only",
+        dest="json_validate",
+        action="store_true",
         help="If this is set only the json validation is performed, nothing "
         "else.")
     args = parser.parse_args()
