@@ -12,7 +12,7 @@ except ImportError:
 try:
     import imageio
 except ImportError:
-    imageio = ModuleImportRaiser("gustav")
+    imageio = ModuleImportRaiser("imageio")
 import pathlib
 from copy import deepcopy
 import numpy as np

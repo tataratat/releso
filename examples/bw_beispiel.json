@@ -1,0 +1,73 @@
+{
+    "agent": {
+        "type": "PPO",
+        "policy": "MlpPolicy",
+        "tensorboard_log": "tensorboard"
+    },
+    "environment": {
+        "spline": {
+            "spline_definition": {
+                "control_points": [
+                    [
+                        {
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0
+                        }
+                    ],
+                    [
+                        {
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0
+                        }
+                    ],
+                    [
+                        {
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0
+                        }
+                    ],
+                    [
+                        {
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0
+                        }
+                    ]
+                ]
+            }
+        },
+        "spor": {
+            "steps": [
+                {
+                    "name": "imcs_solver",
+                    "stop_after_error": true,
+                    "reward_on_error": -10,
+                    "reward_on_completion": 0,
+                    "run_on_reset": true,
+                    "use_communication_interface": true,
+                    "working_directory": "./{}/",
+                    "execution_command": "ls",
+                    "command_options": []
+                }
+            ],
+            "reward_aggregation": "sum"
+        },
+        "discrete_actions": true,
+        "max_timesteps_in_episode": 100,
+        "reward_on_episode_exceeds_max_timesteps": 0,
+        "only_use_control_points": true,
+        "multi_processing": {
+            "number_of_cores": 1
+        }
+    },
+    "number_of_timesteps": 5000,
+    "number_of_episodes": 1000,
+    "save_location": "bw_cooperation_test_simple_{}/",
+    "verbosity": {
+        "environment": "DEBUG",
+        "parser": "DEBUG"
+    }
+}
