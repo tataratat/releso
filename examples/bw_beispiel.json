@@ -49,8 +49,10 @@
                     "run_on_reset": true,
                     "use_communication_interface": true,
                     "working_directory": "./{}/",
-                    "execution_command": "ls",
-                    "command_options": []
+                    "execution_command": "python",
+                    "command_options": [
+                        "examples/external_icms_solver_1.py"
+                    ]
                 }
             ],
             "reward_aggregation": "sum"
@@ -67,7 +69,7 @@
     "number_of_episodes": 1000,
     "save_location": "bw_cooperation_test_simple_{}/",
     "verbosity": {
-        "environment": "DEBUG",
-        "parser": "DEBUG"
+        "environment": "INFO",
+        "parser": "INFO"
     }
 }
