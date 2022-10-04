@@ -8,6 +8,152 @@ from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
 from SbSOvRL.util.reward_helpers import load_json, write_json, spor_com_parse_arguments
 
 
+# Import user modules.
+import os
+import numpy as np
+from meshpy import (
+    mpy,
+    InputFile,
+    Function,
+    BoundaryCondition,
+    MaterialReissner,
+    Mesh,
+    Beam3rHerm2Line3,
+)
+from meshpy.mesh_creation_functions import create_beam_mesh_from_nurbs
+from meshpy.header_functions import (
+    set_header_static,
+    set_runtime_output,
+)
+from meshpy.simulation_manager import Simulation, SimulationManager
+
+
+def create_model(base_path, control_points_y):
+    """
+    Create the input file.
+    """
+
+    beam_length = 5.0
+    beam_young = 1000.0
+    beam_radius = 0.1
+
+    # Setup the beam geometry.
+    input_file = InputFile()
+
+    mat = MaterialReissner(youngs_modulus=beam_young, radius=beam_radius)
+    mesh = Mesh()
+
+    control_points = [[0, 0, 0]]
+    for i, control_point_y in enumerate(control_points_y):
+        control_points.append(
+            [(i + 1) * beam_length / len(control_points_y), control_point_y, 0.0]
+        )
+    knotvector = [0, 0, 0]
+    for i in range(len(control_points_y) - 2):
+        knotvector.append(i + 1)
+    knotvector.extend([i + 2] * 3)
+
+    # Setup the nurbs curve.
+    from geomdl import NURBS
+
+    curve = NURBS.Curve()
+    curve.degree = 2
+    curve.ctrlpts = control_points
+    curve.knotvector = knotvector
+    beam_set = create_beam_mesh_from_nurbs(mesh, Beam3rHerm2Line3, mat, curve, n_el=20)
+    input_file.add(mesh)
+
+    def get_fun(mid, wide):
+        """
+        Get the function of a single sinus wave.
+        """
+
+        string = (
+            "(heaviside(x-{0}+{1}*1.5)*heaviside({0}+1.5*{1}-x)*cos((x-{0})*pi/{1}))"
+        )
+        scaling_function = "(heaviside(x-{0}+0.5*{1})*heaviside({0}+{1}*0.5-x)+1)"
+        return (string + "*" + scaling_function).format(mid, wide)
+
+    fun = Function(
+        "COMPONENT 0 FUNCTION t*(-{}+{})".format(get_fun(1.5, 1.0), get_fun(3.5, 1.0))
+    )
+    input_file.add(fun)
+    input_file.add(
+        BoundaryCondition(
+            beam_set["start"],
+            "NUMDOF 9 ONOFF 1 1 1 1 1 1 0 0 0 VAL 0 0 0 0 0 0 0 0 0 FUNCT 0 0 0 0 0 0 0 0 0",
+            bc_type=mpy.bc.dirichlet,
+        )
+    )
+    input_file.add(
+        BoundaryCondition(
+            beam_set["line"],
+            "NUMDOF 9 ONOFF 0 1 0 0 0 0 0 0 0 VAL 0 0.1 0 0 0 0 0 0 0 FUNCT 0 1 0 0 0 0 0 0 0",
+            bc_type=mpy.bc.neumann,
+        )
+    )
+
+    # Set headers.
+    set_header_static(
+        input_file, time_step=0.25, n_steps=4, tol_residuum=1e-14, tol_increment=1e-8
+    )
+    set_runtime_output(input_file, output_triad=False)
+
+    input_file_path = os.path.join(args.run_id, "input.dat")
+    input_file.write_input_file(input_file_path)
+    return Simulation(input_file_path)
+
+
+from vtk.util import numpy_support as VN
+from vtk_utils.vtk_utils import PVDCollection
+
+
+def integrate(X, u):
+    """
+    Evaluate the integral of the square displacements over the length of the beam.
+    """
+
+    return np.sum(np.square(X + u)[:, 1]) * (X[1, 0] - X[0, 0])
+
+
+def post_process(base_dir):
+    """
+    Integrate the displacement of the beam..
+    """
+
+    # Check if there was an error with the simulation
+    with open(os.path.join(base_dir, "xxx.log"), "r") as log_file:
+        for line in log_file.readlines():
+            if "PROC 0 ERROR" in line:
+                logging.getLogger("reward_solver").info(f"Error in the simulation")
+
+    beam_result = PVDCollection(os.path.join(base_dir, "xxx-structure-beams.pvd"))
+    reader = beam_result.get_time_step(beam_result.get_time_steps()[-1])
+    reader.Update()
+    data = reader.GetOutput()
+
+    x = VN.vtk_to_numpy(data.GetPoints().GetData())
+    u = VN.vtk_to_numpy(data.GetPointData().GetArray("displacement"))
+    X = x - u
+
+    diff = np.zeros([len(X) - 1])
+    for i in range(len(X) - 1):
+        diff[i] = X[i + 1, 0] - X[i, 0]
+
+    double_entries = np.where(np.abs(diff) < 1e-10)[0]
+
+    def delete_entries(var):
+        return np.delete(var, double_entries, axis=0)
+
+    u = delete_entries(u)
+    X = delete_entries(X)
+
+    cost_function = integrate(X, u)
+    logging.getLogger("reward_solver").info(f"Cost function: {cost_function}")
+    return cost_function
+
+
+
 def main(args, reward_solver_log) -> Dict[str, Any]:
     pathlib.Path(f"{args.run_id}").mkdir(exist_ok=True, parents=True)
 
@@ -26,8 +172,16 @@ def main(args, reward_solver_log) -> Dict[str, Any]:
     local_variable_store = load_json(local_variable_store_path)
 
     # run your code here
+    state_vector = np.array(args.json_object['info']['control_points']).flatten()
+    logging.getLogger("reward_solver").info(f"The current state vector is: {state_vector}")
+    simulation = create_model(args.run_id, state_vector)
+    manager = SimulationManager(args.run_id)
+    manager.add(simulation)
+    manager.run_simulations_and_wait_for_finish(
+        baci_build_dir="/home/ivo/workspace/baci/work/release/"
+    )
+    post_process(args.run_id)
 
-    reward, done, info, observations = (0, False, {}, [])
 
     # define dict that is passed back
     return_dict = {
