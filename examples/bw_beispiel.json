@@ -45,14 +45,15 @@
                     "name": "imcs_solver",
                     "stop_after_error": true,
                     "reward_on_error": -10,
-                    "reward_on_completion": 0,
+                    #"reward_on_completion": 0,
                     "run_on_reset": true,
                     "use_communication_interface": true,
                     "working_directory": "./{}/",
                     "execution_command": "python",
                     "command_options": [
                         "examples/external_icms_solver_1.py"
-                    ]
+                    ],
+                    "add_step_information": true
                 }
             ],
             "reward_aggregation": "sum"
