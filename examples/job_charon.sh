@@ -38,13 +38,14 @@
 
 # Store calling directroy
 CWD=$(pwd)
+echo $CWD
 
 # Setup shell environment
 echo $HOME
 cd $HOME
 #source /etc/profile.d/modules.sh
 #source /home/opt/cluster_tools/core/load_baci_environment.sh
-source load_python.sh 
+source /home/a11bivst/load_python.sh
 
 # Go back to calling directroy
 cd  $CWD
