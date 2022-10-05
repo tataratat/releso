@@ -60,7 +60,7 @@ def create_model(base_path, control_points_y):
     curve.degree = 2
     curve.ctrlpts = control_points
     curve.knotvector = knotvector
-    beam_set = create_beam_mesh_from_nurbs(mesh, Beam3rHerm2Line3, mat, curve, n_el=20)
+    beam_set = create_beam_mesh_from_nurbs(mesh, Beam3rHerm2Line3, mat, curve, n_el=20, tol=1e-5)
     input_file.add(mesh)
 
     def get_fun(mid, wide):
@@ -185,7 +185,7 @@ def main(args, reward_solver_log) -> Dict[str, Any]:
     manager = SimulationManager(f"{args.run_id}")
     manager.add(simulation)
     manager.run_simulations_and_wait_for_finish(
-        baci_build_dir="/home/ivo/workspace/baci/work/release/"
+        baci_build_dir="/home/a11bivst/baci/work/release/"
     )
     cost_function = post_process(f"{args.run_id}")
 
