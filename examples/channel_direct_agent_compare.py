@@ -6,11 +6,11 @@ from pandas.errors import EmptyDataError
 from matplotlib.ticker import EngFormatter, PercentFormatter
 from matplotlib import gridspec
 
-window = 100
+window = 5
 folder_paths = list()
 n_env = []
 # this is the one that is to be overwritten
-folder_paths.append("path-to-main-folder")
+folder_paths.append("/home/ivo/dev/python/releso/bw_cooperation_test_simple_2022-10-05_09-56-30")
 n_env.append("run description")
 
 marker = ["-", "-", (0, (5, 10)), (0, (5, 10)), (0, (3, 10, 1, 10)), (0, (3, 10, 1, 10)), (0, (1, 10)), (0, (1, 10))]
@@ -30,14 +30,16 @@ for idx, folder in enumerate(folder_paths):
   row = pd.to_datetime(temp_df["wall_time"])
   temp_df['wall_time'] = row
   temp_df['time_delta'] = row - row.shift()
+  temp_df['mean_step_reward'] = temp_df['episode_reward'] / temp_df['steps_in_episode']
   df.append(temp_df)
+
 
 
 
 fig = plt.figure()
 gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 0.5])
 ax0 = plt.subplot(gs[0])
-ax0.set_xlim((0,cut_off_point+cut_off_point*0.05))
+#ax0.set_xlim((0,cut_off_point+cut_off_point*0.05))
 
 for idx, dataframe in enumerate(df):
     ax0.plot(dataframe["total_timesteps"].iloc[:end_episode[idx]],dataframe["episode_reward"].iloc[:end_episode[idx]].rolling(window, window).mean(), label=f"{n_env[idx]}"
@@ -84,16 +86,15 @@ yticks = ax1.yaxis.get_major_ticks()
 yticks[-1].label1.set_visible(False)
 
 
-## third plot
-# ax2 = plt.subplot(gs[2], sharex = ax0)
-# for idx, dataframe in enumerate(df):
-    # ax2.plot(dataframe["total_timesteps"].iloc[:end_episode[idx]],
-    # # (((dataframe.replace('goal_achieved',np.NaN)["episode_end_reason"].iloc[:end_episode[idx]].rolling(window,window).count()/window)))
-    # ((dataframe.replace('ExecutionFailed-main_solver',np.NaN)["episode_end_reason"].iloc[:end_episode[idx]].rolling(window,window).count()/window)-1)*-1
-    # , label=f"{n_env[idx]}"
-    # # ,linestyle=marker[idx]
-    # ,c=colors[idx]
-    # ,linewidth=0.6)
+# third plot
+ax2 = plt.subplot(gs[2], sharex = ax0)
+for idx, dataframe in enumerate(df):
+    ax2.plot(dataframe["total_timesteps"].iloc[:end_episode[idx]],
+    dataframe["mean_step_reward"].iloc[:end_episode[idx]].rolling(window, window).mean(),
+    label=f"{n_env[idx]}"
+    # ,linestyle=marker[idx]
+    ,c=colors[idx]
+    ,linewidth=0.6)
 # # if idx == (hdx-1):
 # #   break
 # ax2.set_ylim((-0.1,1.1))
