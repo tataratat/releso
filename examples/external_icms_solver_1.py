@@ -173,6 +173,12 @@ def main(args, reward_solver_log) -> Dict[str, Any]:
     local_variable_store = load_json(local_variable_store_path)
 
     # run your code here
+
+# expected cost function and state vector
+#0.002593258178253796
+#[ 0.20488688 -0.51264381 -1.16020725 -0.46927415]
+
+
     state_vector = np.array(args.json_object['info']['control_points']).flatten()
     logging.getLogger("SbSOvRL_rl").info(f"The current state vector is: {state_vector}")
     simulation = create_model(f"{args.run_id}", state_vector)
@@ -186,7 +192,7 @@ def main(args, reward_solver_log) -> Dict[str, Any]:
     if cost_function == False or abs(cost_function) > 10:
         return_dict = {
             "reward": -10,
-            "done": True,
+            "done": False,
             "info": {},
             "observations": []
         }

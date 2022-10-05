@@ -47,7 +47,7 @@
             "steps": [
                 {
                     "name": "imcs_solver",
-                    "stop_after_error": true,
+                    "stop_after_error": false,
                     "reward_on_error": -10,
                     #"reward_on_completion": 0,
                     "run_on_reset": true,
