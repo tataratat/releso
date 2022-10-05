@@ -126,6 +126,7 @@ def post_process(base_dir):
         for line in log_file.readlines():
             if "PROC 0 ERROR" in line:
                 logging.getLogger("SbSOvRL_rl").info(f"Error in the simulation")
+                return False
 
     beam_result = PVDCollection(os.path.join(base_dir, "xxx-structure-beams.pvd"))
     reader = beam_result.get_time_step(beam_result.get_time_steps()[-1])
@@ -180,16 +181,23 @@ def main(args, reward_solver_log) -> Dict[str, Any]:
     manager.run_simulations_and_wait_for_finish(
         baci_build_dir="/home/ivo/workspace/baci/work/release/"
     )
-    post_process(f"{args.run_id}")
+    cost_function = post_process(f"{args.run_id}")
 
-
-    # define dict that is passed back
-    return_dict = {
-        "reward": reward,
-        "done": done,
-        "info": info,
-        "observations": observations
-    }
+    if cost_function == False or abs(cost_function) > 10:
+        return_dict = {
+            "reward": -10,
+            "done": True,
+            "info": {},
+            "observations": []
+        }
+    else:
+        # define dict that is passed back
+        return_dict = {
+            "reward": -cost_function,
+            "done": True if abs(cost_function) < 1e-2 else False,
+            "info": {},
+            "observations": []
+        }
 
     # store persistent local variables
     write_json(local_variable_store_path, local_variable_store)
