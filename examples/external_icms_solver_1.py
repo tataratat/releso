@@ -99,7 +99,7 @@ def create_model(base_path, control_points_y):
     )
     set_runtime_output(input_file, output_triad=False)
 
-    input_file_path = os.path.join(args.run_id, "input.dat")
+    input_file_path = os.path.join(base_path, "input.dat")
     input_file.write_input_file(input_file_path)
     return Simulation(input_file_path)
 
@@ -125,7 +125,7 @@ def post_process(base_dir):
     with open(os.path.join(base_dir, "xxx.log"), "r") as log_file:
         for line in log_file.readlines():
             if "PROC 0 ERROR" in line:
-                logging.getLogger("reward_solver").info(f"Error in the simulation")
+                logging.getLogger("SbSOvRL_rl").info(f"Error in the simulation")
 
     beam_result = PVDCollection(os.path.join(base_dir, "xxx-structure-beams.pvd"))
     reader = beam_result.get_time_step(beam_result.get_time_steps()[-1])
@@ -149,7 +149,7 @@ def post_process(base_dir):
     X = delete_entries(X)
 
     cost_function = integrate(X, u)
-    logging.getLogger("reward_solver").info(f"Cost function: {cost_function}")
+    logging.getLogger("SbSOvRL_rl").info(f"Cost function: {cost_function}")
     return cost_function
 
 
@@ -173,14 +173,14 @@ def main(args, reward_solver_log) -> Dict[str, Any]:
 
     # run your code here
     state_vector = np.array(args.json_object['info']['control_points']).flatten()
-    logging.getLogger("reward_solver").info(f"The current state vector is: {state_vector}")
-    simulation = create_model(args.run_id, state_vector)
-    manager = SimulationManager(args.run_id)
+    logging.getLogger("SbSOvRL_rl").info(f"The current state vector is: {state_vector}")
+    simulation = create_model(f"{args.run_id}", state_vector)
+    manager = SimulationManager(f"{args.run_id}")
     manager.add(simulation)
     manager.run_simulations_and_wait_for_finish(
         baci_build_dir="/home/ivo/workspace/baci/work/release/"
     )
-    post_process(args.run_id)
+    post_process(f"{args.run_id}")
 
 
     # define dict that is passed back
