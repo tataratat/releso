@@ -10,11 +10,15 @@ window = 5
 folder_paths = list()
 n_env = []
 # this is the one that is to be overwritten
-folder_paths.append("/home/ivo/dev/python/releso/bw_cooperation_test_simple_2022-10-05_09-56-30")
-n_env.append("run description")
+#folder_paths.append("/home/ivo/dev/python/releso/bw_cooperation_test_simple_2022-10-05_09-56-30")
+folder_paths.append("/home/a11bivst/dev/releso/bw_cooperation_test_simple_2022-10-05_15-06-59_35897")
+folder_paths.append("/home/a11bivst/dev/releso/bw_cooperation_test_simple_2022-10-05_15-07-55_35899")
+#n_env.append("old")
+n_env.append("incremental")
+n_env.append("direct")
 
 marker = ["-", "-", (0, (5, 10)), (0, (5, 10)), (0, (3, 10, 1, 10)), (0, (3, 10, 1, 10)), (0, (1, 10)), (0, (1, 10))]
-colors = ["r", "r","orange", "orange", "b", "b", "turquoise", "turquoise"]
+colors = ["r", "orange", "b", "turquoise"]
 end_episode = []
 print(len(folder_paths), len(marker), len(n_env), len(colors))
 
@@ -59,7 +63,7 @@ ax0.set_ylabel("Episode \nreward")
 formatter1 = EngFormatter(places=0, sep="")  # U+2009
 ax0.xaxis.set_major_formatter(formatter1)
 # ax0.set_yticks([-10,0,5])
-# ax0.legend()
+ax0.legend()
 for tick in ax0.get_yticklabels():
     tick.set_rotation(90)
 
