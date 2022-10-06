@@ -202,7 +202,7 @@ def main(args, reward_solver_log) -> Dict[str, Any]:
         return_dict = {
             "reward": -cost_function,
             "done": True if is_converged else False,
-            "info": {"reset_reason": "converged"} if is_converged else {}
+            "info": {"reset_reason": "converged"} if is_converged else {},
             "observations": []
         }
 
