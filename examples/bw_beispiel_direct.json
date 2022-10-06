@@ -1,0 +1,80 @@
+{
+    "agent": {
+        "type": "DDPG",
+        "policy": "MlpPolicy",
+        "tensorboard_log": "tensorboard", "optimize_memory_usage": false
+    },
+    "environment": {
+        "spline": {
+            "spline_definition": {
+                "control_points": [
+                    [
+                        {
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0,
+                            "step": 0.1
+                        }
+                    ],
+                    [
+                        {
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0,
+                            "step": 0.1
+                        }
+                    ],
+                    [
+                        {
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0,
+                            "step": 0.1
+                        }
+                    ],
+                    [
+                        {
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0,
+                            "step": 0.1
+                        }
+                    ]
+                ]
+            }
+        },
+        "spor": {
+            "steps": [
+                {
+                    "name": "imcs_solver",
+                    "stop_after_error": false,
+                    "reward_on_error": -10,
+                    #"reward_on_completion": 0,
+                    "run_on_reset": true,
+                    "use_communication_interface": true,
+                    "working_directory": "./{}/",
+                    "execution_command": "python",
+                    "command_options": [
+                        "examples/external_icms_solver_1.py"
+                    ],
+                    "add_step_information": true
+                }
+            ],
+            "reward_aggregation": "sum"
+        },
+        "discrete_actions": false,
+        "max_timesteps_in_episode": 100,
+        "reward_on_episode_exceeds_max_timesteps": 0,
+        "only_use_control_points": true,
+        "multi_processing": {
+            "number_of_cores": 1
+        }
+    },
+    "number_of_timesteps": 100000,
+    "number_of_episodes": 10000,
+    "save_location": "bw_cooperation_test_simple_{}/",
+    "verbosity": {
+        "environment": "INFO",
+        "parser": "INFO"
+    }
+}
