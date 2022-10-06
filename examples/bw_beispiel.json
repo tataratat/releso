@@ -70,8 +70,8 @@
             "number_of_cores": 1
         }
     },
-    "number_of_timesteps": 5000,
-    "number_of_episodes": 1000,
+    "number_of_timesteps": 100000,
+    "number_of_episodes": 10000,
     "save_location": "bw_cooperation_test_simple_{}/",
     "verbosity": {
         "environment": "INFO",
