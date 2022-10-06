@@ -73,7 +73,7 @@
     },
     "number_of_timesteps": 100000,
     "number_of_episodes": 10000,
-    "save_location": "bw_cooperation_test_simple_{}/",
+    "save_location": "bw_cooperation_test_simple_direct_{}/",
     "verbosity": {
         "environment": "INFO",
         "parser": "INFO"

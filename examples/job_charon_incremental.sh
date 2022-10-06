@@ -50,7 +50,7 @@ source /home/a11bivst/load_python.sh
 # Go back to calling directroy
 cd  $CWD
 
-python3 -m SbSOvRL -i examples/bw_beispiel.json
+python3 -m SbSOvRL -i examples/bw_beispiel_incremental.json
 
 # END ################## DO NOT TOUCH ME #########################
 echo

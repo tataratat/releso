@@ -55,7 +55,7 @@
                     "working_directory": "./{}/",
                     "execution_command": "python",
                     "command_options": [
-                        "examples/external_icms_solver_1.py"
+                        "examples/external_icms_solver_incremental.py"
                     ],
                     "add_step_information": true
                 }
@@ -72,7 +72,7 @@
     },
     "number_of_timesteps": 100000,
     "number_of_episodes": 10000,
-    "save_location": "bw_cooperation_test_simple_{}/",
+    "save_location": "bw_cooperation_test_simple_incemental_{}/",
     "verbosity": {
         "environment": "INFO",
         "parser": "INFO"
