@@ -2,7 +2,8 @@
     "agent": {
         "type": "DDPG",
         "policy": "MlpPolicy",
-        "tensorboard_log": "tensorboard", "optimize_memory_usage": false
+        "tensorboard_log": "tensorboard",
+        "gamma": 0.0
     },
     "environment": {
         "spline": {
@@ -55,7 +56,7 @@
                     "working_directory": "./{}/",
                     "execution_command": "python",
                     "command_options": [
-                        "examples/external_icms_solver_1.py"
+                        "examples/external_icms_solver_direct.py"
                     ],
                     "add_step_information": true
                 }
@@ -63,7 +64,7 @@
             "reward_aggregation": "sum"
         },
         "discrete_actions": false,
-        "max_timesteps_in_episode": 100,
+        "max_timesteps_in_episode": 10,
         "reward_on_episode_exceeds_max_timesteps": 0,
         "only_use_control_points": true,
         "multi_processing": {
