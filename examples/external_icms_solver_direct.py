@@ -113,7 +113,8 @@ def integrate(X, u):
     Evaluate the integral of the square displacements over the length of the beam.
     """
 
-    return np.sum(np.square(X + u)[:, 1])
+    return np.sum(np.square(X + u)[:, 1]) * 0.1
+
 
 
 def post_process(base_dir):

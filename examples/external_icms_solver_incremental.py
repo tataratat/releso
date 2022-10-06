@@ -113,7 +113,7 @@ def integrate(X, u):
     Evaluate the integral of the square displacements over the length of the beam.
     """
 
-    return np.sum(np.square(X + u)[:, 1])
+    return np.sum(np.square(X + u)[:, 1]) * 0.1
 
 
 def post_process(base_dir):
@@ -196,7 +196,7 @@ def main(args, reward_solver_log) -> Dict[str, Any]:
     last_cost = local_variable_store["last_cost"]
     if last_cost is None:
         reward = 0
-    elif cost_function < 0.06:
+    elif cost_function < 0.01:
         reward = 5
         done = True
         info["reset_reason"] = "converged"
