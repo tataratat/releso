@@ -75,7 +75,7 @@ def create_model(base_path, control_points_y):
         return (string + "*" + scaling_function).format(mid, wide)
 
     fun = Function(
-        "COMPONENT 0 FUNCTION t*(-{}+{})".format(get_fun(1.5, 1.0), get_fun(3.5, 1.0))
+        "COMPONENT 0 FUNCTION t"
     )
     input_file.add(fun)
     input_file.add(
@@ -88,7 +88,7 @@ def create_model(base_path, control_points_y):
     input_file.add(
         BoundaryCondition(
             beam_set["line"],
-            "NUMDOF 9 ONOFF 0 1 0 0 0 0 0 0 0 VAL 0 0.1 0 0 0 0 0 0 0 FUNCT 0 1 0 0 0 0 0 0 0",
+            "NUMDOF 9 ONOFF 0 1 0 0 0 0 0 0 0 VAL 0 0.001 0 0 0 0 0 0 0 FUNCT 0 1 0 0 0 0 0 0 0",
             bc_type=mpy.bc.neumann,
         )
     )
@@ -113,7 +113,7 @@ def integrate(X, u):
     Evaluate the integral of the square displacements over the length of the beam.
     """
 
-    return np.sum(np.square(X + u)[:, 1]) * (X[1, 0] - X[0, 0])
+    return np.sum(np.square(X + u)[:, 1])
 
 
 def post_process(base_dir):
