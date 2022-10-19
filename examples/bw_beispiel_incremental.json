@@ -52,7 +52,7 @@
                     #"reward_on_completion": 0,
                     "run_on_reset": true,
                     "use_communication_interface": true,
-                    "working_directory": "./{}/",
+                    "working_directory": "./",
                     "execution_command": "python",
                     "command_options": [
                         "examples/external_icms_solver_incremental.py"
