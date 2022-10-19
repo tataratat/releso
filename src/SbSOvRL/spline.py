@@ -5,8 +5,14 @@ definition of the problem.
 from abc import abstractmethod
 from SbSOvRL.exceptions import SbSOvRLParserException
 import logging
+
 from SbSOvRL.util.logger import get_parser_logger
-from gustav import BSpline, NURBS
+from SbSOvRL.util.util_funcs import ModuleImportRaiser
+try:
+    from gustav import BSpline, NURBS
+except ImportError:
+    BSpline = ModuleImportRaiser("gustav")
+    NURBS = ModuleImportRaiser("gustav")
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from typing import List, Union, Optional, Dict, Any
 import numpy as np
@@ -669,8 +675,166 @@ class NURBSDefinition(SplineDefinition):
             weight.reset()
 
 
+class CubeDefinition(SbSOvRL_BaseModel):
+    """
+    Defines a simple cube. TODO make better docu
+    """
+    control_points: List[List[VariableLocation]]
+
+    def get_number_of_points(self) -> int:
+        """
+        Returns the number of points in the Cube. Number of control points 
+        multiplied bz the number of dimensions for each cp.
+
+        Returns:
+            int: number of points in the spline
+        """
+        return int(len(self.control_points)*len(self.control_points[0]))
+
+    @validator("control_points", each_item=True)
+    @classmethod
+    def convert_all_control_point_locations_to_variable_locations(
+            cls, v, values):
+        """
+        Converts all control points values into VariableLocations if the value
+        is given as a simple float. Simple float will be converted into
+        VariableLocation with current_position=value and no variability.
+
+        Args:
+            v ([type]): value to validate
+
+        Returns:
+            [type]: validated value
+        """
+        new_list = []
+        for element in v:
+            new_list.append(
+                VariableLocation(
+                    current_position=element,
+                    save_location=values["save_location"]
+                    ) if type(element) is float else element)
+            if not 0. <= new_list[-1].current_position <= 1.:
+                raise SbSOvRLParserException(
+                    "SplineDefinition", "control_point_variables",
+                    "The control_point_variables need to be inside an unit "
+                    "hypercube. Found a values outside this unit hypercube.")
+        return new_list
+
+    def get_control_points(self) -> List[List[float]]:
+        """Returns the positions of all control points in a two deep list.
+
+        Returns:
+            List[List[float]]: Positions of all control points.
+        """
+        return [
+            [control_point.current_position for control_point in sub_list]
+            for sub_list in self.control_points]
+
+    def get_actions(self) -> List[VariableLocation]:
+        """
+        Returns list of VariableLocations but only if the variable location is
+        actually variable.
+
+        Returns:
+            List[VariableLocation]: See above
+        """
+        self.get_logger().debug("Collecting all actions for Cube.")
+        return [
+            variable for sub_dim in self.control_points
+            for variable in sub_dim if variable.is_action()]
+
+    def get_spline(self) -> Any:
+        """Generates the current Spline in the gustav format.
+
+        Notes:
+            This is an abstract method.
+
+        Returns:
+            Spline: Spline that is generated.
+        """
+        return self.get_control_points()
+    
+    def reset(self) -> None:
+        """Resets the spline to the original shape.
+        """
+        for cp in self.control_points:
+            for variable in cp:
+                variable.reset()
+    
+    
+
+    def draw_action_space(
+            self, save_location: Optional[str] = None, no_axis: bool = False,
+            fig_size: List[float] = [6, 6], dpi: int = 400):
+        """_summary_
+
+        Args:
+            save_location (Optional[str], optional): _description_. Defaults to None.
+            no_axis (bool, optional): _description_. Defaults to False.
+            fig_size (List[float], optional): _description_. Defaults to [6, 6].
+            dpi (int, optional): _description_. Defaults to 400.
+
+        Raises:
+            RuntimeError: _description_
+        """
+        from matplotlib.patches import Polygon
+        import matplotlib.pyplot as plt
+        control_points = self.control_points
+        if len(self.control_points[0]) > 2:
+            raise RuntimeError(
+                "Could not draw the splines action space. Only a 2D parametric"
+                " space is currently available.")
+        elif len(self.control_points[0]) == 1:
+            for idx, cp in enumerate(control_points):
+                cp.insert(
+                    0, 
+                    VariableLocation(
+                        current_location = float(idx),
+                        save_location = self.save_location
+                    )
+                )
+        phi = np.linspace(0, 2*np.pi, len(control_points))
+        rgb_cycle = np.vstack((            # Three sinusoids
+            .5*(1.+np.cos(phi)),  # scaled to [0,1]
+            .5*(1.+np.cos(phi+2*np.pi/3)),  # 120° phase shifted.
+            .5*(1.+np.cos(phi-2*np.pi/3)))).T  # Shape = (60,3)
+        fig, ax = plt.subplots(figsize=fig_size, dpi=dpi)
+
+        dots = [[], []]
+
+        for elem, color in zip(control_points, rgb_cycle):
+            dots[0].append(elem[0].current_position)
+            dots[1].append(elem[1].current_position)
+            cur_pos = np.array([dots[0][-1], dots[1][-1]])
+            spanning_elements = []
+            no_boundary = False
+            for item in elem:
+                spanning_elements.append([item.min_value, item.max_value])
+                if item.min_value == item.max_value:
+                    no_boundary = True
+            boundary = []
+            for i, j in zip([0, 1, 1, 0], [0, 0, 1, 1]):
+                end_pos = np.array(
+                    [spanning_elements[0][i], spanning_elements[1][j]])
+                if not np.isclose(cur_pos, end_pos).all():  # draw arrow
+                    difference = end_pos-cur_pos
+                    ax.arrow(cur_pos[0], cur_pos[1], difference[0] *
+                             0.9, difference[1]*0.9, width=0.005, color=color)
+                boundary.append(end_pos)
+            if not no_boundary:
+                pol = Polygon(boundary, facecolor=color,
+                              linewidth=1, alpha=0.2)
+                ax.add_patch(pol)
+        ax.scatter(dots[0], dots[1], c=rgb_cycle, marker="o", s=50, zorder=3)
+        if no_axis:
+            plt.axis("off")
+        if save_location:
+            fig.savefig(save_location, transparent=True)
+            plt.close()
+
+
 # should always be a derivate of SplineDefinition
-SplineTypes = Union[NURBSDefinition, BSplineDefinition]
+SplineTypes = Union[NURBSDefinition, BSplineDefinition, CubeDefinition]
 
 
 class Spline(SbSOvRL_BaseModel):
@@ -681,6 +845,9 @@ class Spline(SbSOvRL_BaseModel):
     Please remove in next rework.
     """
     spline_definition: SplineTypes
+
+    def get_control_points(self) -> List[List[float]]:
+        return self.spline_definition.get_control_points()
 
     def get_spline(self) -> SplineTypes:
         """Creates the current spline.

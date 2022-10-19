@@ -154,7 +154,7 @@ class ObservationDefinition(SbSOvRL_BaseModel):
         return (
             self.name,
             Box(
-                self.value_min, self.value_max, shape=(1), dtype=np.float32))
+                self.value_min, self.value_max, shape=([1]), dtype=np.float32))
 
     def get_default_observation(self) -> np.ndarray:
         """

@@ -73,7 +73,7 @@ def spor_com_additional_information(j_str: str) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Dict created from the json definition
     """
-    a = json.loads(j_str)
+    a = json.loads(j_str[1:-1])
     return a
 
 

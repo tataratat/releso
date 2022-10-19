@@ -26,18 +26,24 @@ Author:
     Clemens Fricke (clemens.david.fricke@tuwien.ac.at)
 
 """
+from ast import Import
 from typing import Literal, Optional, Union, Dict, Any
 # import numpy as np
 # from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.gym_environment import GymEnvironment
+from SbSOvRL.util.util_funcs import ModuleImportRaiser
 from pydantic.types import FilePath
 from stable_baselines3 import A2C, PPO, DDPG, SAC, DQN
 from stable_baselines3.common.base_class import BaseAlgorithm
 import datetime
 from SbSOvRL.base_model import SbSOvRL_BaseModel
 from SbSOvRL.exceptions import SbSOvRLAgentUnknownException
-from SbSOvRL.feature_extractor import SbSOvRL_FeatureExtractor
-from SbSOvRL.feature_extractor import SbSOvRL_CombinedExtractor
+try:
+    from SbSOvRL.feature_extractor import SbSOvRL_FeatureExtractor
+    from SbSOvRL.feature_extractor import SbSOvRL_CombinedExtractor
+except ImportError:
+    SbSOvRL_CombinedExtractor = ModuleImportRaiser("torchvision")
+    SbSOvRL_FeatureExtractor = ModuleImportRaiser("torchvision")
 
 # TODO dynamic agent detection via https://stackoverflow.com/a/3862957
 ####################################
@@ -390,7 +396,7 @@ class DDPGAgent(BaseTrainingAgent):
     #: complexity. See
     #: https://github.com/DLR-RM/stable-baselines3/issues/37#:issuecomment
     # -637501195
-    optimize_memory_usage: float = 0.95
+    optimize_memory_usage: bool = False
     #: Seed for the pseudo random generators
     seed: Optional[int] = None
     #: Device (cpu, cuda, …) on which the code should be run. Setting it to

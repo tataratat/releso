@@ -6,7 +6,14 @@ from pydantic import Field, PrivateAttr
 from typing import Optional, Dict, Any
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.util.logger import get_parser_logger
-from gustav import Mesh, load_mixd, load_volume_mixd
+from SbSOvRL.util.util_funcs import ModuleImportRaiser
+try:
+    from gustav import Mesh, load_mixd, load_volume_mixd
+except ImportError:
+    Mesh = ModuleImportRaiser("gustav")
+    load_mixd = ModuleImportRaiser("gustav")
+    load_volume_mixd = ModuleImportRaiser("gustav")  #TODO add raiseif helper
+
 from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
 from SbSOvRL.base_model import SbSOvRL_BaseModel

@@ -4,12 +4,19 @@
   plotting function exist but are not part of the library.
 """
 from typing import List, Optional, Tuple
-import gustav as gus
+from SbSOvRL.util.util_funcs import ModuleImportRaiser
+try:
+    import gustav as gus
+except ImportError:
+    gus = ModuleImportRaiser("gustav")
+try:
+    import imageio
+except ImportError:
+    imageio = ModuleImportRaiser("gustav")
 import pathlib
 from copy import deepcopy
 import numpy as np
 from matplotlib import pyplot as plt
-import imageio
 import pandas as pd
 from matplotlib.patches import Polygon
 import itertools

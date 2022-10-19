@@ -20,9 +20,12 @@ from pydantic import conint, UUID4
 import gym
 from gym import spaces
 from stable_baselines3.common.monitor import Monitor
+from SbSOvRL.util.util_funcs import ModuleImportRaiser
 
-from gustav import FreeFormDeformation
-
+try:
+    from gustav import FreeFormDeformation
+except ImportError:
+    FreeFormDeformation = ModuleImportRaiser("gustav")
 from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.spline import Spline, VariableLocation
 from SbSOvRL.util.logger import get_parser_logger
@@ -33,8 +36,10 @@ from SbSOvRL.base_model import SbSOvRL_BaseModel
 from SbSOvRL.util.sbsovrl_types import ObservationType
 from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
 from SbSOvRL.util.load_binary import read_mixd_double
-from SbSOvRL.util.plotting import get_tricontour_solution
-
+try:
+    from SbSOvRL.util.plotting import get_tricontour_solution
+except ImportError:
+    get_tricontour_solution = ModuleImportRaiser("gustav")
 
 class MultiProcessing(SbSOvRL_BaseModel):
     """
@@ -57,7 +62,7 @@ class Environment(SbSOvRL_BaseModel):
     multi_processing: Optional[MultiProcessing] = Field(
         default_factory=MultiProcessor)
     spline: Spline  #: definition of the spline
-    mesh: Mesh  #: definition of the mesh
+    mesh: Optional[Mesh] = None  #: definition of the mesh TODO make optional
     spor: SPORList  #: definition of the spor objects
     #: Whether or not to use discrete actions if False continuous actions
     #: will be used.
@@ -86,6 +91,9 @@ class Environment(SbSOvRL_BaseModel):
     #: also saves the mesh when an episode is saved with
     #: save_random_good_episode_results, works only if the named option is True
     save_random_good_episode_mesh: bool = False
+    #: do not perform FFD just add the control_points current location to the 
+    #: info of the episode
+    only_use_control_points: bool = False
 
     # object variables
     #: id if the environment, important for multi-environment learning
@@ -101,20 +109,22 @@ class Environment(SbSOvRL_BaseModel):
     #: spline has changed between episodes
     _last_observation: Optional[ObservationType] = PrivateAttr(default=None)
     #: FreeFormDeformation used for the spline based shape optimization
-    _FFD: FreeFormDeformation = PrivateAttr(
-        default_factory=FreeFormDeformation)
-    _last_step_results: Dict[str, Any] = PrivateAttr(
-        default={})    #: StepReturn values from last step
+    _FFD: Optional[FreeFormDeformation] = PrivateAttr(None)
+    #: StepReturn values from last step
+    _last_step_results: Dict[str, Any] = PrivateAttr(default={})
     #: path where the mesh should be saved to for validation
     _validation_base_mesh_path: Optional[str] = PrivateAttr(default=None)
+    #: How many validations were already evaluated
     _validation_iteration: Optional[int] = PrivateAttr(
-        default=0)   #: How many validations were already evaluated
+        default=0)
+    #: The triangular connectivity of the
     _connectivity: Optional[np.ndarray] = PrivateAttr(
-        default=None)  #: The triangular connectivity of the
+        default=None)
     #: Please check validation definition to see what this does
     _save_image_in_validation: bool = PrivateAttr(default=False)
     #: Please check validation definition to see what this does
     _validation_timestep: int = PrivateAttr(default=0)
+    #: 
     _observation_is_dict: bool = PrivateAttr(default=False)
     #: At these values the validation results are saved
     _result_values_to_save: List[float] = PrivateAttr(default=list(
@@ -215,6 +225,8 @@ class Environment(SbSOvRL_BaseModel):
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
+        if not self.only_use_control_points:
+            self._FFD = FreeFormDeformation
 
     def _set_up_actions(self) -> gym.Space:
         """Creates the action space the gym environment uses to define its
@@ -318,7 +330,7 @@ class Environment(SbSOvRL_BaseModel):
         if spor_obs is not None:
             for item in spor_obs:
                 observation_spaces.append(item.get_observation_definition())
-                if item.value_type == "CNN":
+                if "value_type" in item.__dict__.keys() and  item.value_type == "CNN":
                     has_cnn_observations = True
 
         # check if dict is actually necessary
@@ -448,15 +460,16 @@ class Environment(SbSOvRL_BaseModel):
         self.get_logger().info(f"Action {action}")
         self.apply_action(action)
 
-        # apply Free Form Deformation
-        self._apply_FFD()
-
         observations = {}
         done = False
         reward = 0.
-        info = {
-            "mesh_path": str(self.mesh.mxyz_path)
-        }
+        info = dict()
+
+        if not self.only_use_control_points:
+            # apply Free Form Deformation
+            self._apply_FFD()
+            info["mesh_path"] = str(self.mesh.mxyz_path)
+        info["control_points"] = self.spline.get_control_points()
 
         # run solver
         observations, reward, done, info = self.spor.run(step_information=(
@@ -582,16 +595,15 @@ class Environment(SbSOvRL_BaseModel):
         else:
             self.spline.reset()
 
-        # apply Free Form Deformation should now just recreate the
-        # non deformed mesh
-        self._apply_FFD()
         observations = {}
-
         done = False
-        reward = 0
-        info = {
-            "mesh_path": str(self.mesh.mxyz_path)
-        }
+        reward = 0.
+        info = dict()
+        if not self.only_use_control_points:
+            # apply Free Form Deformation
+            self._apply_FFD()
+            info["mesh_path"] = str(self.mesh.mxyz_path)
+        info["control_points"] = self.spline.get_control_points()
 
         self._timesteps_in_episode = 0
         self._approximate_episode += 1
@@ -725,8 +737,9 @@ class Environment(SbSOvRL_BaseModel):
                 "and not before.")
 
         self._actions = self.spline.get_actions()
-        self._FFD.set_mesh(self.mesh.get_mesh())
-        self.mesh.adapt_export_path(self._id)
+        if not self.only_use_control_points:
+            self._FFD.set_mesh(self.mesh.get_mesh())
+            self.mesh.adapt_export_path(self._id)
         env = GymEnvironment(self._set_up_actions(),
                              self._define_observation_space())
         env.step = self.step
@@ -763,7 +776,8 @@ class Environment(SbSOvRL_BaseModel):
         Args:
             file_name (str): [description]
         """
-        self._FFD.deformed_spline.export(file_name)
+        if not self.only_use_control_points:
+            self._FFD.deformed_spline.export(file_name)
 
     def export_mesh(self, file_name: str, space_time: bool = False) -> None:
         """
@@ -782,7 +796,8 @@ class Environment(SbSOvRL_BaseModel):
                 export. Currently during the import it is assumed no space
                 time mesh is given.
         """
-        self._FFD.deformed_mesh.export(file_name, space_time=space_time)
+        if not self.only_use_control_points:
+            self._FFD.deformed_mesh.export(file_name, space_time=space_time)
 
     def close(self):
         """Function is called when training is stopped.
