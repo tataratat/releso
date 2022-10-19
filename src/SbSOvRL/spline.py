@@ -760,6 +760,77 @@ class CubeDefinition(SbSOvRL_BaseModel):
         for cp in self.control_points:
             for variable in cp:
                 variable.reset()
+    
+    
+
+    def draw_action_space(
+            self, save_location: Optional[str] = None, no_axis: bool = False,
+            fig_size: List[float] = [6, 6], dpi: int = 400):
+        """_summary_
+
+        Args:
+            save_location (Optional[str], optional): _description_. Defaults to None.
+            no_axis (bool, optional): _description_. Defaults to False.
+            fig_size (List[float], optional): _description_. Defaults to [6, 6].
+            dpi (int, optional): _description_. Defaults to 400.
+
+        Raises:
+            RuntimeError: _description_
+        """
+        from matplotlib.patches import Polygon
+        import matplotlib.pyplot as plt
+        control_points = self.control_points
+        if len(self.control_points[0]) > 2:
+            raise RuntimeError(
+                "Could not draw the splines action space. Only a 2D parametric"
+                " space is currently available.")
+        elif len(self.control_points[0]) == 1:
+            for idx, cp in enumerate(control_points):
+                cp.insert(
+                    0, 
+                    VariableLocation(
+                        current_location = float(idx),
+                        save_location = self.save_location
+                    )
+                )
+        phi = np.linspace(0, 2*np.pi, len(control_points))
+        rgb_cycle = np.vstack((            # Three sinusoids
+            .5*(1.+np.cos(phi)),  # scaled to [0,1]
+            .5*(1.+np.cos(phi+2*np.pi/3)),  # 120° phase shifted.
+            .5*(1.+np.cos(phi-2*np.pi/3)))).T  # Shape = (60,3)
+        fig, ax = plt.subplots(figsize=fig_size, dpi=dpi)
+
+        dots = [[], []]
+
+        for elem, color in zip(control_points, rgb_cycle):
+            dots[0].append(elem[0].current_position)
+            dots[1].append(elem[1].current_position)
+            cur_pos = np.array([dots[0][-1], dots[1][-1]])
+            spanning_elements = []
+            no_boundary = False
+            for item in elem:
+                spanning_elements.append([item.min_value, item.max_value])
+                if item.min_value == item.max_value:
+                    no_boundary = True
+            boundary = []
+            for i, j in zip([0, 1, 1, 0], [0, 0, 1, 1]):
+                end_pos = np.array(
+                    [spanning_elements[0][i], spanning_elements[1][j]])
+                if not np.isclose(cur_pos, end_pos).all():  # draw arrow
+                    difference = end_pos-cur_pos
+                    ax.arrow(cur_pos[0], cur_pos[1], difference[0] *
+                             0.9, difference[1]*0.9, width=0.005, color=color)
+                boundary.append(end_pos)
+            if not no_boundary:
+                pol = Polygon(boundary, facecolor=color,
+                              linewidth=1, alpha=0.2)
+                ax.add_patch(pol)
+        ax.scatter(dots[0], dots[1], c=rgb_cycle, marker="o", s=50, zorder=3)
+        if no_axis:
+            plt.axis("off")
+        if save_location:
+            fig.savefig(save_location, transparent=True)
+            plt.close()
 
 
 # should always be a derivate of SplineDefinition
