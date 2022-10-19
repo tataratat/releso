@@ -5,7 +5,7 @@
 .. autoclass:: {{ objname }}
    :members:
    :show-inheritance:
-   
+
    {% block methods %}
    .. automethod:: __init__
 

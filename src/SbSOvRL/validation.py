@@ -1,22 +1,23 @@
-"""
-File holds the definition class for the validation.
-"""
+"""File holds the definition class for the validation."""
 import pathlib
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.logger import get_parser_logger
+from typing import Any, Dict, List, Optional, Tuple
+
 from pydantic.class_validators import validator
 from pydantic.fields import Field
 from pydantic.types import conint, conlist
-from typing import Any, Optional, List, Tuple, Dict
-from SbSOvRL.exceptions import SbSOvRLParserException
-from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.type_aliases import GymEnv
-from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.base_class import BaseAlgorithm
+from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.type_aliases import GymEnv
+
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.exceptions import SbSOvRLParserException
+from SbSOvRL.util.logger import get_parser_logger
 
 
 class Validation(SbSOvRL_BaseModel):
-    """
+    """Parser class to define the validation to be performed during training.
+
     This class is used for the configuration of how validation is to be
     performed during training.
     """
@@ -52,20 +53,20 @@ class Validation(SbSOvRL_BaseModel):
     @classmethod
     def check_if_reward_given_if_spline_not_change_episode_killer_activated(
             cls, value: float, values: Dict[str, Any]) -> float:
-        """
+        """Validator for reward_on_spline_not_changed.
+
         Checks that 1) if a reward is set, also the boolean value for the
         end_episode_on_spline_not_changed is True.
         2) If end_episode_on_spline_not_changed is True a reward value is set.
 
         Args:
             value (float): value to validate
-            values (Dict[str, Any]):
-                previously validated values
-                (here end_episode_on_spline_not_changed is important)
+            values (Dict[str, Any]): previously validated values
+            (here end_episode_on_spline_not_changed is important)
 
         Raises:
-            SbSOvRLParserException:
-                Error is thrown if one of the conditions is not met.
+            SbSOvRLParserException: Error is thrown if one of the conditions is
+            not met.
 
         Returns:
             float: reward for the specified occurrence.
@@ -96,20 +97,20 @@ class Validation(SbSOvRL_BaseModel):
     @classmethod
     def check_if_reward_given_if_max_steps_killer_activated(
             cls, value: float, values: Dict[str, Any]) -> float:
-        """
+        """Validator for reward_on_episode_exceeds_max_timesteps.
+
         Checks that 1) if a reward is set, also that the value for the
         max_timesteps_in_episode is greater than 0.
         2) If max_timesteps_in_episode is greater 0 a reward value is set.
 
         Args:
             value (float): value to validate
-            values (Dict[str, Any]):
-                previously validated values (here max_timesteps_in_episode is
-                important)
+            values (Dict[str, Any]): previously validated values
+            (here max_timesteps_in_episode is important)
 
         Raises:
-            SbSOvRLParserException:
-                Error is thrown if one of the conditions is not met.
+            SbSOvRLParserException: Error is thrown if one of the conditions is
+            not met.
 
         Returns:
             float: reward for the specified occurrence.
@@ -139,8 +140,7 @@ class Validation(SbSOvRL_BaseModel):
     @classmethod
     def validate_validation_values_list_not_empty(
             cls, value: List[float], field: str) -> List[float]:
-        """
-        Checks that the validation_values list is not empty.
+        """Checks that the validation_values list is not empty.
 
         Args:
             value (List[float]): value holding the list
@@ -174,12 +174,12 @@ class Validation(SbSOvRL_BaseModel):
         """Creates the EvalCallback with the values given in this object.
 
         Args:
-            eval_environment (GymEnv):
-                Evaluation environment. Should be the same as the normal
-                training environment only that here the goal values should be
-                set and not random.
-            save_location (Optional[pathlib.Path]):
-                Path to where the best models should be save to.
+            eval_environment (GymEnv): Evaluation environment. Should be the
+            same as the normal training environment only that here the goal
+            values should be set and not random.
+            save_location (Optional[pathlib.Path]): Path to where the best
+            models should be save to.
+
         Returns:
             EvalCallback: Validation callback parametrized by this object.
         """
@@ -200,9 +200,9 @@ class Validation(SbSOvRL_BaseModel):
     def end_validation(
             self, agent: BaseAlgorithm,
             environment: GymEnv) -> Tuple[float, float]:
-        """
-        Function is called at the end of a validation. All clean up and last
-        evaluation is going in here.
+        """Function is called at the end of a validation.
+
+        All clean up and last evaluation is going in here.
 
         Args:
             agent (BaseAlgorithm): Agent which is to be used to validate.
@@ -221,26 +221,27 @@ class Validation(SbSOvRL_BaseModel):
         return evaluate_policy(**variable_dict)
 
     def get_mesh_base_path(self, base_save_location: pathlib.Path) -> str:
-        """
+        """Get the path to the initial mesh.
+
         Appends the read in base_mesh_path to the save_location path given as
         input parameter. This makes it so that the validation results are
         stored inside the results storage of the experiment.
 
         Args:
-            base_save_location (pathlib.Path):
-                Experiment/Trainings run save location.
+            base_save_location (pathlib.Path): Experiment/Trainings run save
+            location.
 
         Returns:
-            str:
-                str of path pointing to the location where the meshes from the
-                validation are supposed to be stored
+            str: str of path pointing to the location where the meshes from the
+            validation are supposed to be stored
         """
         return str(base_save_location/self.mesh_base_path_extension) \
             if self.mesh_base_path_extension else None
 
     def get_environment_validation_parameters(
             self, base_save_location: pathlib.Path) -> Dict[str, Any]:
-        """
+        """Gather the validation arguments used to initialize validator.
+
         Gets the validation parameters that need to be send to the environment
         if it gets converted to be a validation environment.
 

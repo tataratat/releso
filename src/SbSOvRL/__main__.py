@@ -1,19 +1,23 @@
 #!/usr/bin/env python
+"""ReLeSO main file and framework starting point.
+
+File defines the main entry point of the framework if it is called via the
+command line. (via python -m SbSOvRL)
 """
-    File defines the main entry point of the framework if it is called via the
-    command line. (via python -m SbSOvRL)
-"""
-import shutil
-from SbSOvRL.base_parser import BaseParser
 import argparse
-import pathlib
-import hjson
 import datetime
+import pathlib
 import pprint
+import shutil
+
+import hjson
+
+from SbSOvRL.base_parser import BaseParser
 
 
 def main(args) -> None:
-    """
+    """Calling function of framework.
+
     Functions control how the framework works when called from the command
     line.
 
@@ -23,7 +27,6 @@ def main(args) -> None:
     Raises:
         ValueError: Thrown if the json file could not be found.
     """
-
     ###########################
     #                         #
     #   Loading and parsing   #

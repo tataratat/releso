@@ -1,4 +1,5 @@
-"""
+"""Parsing of the agents available in ReLeSO.
+
 Out of the box the SbSOvRL package uses agents implemented in the Python
 package stable-baselines3. Currently the agents Deep Q-Network (DQN), Proximal
 Policy Optimization (PPO), Soft Actor-Critic (SAC) Advantage Actor Critic (A2C)
@@ -26,21 +27,24 @@ Author:
     Clemens Fricke (clemens.david.fricke@tuwien.ac.at)
 
 """
+import datetime
 from ast import Import
-from typing import Literal, Optional, Union, Dict, Any
+from typing import Any, Dict, Literal, Optional, Union
+
+from pydantic.types import FilePath
+from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC
+from stable_baselines3.common.base_class import BaseAlgorithm
+
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.exceptions import SbSOvRLAgentUnknownException
 # import numpy as np
 # from SbSOvRL.exceptions import SbSOvRLParserException
 from SbSOvRL.gym_environment import GymEnvironment
 from SbSOvRL.util.util_funcs import ModuleImportRaiser
-from pydantic.types import FilePath
-from stable_baselines3 import A2C, PPO, DDPG, SAC, DQN
-from stable_baselines3.common.base_class import BaseAlgorithm
-import datetime
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.exceptions import SbSOvRLAgentUnknownException
+
 try:
-    from SbSOvRL.feature_extractor import SbSOvRL_FeatureExtractor
-    from SbSOvRL.feature_extractor import SbSOvRL_CombinedExtractor
+    from SbSOvRL.feature_extractor import (SbSOvRL_CombinedExtractor,
+                                           SbSOvRL_FeatureExtractor)
 except ImportError:
     SbSOvRL_CombinedExtractor = ModuleImportRaiser("torchvision")
     SbSOvRL_FeatureExtractor = ModuleImportRaiser("torchvision")
@@ -65,16 +69,18 @@ except ImportError:
 
 
 class BaseAgent(SbSOvRL_BaseModel):
-    """
-        The class BaseAgent should be used as the base class for all classes
-        defining agents for the SbSOvRL framework.
+    """Base agent definition.
+
+    The class BaseAgent should be used as the base class for all classes
+    defining agents for the SbSOvRL framework.
     """
     #: base directory of the tensorboard logs if given an experiment name
     #: with a current timestamp is also added.
     tensorboard_log: Optional[str]
 
     def get_next_tensorboard_experiment_name(self) -> str:
-        """
+        """Return tensorboard experiment name.
+
         Adds a date and time marker to the tensorboard experiment name so that
         it can be distinguished from other experiments.
 
@@ -87,9 +93,10 @@ class BaseAgent(SbSOvRL_BaseModel):
 
 
 class BaseTrainingAgent(BaseAgent):
-    """
-        The class BaseAgent should be used as the base class for all classes
-        defining agents for the SbSOvRL framework.
+    """BaseTraining agent definition.
+
+    The class BaseAgent should be used as the base class for all classes
+    defining agents for the SbSOvRL framework.
     """
     #: policy defines the network structure which the agent uses
     policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]
@@ -104,7 +111,8 @@ class BaseTrainingAgent(BaseAgent):
     policy_kwargs: Optional[Dict[str, Any]] = None
 
     def get_next_tensorboard_experiment_name(self) -> str:
-        """
+        """Return tensorboard experiment name.
+
         Adds a date and time marker to the tensorboard experiment name so that
         it can be distinguished from other experiments.
 
@@ -116,7 +124,8 @@ class BaseTrainingAgent(BaseAgent):
         return None
 
     def get_additional_kwargs(self, **kwargs) -> Dict[str, Any]:
-        """
+        """Add additional keyword arguments for agent instantiation.
+
         Reads and gets the additional keyword arguments for the agent
         definition.
 
@@ -158,7 +167,8 @@ class BaseTrainingAgent(BaseAgent):
 
 
 class PretrainedAgent(BaseAgent):
-    """
+    """Pretrained agent definition.
+
     This class can be used to load pretrained agents, instead of using
     untrained agents. Can also be used to only validate this agent without
     training it further. Please see validation section for this use-case.
@@ -180,13 +190,13 @@ class PretrainedAgent(BaseAgent):
         """Tries to locate the agent defined and to load it correctly.
 
         Args:
-            environment (GymEnvironment):
-                Environment with which the agent will interact.
+            environment (GymEnvironment): Environment with which the agent will
+            interact.
             normalizer_divisor (int): Currently not used in this function.
 
         Raises:
-            SbSOvRLAgentUnknownException:
-                Possible exception which can be thrown.
+            SbSOvRLAgentUnknownException: Possible exception which can be
+            thrown.
 
         Returns:
             BaseAlgorithm: Return the correctly loaded agent.
@@ -208,7 +218,8 @@ class PretrainedAgent(BaseAgent):
             raise SbSOvRLAgentUnknownException(self.type)
 
     def get_next_tensorboard_experiment_name(self) -> str:
-        """
+        """Return the name of the tensorboard experiment.
+
         The tensorboard experiment name of the original training run if given
         else a new one with the current time stamp.
 
@@ -224,8 +235,9 @@ class PretrainedAgent(BaseAgent):
 
 
 class A2CAgent(BaseTrainingAgent):
-    """
-    PPO definition for the stable_baselines3 implementation for this algorithm.
+    """A2c agent definition.
+
+    A2C definition for the stable_baselines3 implementation for this algorithm.
     Variable comments are taken from the stable_baselines3 documentation.
     """
     #: What RL algorithm was used to train the agent. Needs to be know to
@@ -273,10 +285,10 @@ class A2CAgent(BaseTrainingAgent):
     def get_agent(
             self, environment: GymEnvironment,
             normalizer_divisor: int = 1) -> A2C:
-        """
-        Creates the stable_baselines version of the wanted Agent. Uses all
-        Variables given in the object (except type) as the input parameters of
-        the agent object creation.
+        """Creates the stable_baselines version of the wanted Agent.
+
+        Uses all Variables given in the object (except type) as the input
+        parameters of the agent object creation.
 
         Notes:
             The A2C variable n_steps scales with the amount of environments the
@@ -301,7 +313,8 @@ class A2CAgent(BaseTrainingAgent):
 
 
 class PPOAgent(BaseTrainingAgent):
-    """
+    """PPO agent definition.
+
     PPO definition for the stable_baselines3 implementation for this algorithm.
     Variable comments are taken from the stable_baselines3 documentation.
     """
@@ -342,10 +355,10 @@ class PPOAgent(BaseTrainingAgent):
     def get_agent(
             self, environment: GymEnvironment, normalizer_divisor: int = 1
     ) -> PPO:
-        """
-        Creates the stable_baselines version of the wanted Agent. Uses all
-        Variables given in the object (except type) as the input parameters of
-        the agent object creation.
+        """Creates the stable_baselines version of the wanted Agent.
+
+        Uses all Variables given in the object (except type) as the input
+        parameters of the agent object creation.
 
         Notes:
             The PPO variable n_steps scales with the amount of environments the
@@ -370,7 +383,8 @@ class PPOAgent(BaseTrainingAgent):
 
 
 class DDPGAgent(BaseTrainingAgent):
-    """
+    """DDPG agent definition.
+
     DDPG definition for the stable_baselines3 implementation for this
     algorithm. Variable comments are taken from the stable_baselines3
     documentation.
@@ -406,16 +420,15 @@ class DDPGAgent(BaseTrainingAgent):
     def get_agent(
             self, environment: GymEnvironment, normalizer_divisor: int = 1
     ) -> DDPG:
-        """
-        Creates the stable_baselines version of the wanted Agent. Uses all
-        Variables given in the object (except type) as the input parameters of
-        the agent object creation.
+        """Creates the stable_baselines version of the wanted Agent.
+
+        Uses all Variables given in the object (except type) as the input
+        parameters of the agent object creation.
 
         Args:
-            environment (GymEnvironment):
-                The environment the agent uses to train.
-            normalizer_divisor (int):
-                Currently not used in this function.
+            environment (GymEnvironment): The environment the agent uses to
+            train.
+            normalizer_divisor (int): Currently not used in this function.
 
         Returns:
             DDPG: Initialized DDPG agent.
@@ -425,7 +438,8 @@ class DDPGAgent(BaseTrainingAgent):
 
 
 class SACAgent(BaseTrainingAgent):
-    """
+    """SAC Agent definition.
+
     SAC definition for the stable_baselines3 implementation for this algorithm.
     Variable comments are taken from the stable_baselines3 documentation.
     """
@@ -478,16 +492,15 @@ class SACAgent(BaseTrainingAgent):
     def get_agent(
             self, environment: GymEnvironment, normalizer_divisor: int = 1
     ) -> SAC:
-        """
-        Creates the stable_baselines version of the wanted Agent. Uses all
-        Variables given in the object (except type) as the input parameters of
-        the agent object creation.
+        """Creates the stable_baselines version of the wanted Agent.
+
+        Uses all Variables given in the object (except type) as the input
+        parameters of the agent object creation.
 
         Args:
-            environment (GymEnvironment):
-                The environment the agent uses to train.
-            normalizer_divisor (int):
-                Currently not used in this function.
+            environment (GymEnvironment): The environment the agent uses to
+            train.
+            normalizer_divisor (int): Currently not used in this function.
 
         Returns:
             SAC: Initialized SAC agent.
@@ -497,7 +510,8 @@ class SACAgent(BaseTrainingAgent):
 
 
 class DQNAgent(BaseTrainingAgent):
-    """
+    """DQN Agent definition.
+
     DQN definition for the stable_baselines3 implementation for this algorithm.
     Variable comments are taken from the stable_baselines3 documentation.
     """
@@ -549,16 +563,15 @@ class DQNAgent(BaseTrainingAgent):
     def get_agent(
             self, environment: GymEnvironment, normalizer_divisor: int = 1
     ) -> DQN:
-        """
-        Creates the stable_baselines version of the wanted Agent. Uses all
-        Variables given in the object (except type) as the input parameters of
-        the agent object creation.
+        """Creates the stable_baselines version of the wanted Agent.
+
+        Uses all Variables given in the object (except type) as the input
+        parameters of the agent object creation.
 
         Args:
-            environment (GymEnvironment):
-                The environment the agent uses to train.
-            normalizer_divisor (int):
-                Currently not used in this function.
+            environment (GymEnvironment): The environment the agent uses to
+            train.
+            normalizer_divisor (int): Currently not used in this function.
 
         Returns:
             DQN: Initialized DQN agent.

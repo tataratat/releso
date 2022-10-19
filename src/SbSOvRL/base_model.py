@@ -1,19 +1,23 @@
-"""
+"""Definition of the ReLeSO base Model.
+
 File holding the base class for all SbSOvRL classes which are needed for the
 command line based application of this toolbox.
 """
 import multiprocessing
 import pathlib
-from typing import Dict, Optional, List, Any
+from collections import OrderedDict
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Extra
+
 from SbSOvRL.util.logger import logging
 from SbSOvRL.util.util_funcs import get_path_extension
-from collections import OrderedDict
 
 
 def add_save_location_if_elem_is_o_dict(
         possible_value: Any, save_location: pathlib.Path):
-    """
+    """Add the save_location keyword to the element of it is a dict.
+
     This function adds the save_location to all ordered dicts in possible_value
     if it is not already present. This function is used to forward the
     save_location variable to all child objects so that all objects can access
@@ -23,10 +27,9 @@ def add_save_location_if_elem_is_o_dict(
     even be multiple lists deep)
 
     Args:
-        possible_value (Any):
-            Variable holding potential objects which need the save_location.
-        save_location (str):
-            string that defines the location
+        possible_value (Any): Variable holding potential objects which need
+        the save_location.
+        save_location (str): string that defines the location
     """
     if isinstance(possible_value, OrderedDict) \
             or isinstance(possible_value, Dict):
@@ -40,7 +43,8 @@ def add_save_location_if_elem_is_o_dict(
 
 
 class SbSOvRL_BaseModel(BaseModel):
-    """
+    """Base of all ReLeSO objects used for parsing.
+
     Base class for all SbSOvRL classes which are needed for the command line
     based application of this toolbox.
     """
@@ -55,6 +59,7 @@ class SbSOvRL_BaseModel(BaseModel):
     logger_name: Optional[str] = None
 
     def __init__(self, **data: Any) -> None:
+        """Constructor for the ReLeSO basemodel object."""
         if "save_location" in data:
             # This is so that the save location always gets the same
             if type(data["save_location"]) is str:
@@ -71,7 +76,8 @@ class SbSOvRL_BaseModel(BaseModel):
 
     @classmethod
     def convert_to_pathlib_add_datetime(cls, v: str):
-        """
+        """Add timestamp to save_location, of applicable.
+
         Adds a datetime timestamp to the save_location if {} present and
         current slurm job id if available. Task arrays will be added to the
         same folder and each task gets its own subfolder. This is done to make
@@ -93,16 +99,15 @@ class SbSOvRL_BaseModel(BaseModel):
         return path
 
     def _check_list(self, list_item: List[Any], logger_name: str):
-        """
+        """Helper function for set_logger_name_recursively.
+
         Recursively goes through lists and add the logger_name where
         applicable.
 
         Args:
-            list_item (List[Any]):
-                list in which to check if items reside which need checking for
-                logger names
-            logger_name (str):
-                logger name to add to all applicable objects
+            list_item (List[Any]): list in which to check if items reside
+            which need checking for logger names
+            logger_name (str): logger name to add to all applicable objects
         """
         for item in list_item:
             if isinstance(item, list):
@@ -111,7 +116,8 @@ class SbSOvRL_BaseModel(BaseModel):
                 item.set_logger_name_recursively(logger_name)
 
     def set_logger_name_recursively(self, logger_name: str):
-        """
+        """Set the logger_name variable for all child elements.
+
         Sets the given logger_name for the current object and all attributes
         which have the ``set_logger_recursively`` method.
 
@@ -132,10 +138,10 @@ class SbSOvRL_BaseModel(BaseModel):
                     attr(logger_name)
 
     def get_logger(self) -> logging.Logger:
-        """
-        Gets the currently defined environment logger. If multiprocessing is
-        part of the logger name the multiprocessing standard logger will be
-        called.
+        """Gets the currently defined environment logger.
+
+        If multiprocessing is part of the logger name the multiprocessing
+        standard logger will be called.
 
         Returns:
             logging.Logger: logger which is currently to be used.
@@ -146,4 +152,6 @@ class SbSOvRL_BaseModel(BaseModel):
 
     # makes it that pydantic returns an error if unknown keywords are given
     class Config:
+        """Used to add pydantic configurations."""
+        #: Forbids superfluous keywords for object definitions.
         extra = Extra.forbid

@@ -1,25 +1,29 @@
-"""
+"""File hold definition for verbosity settings.
+
 File holding the class defining the verbosity of the problem and defining the
 loggers.
 """
-from pydantic import validator
-from pydantic.fields import PrivateAttr
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.logger import VerbosityLevel, set_up_logger, logging
+import datetime
 import pathlib
 from typing import Any, Literal
-import datetime
+
+from pydantic import validator
+from pydantic.fields import PrivateAttr
+
+from SbSOvRL.base_model import SbSOvRL_BaseModel
+from SbSOvRL.util.logger import VerbosityLevel, logging, set_up_logger
 
 
 class Verbosity(SbSOvRL_BaseModel):
-    """
-        Defines the settings for the different loggers used in the current
-        experiment. This class is the only class which is copied to all
-        children. (this happens outside of the the standard channels and will
-        hopefully not break with multiprocessing)
+    """Verbosity class.
 
-        Please note, the parser logger only ever can have the following name
-        ``SbSOvRL_parser``
+    Defines the settings for the different loggers used in the current
+    experiment. This class is the only class which is copied to all
+    children. (this happens outside of the the standard channels and will
+    hopefully not break with multiprocessing)
+
+    Please note, the parser logger only ever can have the following name
+    ``SbSOvRL_parser``
     """
     #: VerbosityLevel of the parser logger. This logger should only generate
     #: messages during the setup of the experiment.
@@ -48,7 +52,8 @@ class Verbosity(SbSOvRL_BaseModel):
     @validator("parser", "environment", always=True)
     @classmethod
     def convert_literal_str_to_verbosityLevel(cls, v):
-        """
+        """Validator for parser and environment variable.
+
         Validation function converting the string representation of the enum
         to the correct enum item.
 
@@ -70,8 +75,8 @@ class Verbosity(SbSOvRL_BaseModel):
     @validator("SbSOvRL_logfile_location", always=True)
     @classmethod
     def make_logfile_location_absolute(cls, v, values):
-        """
-        Validation function resolves and makes the log path absolute.
+        """Validation function resolves and makes the log path absolute.
+
         Also adds the current timestamp to the log path if a {} is present in
         the given path.
 
@@ -98,6 +103,7 @@ class Verbosity(SbSOvRL_BaseModel):
         return path
 
     def __init__(self, **data: Any) -> None:
+        """Constructor verbosity parser."""
         super().__init__(**data)
         # create parser logger
         parser_name = "SbSOvRL_parser"
@@ -124,9 +130,9 @@ class Verbosity(SbSOvRL_BaseModel):
 
     def add_environment_logger_with_name_extension(
             self, extension: str) -> logging.Logger:
-        """
-        Initializes a logger with the settings for the environment logger. The
-        name of the base environment logger is extended by the
+        """Initializes a logger with the settings for the environment logger.
+
+        The name of the base environment logger is extended by the
         :attr:`extension`. The name if the created logger is found by joining
         the strings of the following variables by an underscore.
         :attr:`Verbosity.base_logger_name`,

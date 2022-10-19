@@ -1,10 +1,13 @@
-"""
-  This file contains some plotting functions these are very limited and should
-  were created for the seminar and master thesis of clemens fricke. Other
-  plotting function exist but are not part of the library.
+"""Internal and auxiliary plotting functions might be removed.
+
+This file contains some plotting functions these are very limited and should
+were created for the seminar and master thesis of clemens fricke. Other
+plotting function exist but are not part of the library.
 """
 from typing import List, Optional, Tuple
+
 from SbSOvRL.util.util_funcs import ModuleImportRaiser
+
 try:
     import gustav as gus
 except ImportError:
@@ -12,21 +15,22 @@ except ImportError:
 try:
     import imageio
 except ImportError:
-    imageio = ModuleImportRaiser("gustav")
+    imageio = ModuleImportRaiser("imageio")
+import itertools
 import pathlib
 from copy import deepcopy
+
 import numpy as np
-from matplotlib import pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
-import itertools
 
 
 def get_tricontour_solution(
-      width: int, height: int, dpi: int, coordinates: np.ndarray,
-      connectivity: np.ndarray, solution: np.ndarray, sol_len: int,
-      limits_min: List[float], limits_max: List[float], ) -> np.ndarray:
-    """_summary_
+        width: int, height: int, dpi: int, coordinates: np.ndarray,
+        connectivity: np.ndarray, solution: np.ndarray, sol_len: int,
+        limits_min: List[float], limits_max: List[float], ) -> np.ndarray:
+    """_summary_.
 
     Args:
         width (int): _description_
@@ -47,15 +51,15 @@ def get_tricontour_solution(
         fig = plt.figure(figsize=(width, height), dpi=dpi)
         if i == 2:
             mappable = plt.gca().tricontourf(
-              coordinates[:, 0], coordinates[:, 1],
-              np.clip(solution[:, i], limits_min[i], limits_max[i])-1,
-              triangles=connectivity, cmap="Greys", vmin=limits_min[i],
-              vmax=limits_max[i])
+                coordinates[:, 0], coordinates[:, 1],
+                np.clip(solution[:, i], limits_min[i], limits_max[i])-1,
+                triangles=connectivity, cmap="Greys", vmin=limits_min[i],
+                vmax=limits_max[i])
         else:
             mappable = plt.gca().tricontourf(
-              coordinates[:, 0], coordinates[:, 1], solution[:, i],
-              triangles=connectivity, cmap="Greys", vmin=limits_min[i],
-              vmax=limits_max[i])
+                coordinates[:, 0], coordinates[:, 1], solution[:, i],
+                triangles=connectivity, cmap="Greys", vmin=limits_min[i],
+                vmax=limits_max[i])
         ax = plt.gca()
         ax.set_xlim((0, 1))
         ax.set_ylim((0, 1))
@@ -75,7 +79,19 @@ def get_tricontour_solution(
 
 
 def create_open_knot_vector(
-      degrees: List[int], n_cps: List[int]) -> List[List[float]]:
+        degrees: List[int], n_cps: List[int]) -> List[List[float]]:
+    """Create an open knot vector according to the given parameters.
+
+    Args:
+        degrees (List[int]): _description_
+        n_cps (List[int]): _description_
+
+    Raises:
+        ValueError: _description_
+
+    Returns:
+        List[List[float]]: _description_
+    """
     knot_vectors = []
 
     for degree, n_cp in zip(degrees, n_cps):
@@ -96,8 +112,17 @@ def create_open_knot_vector(
 
 
 def create_gif_mp4_delete_images(
-      files: List[str], save_path: str, fps: int = 5,
-      delete_used: bool = True, cut=True):
+        files: List[str], save_path: str, fps: int = 5,
+        delete_used: bool = True, cut=True):
+    """_summary_.
+
+    Args:
+        files (List[str]): _description_
+        save_path (str): _description_
+        fps (int, optional): _description_. Defaults to 5.
+        delete_used (bool, optional): _description_. Defaults to True.
+        cut (bool, optional): _description_. Defaults to True.
+    """
     images = []
     for file_name in files:
         if cut:
@@ -116,6 +141,14 @@ def create_gif_mp4_delete_images(
 
 
 def normalize_mesh(mesh: gus.Mesh) -> gus.Mesh:
+    """Normalize the given mesh [0,1].
+
+    Args:
+        mesh (gus.Mesh): Mesh to normalize.
+
+    Returns:
+        gus.Mesh: Normalized mesh.
+    """
     _mesh = deepcopy(mesh)
     min_: np.ndarray = _mesh.vertices.min(axis=0)
     _mesh.vertices -= min_
@@ -126,8 +159,17 @@ def normalize_mesh(mesh: gus.Mesh) -> gus.Mesh:
 
 # TODO this is gustav specific
 def get_face_boundaries_and_vertices(
-      mesh: gus.Mesh,
-      optional=False) -> Tuple[List[List[List[float]]], pd.DataFrame]:
+        mesh: gus.Mesh,
+        optional=False) -> Tuple[List[List[List[float]]], pd.DataFrame]:
+    """_summary_.
+
+    Args:
+        mesh (gus.Mesh): _description_
+        optional (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        Tuple[List[List[List[float]]], pd.DataFrame]: _description_
+    """
     # create vertices dataframe
     vertice_df = pd.DataFrame(mesh.vertices)
 
@@ -153,8 +195,16 @@ def get_face_boundaries_and_vertices(
 
 
 def plot_mesh(
-      mesh: gus.Mesh, save_name: str, no_axis: bool = False,
-      tight: bool = False):
+        mesh: gus.Mesh, save_name: str, no_axis: bool = False,
+        tight: bool = False):
+    """_summary_.
+
+    Args:
+        mesh (gus.Mesh): _description_
+        save_name (str): _description_
+        no_axis (bool, optional): _description_. Defaults to False.
+        tight (bool, optional): _description_. Defaults to False.
+    """
     plt.rcParams["figure.figsize"] = (20, 20)
     plt.rcParams.update({'font.size': 22})
 
@@ -182,13 +232,36 @@ def plot_mesh(
 
 
 def plot_spline(
-      spline: gus.nurbs.Spline, axis: Optional[plt.Axes] = None,
-      export_path: Optional[str] = None, close: bool = False,
-      control_point_marker: str = "*", control_point_marker_size: int = 120,
-      control_point_color: str = "r", spline_path_color: str = "g",
-      spline_path_alpha: float = 0.2, num_points: int = 100,
-      spline_grid_plot_step: int = 1,
-      lims: List[List[float]] = None) -> Optional[plt.Axes]:
+        spline: gus.nurbs.Spline, axis: Optional[plt.Axes] = None,
+        export_path: Optional[str] = None, close: bool = False,
+        control_point_marker: str = "*", control_point_marker_size: int = 120,
+        control_point_color: str = "r", spline_path_color: str = "g",
+        spline_path_alpha: float = 0.2, num_points: int = 100,
+        spline_grid_plot_step: int = 1,
+        lims: List[List[float]] = None) -> Optional[plt.Axes]:
+    """Not Implemented.
+
+    Args:
+        spline (gus.nurbs.Spline): _description_
+        axis (Optional[plt.Axes], optional): _description_. Defaults to None.
+        export_path (Optional[str], optional): _description_. Defaults to None.
+        close (bool, optional): _description_. Defaults to False.
+        control_point_marker (str, optional): _description_. Defaults to "*".
+        control_point_marker_size (int, optional):
+        _description_. Defaults to 120.
+        control_point_color (str, optional): _description_. Defaults to "r".
+        spline_path_color (str, optional): _description_. Defaults to "g".
+        spline_path_alpha (float, optional): _description_. Defaults to 0.2.
+        num_points (int, optional): _description_. Defaults to 100.
+        spline_grid_plot_step (int, optional): _description_. Defaults to 1.
+        lims (List[List[float]], optional): _description_. Defaults to None.
+
+    Raises:
+        NotImplemented: _description_
+
+    Returns:
+        Optional[plt.Axes]: _description_
+    """
     raise NotImplemented
     if not axis:
         # max 2D projection dimension
@@ -221,9 +294,9 @@ def plot_spline(
     # horizontal lines
     for i in range(0, num_points, spline_grid_plot_step):
         ax.plot(
-          df_items[0][num_points*i:num_points*(i+1)],
-          df_items[1][num_points * i:num_points*(i+1)],
-          c=spline_path_color, alpha=spline_path_alpha)
+            df_items[0][num_points*i:num_points*(i+1)],
+            df_items[1][num_points * i:num_points*(i+1)],
+            c=spline_path_color, alpha=spline_path_alpha)
     # ax.scatter(df_items[0], df_items[1])
 
     # 1D case control_mesh in spline is differently configured so this has to

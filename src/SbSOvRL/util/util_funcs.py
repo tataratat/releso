@@ -1,24 +1,36 @@
-"""
+"""Utility functions.
+
 This files includes multiple functions and classes which are used in this
 package but can not be directly associated to a single sub module.
 """
-from typing import Optional, Any
-import subprocess
+import datetime
+import json
 import os
+import subprocess
+from typing import Any, Optional
+
 import numpy as np
+
 from SbSOvRL.util.logger import logging
 from SbSOvRL.util.sbsovrl_types import InfoType, ObservationType
-import json
-import datetime
 
 
 class SbSOvRL_JSONEncoder(json.JSONEncoder):
-    """
+    """Encodes numpy arrays.
+
     This encoder class is necessary to correctly encode numpy.ndarrays, bytes
     and numpy int values.
     """
 
     def default(self, o: Any) -> Any:
+        """Default function.
+
+        Args:
+            o (Any): To be encoded.
+
+        Returns:
+            Any: Encoded.
+        """
         if isinstance(o, np.ndarray):
             return o.astype(float).tolist()
         elif isinstance(o, np.int64):
@@ -33,7 +45,7 @@ class SbSOvRL_JSONEncoder(json.JSONEncoder):
 
 
 def which(program: str) -> Optional[str]:
-    """Finds if the given program is accessible or in the $PATH
+    """Finds if the given program is accessible or in the $PATH.
 
     Args:
         program (str): Program to look for
@@ -62,11 +74,10 @@ def which(program: str) -> Optional[str]:
 
 
 def call_commandline(command, folder, logger=None):
-    """
-        Executes a command which is provided as a string in the command line
-        Author: Michael Binder (e1325632@student.tuwien.ac.at)
-    """
+    """Executes a command which is provided as a string in the command line.
 
+    Author: Michael Binder (e1325632@student.tuwien.ac.at)
+    """
     if logger is not None:
         logger.debug(f'Executing command {command} in {folder}')
     try:
@@ -90,25 +101,21 @@ def call_commandline(command, folder, logger=None):
 
 
 def join_infos(old_info: InfoType, new_info: InfoType, logger_name: str):
-    """Updates the old Info field with the new info.
+    """Joins the provided old and new infos into a cohesive new dict.
 
     Args:
-        old_info (InfoType):
-            Already existing info dictionary which should be updated with the
-            new infos.
-        new_info (InfoType):
-            Newly received info. Which needs to be added to the already
-            existing infos.
-        logger_name (str):
-            LoggerName so that if necessary the log message is sent into the
-            correct logging cue.
+        old_info (InfoType): Already existing info dictionary which should be
+        updated with the new infos.
+        new_info (InfoType): Newly received info. Which needs to be added to
+        the already existing infos.
+        logger_name (str): LoggerName so that if necessary the log message is
+        sent into the correct logging cue.
     """
     old_info.update(new_info)
 
 
 def get_path_extension() -> str:
-    """
-    Creates a string which has the following characteristics:
+    """Creates a string which has the following characteristics.
 
     If not on a slurm system only the current time stamp is added
     If in a slurm job (non task array) the current time stamp + job id
@@ -137,7 +144,8 @@ def get_path_extension() -> str:
 
 
 class ModuleImportRaiser():
-    """
+    """Import error deferrer until it is actually called.
+
     Class used to have better import error handling in the case that a package
     package is not installed. This is necessary due to that some packages are
     not a dependency of `gustaf`, but some parts require them to function.
@@ -145,15 +153,23 @@ class ModuleImportRaiser():
     """
 
     def __init__(self, lib_name: str) -> None:
+        """Constructor of object of class ModuleImportRaiser.
+
+        Args:
+            lib_name (str): Name of the library which can not be loaded. Will
+            be inserted into the error message of the deferred import Error.
+            Is not checked for correctness.
+        """
         self._message = str(
-                "Parts of the requested functionality in releso depend on the "
-                f"external `{lib_name}` package which could not be found on "
-                "your system. Please refer to the installation instructions "
-                "for more information."
+            "Parts of the requested functionality in ReLeSO depend on the "
+            f"external `{lib_name}` package which could not be found on "
+            "your system. Please refer to the installation instructions "
+            "for more information."
         )
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
-        """
+        """Dummy method for object(args, kwargs).
+
         Is called when the object is called by object(). Will notify the user,
         that the functionality is not accessible and how to proceed to access
         the functionality.
@@ -161,7 +177,8 @@ class ModuleImportRaiser():
         raise ImportError(self._message)
 
     def __getattr__(self, __name: str) -> Any:
-        """
+        """Dummy method for object.__name.
+
         Is called when any attribute of the object is accessed by object.attr.
         Will notify the user, that the functionality is not accessible and how
         to proceed to access the functionality.
@@ -172,7 +189,8 @@ class ModuleImportRaiser():
             raise ImportError(self._message)
 
     def __setattr__(self, __name: str, __value: Any) -> None:
-        """
+        """Dummy method for object.__name = __value.
+
         Is called when any attribute of the object is set by object.attr = new.
         Will notify the user, that the functionality is not accessible and how
         to proceed to access the functionality.
@@ -183,7 +201,8 @@ class ModuleImportRaiser():
             raise ImportError(self._message)
 
     def __getitem__(self, key):
-        """
+        """Dummy method for object[key].
+
         Is called when the object is subscripted object[x]. Will notify the
         user, that the functionality is not accessible and how to proceed to
         access the functionality.

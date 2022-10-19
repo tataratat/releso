@@ -1,4 +1,5 @@
-"""
+"""Definition of the interface class for the gym environment definition.
+
 The gym environment is a class that incorporates the interface requirements set
 out by the OpenAI gym library for Reinforcement Learning environment. This
 standard is very commonly used in python based Reinforcement Learning
@@ -23,13 +24,15 @@ Note:
     fix for this problem is currently worked on.
 """
 
+from typing import Any, Dict, List, Tuple, Union
+
 import gym
 from gym import spaces
-from typing import Dict, Any, Tuple, Union, List
 
 
 class GymEnvironment(gym.Env):
-    """
+    """Environment interface class for the gym environment definition.
+
     This class is a placeholder class which complies with the OpenAI gym
     Interface. The real functionality is infused into the class after creation
     by substituting the functions from the
@@ -38,6 +41,15 @@ class GymEnvironment(gym.Env):
     metadata = {'render.modes': ['mesh']}
 
     def __init__(self, action_space, observation_space) -> None:
+        """Constructor for gym environment object.
+
+        Many functions are dummy implementations and are overwritten by the
+        correct functions at run time.
+
+        Args:
+            action_space (_type_): _description_
+            observation_space (_type_): _description_
+        """
         super().__init__()
         self.action_space = action_space
         self.observation_space = observation_space
@@ -45,14 +57,18 @@ class GymEnvironment(gym.Env):
     def step(
             self,
             action: Union[int, List[float]]
-            ) -> Tuple[Any, float, bool, Dict[str, Any]]:
+    ) -> Tuple[Any, float, bool, Dict[str, Any]]:
+        """Dummy function definition for gym interface."""
         pass
 
     def reset(self) -> Any:
+        """Dummy function definition for gym interface."""
         pass
 
     def render(self, mode: str = "mesh") -> None:
+        """Dummy function definition for gym interface."""
         pass
 
     def close(self) -> None:
+        """Dummy function definition for gym interface."""
         pass
