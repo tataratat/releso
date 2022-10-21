@@ -62,4 +62,4 @@ The communications interface is currently only available for command line calls.
 
 During the configuration if the validation the number of different episodes each validation should include. Each of these validation episodes gets validation id, which is transmitted to the external program.
 
-To help the user in the development of these external task/steps the framework has helper functions in the :doc:`_autosummary/SbSOvRL.util.reward_helpers` module. These are able to setup the working space of the task with "persistent" memory and the parsing of the communication interface command line options can also be handled via these functions.
+To help the user in the development of these external task/steps the framework has helper functions in the :doc:`_autosummary/releso.util.reward_helpers` module. These are able to setup the working space of the task with "persistent" memory and the parsing of the communication interface command line options can also be handled via these functions.

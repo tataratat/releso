@@ -1,4 +1,4 @@
-"""File defines the exceptions of the SbSOvRL toolbox/library."""
+"""File defines the exceptions of the ReLeSO toolbox/library."""
 import enum
 import logging
 import os
@@ -6,7 +6,7 @@ import platform
 import sys
 from typing import List
 
-from SbSOvRL.util.logger import get_parser_logger
+from releso.util.logger import get_parser_logger
 
 
 class Stylings(enum.Enum):
@@ -64,7 +64,7 @@ def output_styling(message: str, stylings: List[Stylings]) -> str:
     styling. Only the first 3 Stylings are actually used the others will be
     ignored.
 
-    Valid stylings can be found in the enum: SbSOvRL.exceptions.Stylings
+    Valid stylings can be found in the enum: ReLeSO.exceptions.Stylings
 
     Args:
         message (str): string to style
@@ -83,7 +83,7 @@ def red(message: str) -> str:
     If ANSI styling is available the message is colored red and bold. After the
     message the styling is removed again.
 
-    For more information please see SbSOvRL.exceptions.output_styling().
+    For more information please see ReLeSO.exceptions.output_styling().
 
     Args:
         message (str): string to color
@@ -101,7 +101,7 @@ def underline(message: str) -> str:
     If ANSI styling is available the message is styled by an underscore and
     bold. After the message the styling is removed again.
 
-    For more information please see SbSOvRL.exceptions.output_styling().
+    For more information please see ReLeSO.exceptions.output_styling().
 
     Args:
         message (str): string to strike through
@@ -113,14 +113,19 @@ def underline(message: str) -> str:
         message=message, stylings=[Stylings.Underline, Stylings.Bold])
 
 
-class SbSOvRLParserException(ValueError):
-    """Parser Exception for the SbSOvRL package.
+class ParserException(ValueError):
+    """Parser Exception for the ReLeSO package.
 
     Shows the context of the error. Also colors the output if coloring is
     available.
 
     Uses the ValueError base class for compatibility with the pydantic
     validation engine.
+
+    Args:
+        parent (str): Parent items names where the error occurred.
+        item (str): Name of the item which caused the error.
+        message (str): Custom message to display in the Exception.
     """
 
     def __init__(self, parent: str, item: str, message: str) -> None:
@@ -139,20 +144,25 @@ class SbSOvRLParserException(ValueError):
             f"the following error has occurred: {red(message)}")
 
 
-class SbSOvRLAgentUnknownException(Exception):
-    """Parser Exception for the SbSOvRL package.
+class AgentUnknownException(Exception):
+    """Agent unknown exception for the ReLeSO package.
 
     Thrown when an agent is unknown. Configurable logger.
+
+    Args:
+        agent (str): Name of the agent which is not set.
+        logger (str, optional): Name of the logger.
+        Defaults to "ReLeSO_environment".
     """
 
     def __init__(
-            self, agent: str, logger: str = "SbSOvRL_environment") -> None:
-        """Constructor SbSOvRLAgentUnknownException.
+            self, agent: str, logger: str = "ReLeSO_environment") -> None:
+        """Constructor AgentUnknownException.
 
         Args:
             agent (str): Name of the agent which is not set.
             logger (str, optional): Name of the logger.
-            Defaults to "SbSOvRL_environment".
+            Defaults to "ReLeSO_environment".
         """
         mes_str: str = f"The {agent} is unknown. Check the spelling or"
         " put in a request to add this agent."
@@ -160,8 +170,8 @@ class SbSOvRLAgentUnknownException(Exception):
         super().__init__(mes_str)
 
 
-class SbSOvRLValidationNotSet(Exception):
-    """Parser Exception for the SbSOvRL package.
+class ValidationNotSet(Exception):
+    """Validation not set exception.
 
     Thrown when a validation
     environment is needed but can not be created due to un-configured
@@ -170,15 +180,15 @@ class SbSOvRLValidationNotSet(Exception):
     Args:
         logger (str):
             Name of the logger where the exception should be logged over.
-            Defaults to: 'SbSOvRL_environment'
+            Defaults to: 'ReLeSO_environment'
     """
 
-    def __init__(self, logger: str = "SbSOvRL_validation_environment") -> None:
+    def __init__(self, logger: str = "ReLeSO_validation_environment") -> None:
         """Constructor ValidationNotSetException.
 
         Args:
             logger (str, optional): Name of the logger.
-            Defaults to "SbSOvRL_validation_environment".
+            Defaults to "ReLeSO_validation_environment".
         """
         mes_str: str = f"Could not create a validation environment due to"
         "unavailability of validation parameters. Please add the validation "

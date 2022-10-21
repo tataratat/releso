@@ -10,11 +10,11 @@ from typing import Any, Literal
 from pydantic import validator
 from pydantic.fields import PrivateAttr
 
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.logger import VerbosityLevel, logging, set_up_logger
+from releso.base_model import BaseModel
+from releso.util.logger import VerbosityLevel, logging, set_up_logger
 
 
-class Verbosity(SbSOvRL_BaseModel):
+class Verbosity(BaseModel):
     """Verbosity class.
 
     Defines the settings for the different loggers used in the current
@@ -23,7 +23,7 @@ class Verbosity(SbSOvRL_BaseModel):
     hopefully not break with multiprocessing)
 
     Please note, the parser logger only ever can have the following name
-    ``SbSOvRL_parser``
+    ``ReLeSO_parser``
     """
     #: VerbosityLevel of the parser logger. This logger should only generate
     #: messages during the setup of the experiment.
@@ -35,13 +35,13 @@ class Verbosity(SbSOvRL_BaseModel):
     environment: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"
     #: Path where the log files should be saved to. Will be inside the
     #: base_save_location.
-    SbSOvRL_logfile_location: str = "logging/"
+    logfile_location: str = "logging/"
     #: Whether or not to also print the log messages to the console.
     console_logging: bool = False
-    #: Base name of all logger. Defaults to "SbSOvRL"
-    base_logger_name: str = "SbSOvRL"
-    #: Name extensions for all environment logger. Defaults to "rl"
-    environment_extension: str = "rl"
+    #: Base name of all logger. Defaults to "ReLeSO"
+    base_logger_name: str = "ReLeSO"
+    #: Name extensions for all environment logger. Defaults to "environment"
+    environment_extension: str = "environment"
 
     # private fields
     #: save different loggers for the different instances
@@ -72,7 +72,7 @@ class Verbosity(SbSOvRL_BaseModel):
         elif v == "INFO":
             return VerbosityLevel.INFO
 
-    @validator("SbSOvRL_logfile_location", always=True)
+    @validator("logfile_location", always=True)
     @classmethod
     def make_logfile_location_absolute(cls, v, values):
         """Validation function resolves and makes the log path absolute.
@@ -92,11 +92,11 @@ class Verbosity(SbSOvRL_BaseModel):
         path: pathlib.Path = None
         if "save_location" in values:
             # the path where the logger should write to is the
-            # save_location/SbSOvRL_logfile_location
+            # save_location/logfile_location
             path = values["save_location"]/v
         else:
             # the path where the logger should write to is the
-            # calling_folder/SbSOvRL_logfile_location
+            # calling_folder/logfile_location
             path = pathlib.Path(v.format(datetime.datetime.now().strftime(
                 "%Y-%m-%d_%H-%M-%S"))).expanduser().resolve()
         path.mkdir(parents=True, exist_ok=True)
@@ -106,10 +106,10 @@ class Verbosity(SbSOvRL_BaseModel):
         """Constructor verbosity parser."""
         super().__init__(**data)
         # create parser logger
-        parser_name = "SbSOvRL_parser"
+        parser_name = "releso_parser"
         if not logging.getLogger(parser_name).hasHandlers():
             parser_logger = set_up_logger(
-                parser_name, self.SbSOvRL_logfile_location,
+                parser_name, self.logfile_location,
                 self.parser, self.console_logging)
 
         # create base rl logger
@@ -155,7 +155,7 @@ class Verbosity(SbSOvRL_BaseModel):
         if not logging.getLogger(logger_name).hasHandlers() or \
                 not (len(logging.getLogger(logger_name).handlers) > 0):
             logger = set_up_logger(
-                logger_name, self.SbSOvRL_logfile_location, self.environment,
+                logger_name, self.logfile_location, self.environment,
                 self.console_logging)
         else:
             logger = logging.getLogger(logger_name)

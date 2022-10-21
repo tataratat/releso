@@ -11,11 +11,11 @@ from typing import Any, Optional
 
 import numpy as np
 
-from SbSOvRL.util.logger import logging
-from SbSOvRL.util.sbsovrl_types import InfoType, ObservationType
+from releso.util.logger import logging
+from releso.util.types import InfoType, ObservationType
 
 
-class SbSOvRL_JSONEncoder(json.JSONEncoder):
+class JSONEncoder(json.JSONEncoder):
     """Encodes numpy arrays.
 
     This encoder class is necessary to correctly encode numpy.ndarrays, bytes

@@ -13,8 +13,8 @@ image based observation spaces and observation spaces which are made up of
 scalar observations (normal observations) and image observations.
 
 Both functionalities come from the feature extractors. Please see the class
-definitions of :py:class:`SbSOvRL.feature_extractor.SbSOvRL_FeatureExtractor`
-and :py:class:`SbSOvRL.feature_extractor.SbSOvRL_CombinedExtractor` for the
+definitions of :py:class:`releso.feature_extractor.FeatureExtractor`
+and :py:class:`releso.feature_extractor.CombinedExtractor` for the
 possible parameters.
 
 The image based observations are explained in more detail on the page

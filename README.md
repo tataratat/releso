@@ -1,6 +1,6 @@
-# Spline based Shape Optimization via Reinforcement Learning
+# Reinforcement Learning based Shape Optimization
 
-This repository holds a Library/Framework written by Clemens Fricke for Spline based Shape Optimization via Reinforcement Learning. Please look into the Documentation for information on how it works. The instruction on how the documentation can be build is given below as well as the instruction on how the package can be installed. It is currently not available from pip, this might come in the future.
+This repository holds a Library/Framework written by Clemens Fricke for Reinforcement Learning based Shape Optimization. Please look into the Documentation for information on how it works. The instruction on how the documentation can be build is given below as well as the instruction on how the package can be installed. It is currently not available from pip, this might come in the future.
 
 
 Documentation generation
@@ -24,7 +24,7 @@ The documentation is build by executing the following command inside the folder 
 Installation
 ============
 
-This page covers the installation process of the framework and its prerequisites.
+This page covers the installation process of the framework and its prerequisites. The first thing to note is that with version 1.0 the strict dependency on gustaf is not present anymore. But if the geometry is to be parameterized by a Spline and the method of Free Form Deformation is to be used to deform a mesh, gustaf is necessary.
 
 Prerequisites
 -------------
@@ -32,11 +32,9 @@ To use SbSOvRL the following packages have to be installed:
  - pydantic
  - stable-baselines3
  - tensorboard
- - torchvision
  - hjson
- - gustav
 
-The first two/three packages can be installed via pip and/or conda with the following command:
+The packages can be installed via pip or conda with the following commands:
 
 **pip** (activation of the venv should be done beforehand)
 
@@ -47,14 +45,12 @@ The first two/three packages can be installed via pip and/or conda with the foll
 **conda**
 
 ``` console
-(base) $ conda create -n SbSOvRL python=3.9 pydantic tensorboard
-(base) $ conda activate SbSOvRL
-(SbSOvRL) $ conda install -c pytorch torchvision
-(SbSOvRL) $ pip install stable-baselines3 hjson
+(base) $ conda create -n releso python=3.9 pydantic tensorboard
+(base) $ conda activate releso
+(releso) $ pip install stable-baselines3 hjson
 ```
 
-The next step is to install the ``gustav`` package which is a python interface for the c++ library SplineLib.
-To install ``gustav`` the following repository must be downloaded into an external folder and installed into the venv or conda environment as before. The installation process for the gustav package is documented in the README file of the repository.
+If the spline based shape optimization functionality is needed, the package ``gustaf`` is needed. Please visit [gustaf on github](https://github.com/tataratat/gustaf) for installation instructions.
 
 
 **Development**
@@ -63,7 +59,7 @@ To develop the framework further the sphinx package should also be installed wit
 The this can be done via:
 
 ``` console
-(SbSOvRL) $ pip install sphinx sphinx_rtd_theme
+(releso) $ pip install sphinx sphinx_rtd_theme
 ```
 
 Framework
@@ -74,11 +70,11 @@ After installing all prerequisites the framework itself can be installed by runn
 **Non-development**
 
 ```console
-(SbSOvRL) $ pip install .
+(releso) $ pip install .
 ```
 
 **Development**
 
 ``` console
-(SbSOvRL) $ pip install -e .
+(releso) $ pip install -e .
 ```

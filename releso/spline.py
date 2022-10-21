@@ -6,9 +6,9 @@ definition of the problem.
 import logging
 from abc import abstractmethod
 
-from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.util.logger import get_parser_logger
-from SbSOvRL.util.util_funcs import ModuleImportRaiser
+from releso.exceptions import ParserException
+from releso.util.logger import get_parser_logger
+from releso.util.util_funcs import ModuleImportRaiser
 
 try:
     from gustav import NURBS, BSpline
@@ -23,10 +23,10 @@ from pydantic.class_validators import root_validator, validator
 from pydantic.fields import PrivateAttr
 from pydantic.types import confloat, conint
 
-from SbSOvRL.base_model import SbSOvRL_BaseModel
+from releso.base_model import BaseModel
 
 
-class VariableLocation(SbSOvRL_BaseModel):
+class VariableLocation(BaseModel):
     """Variable location class.
 
     Object of this class defines the position and movement possibilities for a
@@ -72,7 +72,7 @@ class VariableLocation(SbSOvRL_BaseModel):
             field ([type]): Name of the field that is currently validated.
 
         Raises:
-            SbSOvRLParserException:
+            ParserException:
                 Parser error if current_position is not already validated.
 
         Returns:
@@ -82,7 +82,7 @@ class VariableLocation(SbSOvRL_BaseModel):
             if "current_position" in values.keys():
                 return values["current_position"]
             else:
-                raise SbSOvRLParserException(
+                raise ParserException(
                     "VariableLocation", field,
                     "Please correctly define the current position.")
         return v
@@ -98,7 +98,7 @@ class VariableLocation(SbSOvRL_BaseModel):
             field ([type]): Name of the field that is currently validated.
 
         Raises:
-            SbSOvRLParserException:
+            ParserException:
                 Parser error if min_value is not already validated and if min
                 value greater if max value.
 
@@ -106,12 +106,12 @@ class VariableLocation(SbSOvRL_BaseModel):
             float: value of the validated value.
         """
         if "min_value" not in values.keys():
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "VariableLocation", field, "Please define the min_value.")
         if v is None:
             raise RuntimeError("This should not have happened.")
         if v < values["min_value"]:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "VariableLocation", field,
                 f"The min_value {values['min_value']} must be smaller or equal"
                 f" to the max_value {v}.")
@@ -209,7 +209,7 @@ class VariableLocation(SbSOvRL_BaseModel):
             self.current_position = self._original_position
 
 
-class SplineSpaceDimension(SbSOvRL_BaseModel):
+class SplineSpaceDimension(BaseModel):
     """Defines a single spline space dimension of the current spline.
 
     The dimension is a dimension of the parametric spline dimension.
@@ -239,7 +239,7 @@ class SplineSpaceDimension(SbSOvRL_BaseModel):
             field ([type]): Name of the field that is currently validated.
 
         Raises:
-            SbSOvRLParserException: Emitted parser error.
+            ParserException: Emitted parser error.
 
         Returns:
             float: value of the validated value.
@@ -248,7 +248,7 @@ class SplineSpaceDimension(SbSOvRL_BaseModel):
                 and "name" in values.keys():
             n_knots = values["number_of_points"] + values["degree"] + 1
         else:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "SplineSpaceDimension", "knot_vector", "During validation the "
                 "prerequisite variables number_of_points and degree were not "
                 "present.")
@@ -294,7 +294,7 @@ class SplineSpaceDimension(SbSOvRL_BaseModel):
         return self.knot_vector
 
 
-class SplineDefinition(SbSOvRL_BaseModel):
+class SplineDefinition(BaseModel):
     """Defines the spline.
 
     Base class for the NURBS and B-Spline implementations.
@@ -323,14 +323,14 @@ class SplineDefinition(SbSOvRL_BaseModel):
             field ([type]): Name of the field that is currently validated.
 
         Raises:
-            SbSOvRLParserException: Emitted parser error.
+            ParserException: Emitted parser error.
 
         Returns:
             List[List[VariableLocation]]: Definition of the control_points
         """
         if v is None:
             if "space_dimensions" not in values.keys():
-                raise SbSOvRLParserException(
+                raise ParserException(
                     "SplineDefinition", "control_point_variables",
                     "During validation the prerequisite variable "
                     f"space_dimensions was not present."+str(values))
@@ -432,7 +432,7 @@ class SplineDefinition(SbSOvRL_BaseModel):
                     save_location=values["save_location"]
                 ) if type(element) is float else element)
             if not 0. <= new_list[-1].current_position <= 1.:
-                raise SbSOvRLParserException(
+                raise ParserException(
                     "SplineDefinition", "control_point_variables",
                     "The control_point_variables need to be inside an unit "
                     "hypercube. Found a values outside this unit hypercube.")
@@ -585,7 +585,7 @@ class BSplineDefinition(SplineDefinition):
 class NURBSDefinition(SplineDefinition):
     """Definition of a NURBS spline.
 
-    Definition of the NURBS implementation of the SbSOvRL Toolbox, in
+    Definition of the NURBS implementation of the ReLeSO Toolbox, in
     comparison to the B-Spline implementation only an additional weights
     vector is added.
     """
@@ -608,13 +608,13 @@ class NURBSDefinition(SplineDefinition):
             values (Dict[str, Any]): Previously validated variables
 
         Raises:
-            SbSOvRLParserException: Parser Error
+            ParserException: Parser Error
 
         Returns:
             List[Union[float, VariableLocation]]: Filled weight vector.
         """
         if "space_dimensions" not in values.keys():
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "SplineDefinition", "weights",
                 "During validation the prerequisite variable space_dimensions "
                 "were not present.")
@@ -627,7 +627,7 @@ class NURBSDefinition(SplineDefinition):
                 get_parser_logger().debug(
                     "Found correct number of weights in SplineDefinition.")
             else:
-                raise SbSOvRLParserException(
+                raise ParserException(
                     "SplineDefinition NURBS", "weights", f"The length of the "
                     f"weight vector {len(v)} is not the same as the number of "
                     f"control_points {n_cp}.")
@@ -690,7 +690,7 @@ class NURBSDefinition(SplineDefinition):
             weight.reset()
 
 
-class CubeDefinition(SbSOvRL_BaseModel):
+class CubeDefinition(BaseModel):
     """Defines a simple cube. TODO make better docu!"""
     control_points: List[List[VariableLocation]]
 
@@ -729,7 +729,7 @@ class CubeDefinition(SbSOvRL_BaseModel):
                     save_location=values["save_location"]
                 ) if type(element) is float else element)
             if not 0. <= new_list[-1].current_position <= 1.:
-                raise SbSOvRLParserException(
+                raise ParserException(
                     "SplineDefinition", "control_point_variables",
                     "The control_point_variables need to be inside an unit "
                     "hypercube. Found a values outside this unit hypercube.")
@@ -851,7 +851,7 @@ class CubeDefinition(SbSOvRL_BaseModel):
 SplineTypes = Union[NURBSDefinition, BSplineDefinition, CubeDefinition]
 
 
-class Spline(SbSOvRL_BaseModel):
+class Spline(BaseModel):
     """Definition of the spline.
 
     Can be deleted in the next round of reworks.

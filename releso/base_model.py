@@ -1,6 +1,6 @@
 """Definition of the ReLeSO base Model.
 
-File holding the base class for all SbSOvRL classes which are needed for the
+File holding the base class for all ReLeSO classes which are needed for the
 command line based application of this toolbox.
 """
 import multiprocessing
@@ -8,10 +8,10 @@ import pathlib
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Extra
+import pydantic
 
-from SbSOvRL.util.logger import logging
-from SbSOvRL.util.util_funcs import get_path_extension
+from releso.util.logger import logging
+from releso.util.util_funcs import get_path_extension
 
 
 def add_save_location_if_elem_is_o_dict(
@@ -42,10 +42,10 @@ def add_save_location_if_elem_is_o_dict(
         pass
 
 
-class SbSOvRL_BaseModel(BaseModel):
+class BaseModel(pydantic.BaseModel):
     """Base of all ReLeSO objects used for parsing.
 
-    Base class for all SbSOvRL classes which are needed for the command line
+    Base class for all ReLeSO classes which are needed for the command line
     based application of this toolbox.
     """
     #: (Changes if on slurm system) Definition of the save location of the
@@ -64,7 +64,7 @@ class SbSOvRL_BaseModel(BaseModel):
             # This is so that the save location always gets the same
             if type(data["save_location"]) is str:
                 data["save_location"] = \
-                    SbSOvRL_BaseModel.convert_to_pathlib_add_datetime(
+                    BaseModel.convert_to_pathlib_add_datetime(
                         data["save_location"])
             # if a save_location is present in the current object definition
             #  add this save_location also to all object definition which are
@@ -112,7 +112,7 @@ class SbSOvRL_BaseModel(BaseModel):
         for item in list_item:
             if isinstance(item, list):
                 self._check_list(item, logger_name)
-            elif isinstance(item, SbSOvRL_BaseModel):
+            elif isinstance(item, BaseModel):
                 item.set_logger_name_recursively(logger_name)
 
     def set_logger_name_recursively(self, logger_name: str):
@@ -154,4 +154,4 @@ class SbSOvRL_BaseModel(BaseModel):
     class Config:
         """Used to add pydantic configurations."""
         #: Forbids superfluous keywords for object definitions.
-        extra = Extra.forbid
+        extra = pydantic.Extra.forbid

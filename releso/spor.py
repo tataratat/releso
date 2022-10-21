@@ -4,9 +4,9 @@ Solver Postprocessing Observation Reward (SPOR) is represents all steps which
 follow after completing the Free Form Deformation (FFD), where the base mesh is
 deformed with a spline.
 
-This part of the SbSOvRL environment definition is a list of steps the
+This part of the ReLeSO environment definition is a list of steps the
 environment will run through in series. Each step can be configured to use the
-SbSOvRL communication protocol.
+ReLeSO communication protocol.
 
 A more in depth documentation of the SPOR concept is given here
 :ref:`SPOR Communication Interface <sporcominterface>`
@@ -29,17 +29,15 @@ from gym.spaces import Box
 from pydantic import UUID4, NoneBytes, conint, validator
 from pydantic.fields import PrivateAttr
 
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
-from SbSOvRL.util.reward_helpers import spor_com_parse_arguments
-from SbSOvRL.util.sbsovrl_types import (ObservationType, RewardType,
-                                        StepReturnType)
-from SbSOvRL.util.util_funcs import (SbSOvRL_JSONEncoder, call_commandline,
-                                     join_infos)
+from releso.base_model import BaseModel
+from releso.exceptions import ParserException
+from releso.util.logger import VerbosityLevel, set_up_logger
+from releso.util.reward_helpers import spor_com_parse_arguments
+from releso.util.types import ObservationType, RewardType, StepReturnType
+from releso.util.util_funcs import JSONEncoder, call_commandline, join_infos
 
 
-class MultiProcessor(SbSOvRL_BaseModel):
+class MultiProcessor(BaseModel):
     """Definition of the utilized multiprocessor. Default MPIEXEC.
 
     The MultiProcessor gives access to command prefixes which can enable
@@ -48,7 +46,7 @@ class MultiProcessor(SbSOvRL_BaseModel):
     Note:
         The cluster uses PATH variables to correctly call mpi. IF you want to
         use MPI multiprocessing on the cluster please use
-        :py:class:`SbSOvRL.spor.MPIClusterMultiProcessor`.
+        :py:class:`ReLeSO.spor.MPIClusterMultiProcessor`.
     """
     #: command prefix which is needed to parallelize the give task
     command: str = "mpiexec -np"
@@ -128,7 +126,7 @@ class MPIClusterMultiProcessor(MultiProcessor):
         return f"{self.command} {local_mpi_flags}"
 
 
-class ObservationDefinition(SbSOvRL_BaseModel):
+class ObservationDefinition(BaseModel):
     """Definition of an Observation.
 
     Definition of a single Observations by providing the name of the
@@ -225,7 +223,7 @@ class ObservationDefinitionMulti(ObservationDefinition):
         return np.ones(self.observation_shape, dtype=np.float32)*self.value_min
 
 
-class SPORObject(SbSOvRL_BaseModel):
+class SPORObject(BaseModel):
     """Base class SPORObject can not be instantiated.
 
     Base class for all possible SPOR object classes. Theses objects
@@ -392,7 +390,7 @@ class SPORObjectCommandLine(SPORObject):
     users do not need to add them themselves. These are:
 
     1. access to the (MPI) Multi-processors via
-        :py:class:`SbSOvRL.spor.MultiProcessor`
+        :py:class:`ReLeSO.spor.MultiProcessor`
     2. command line command
     3. additional flags
     4. working directory
@@ -443,7 +441,7 @@ class SPORObjectCommandLine(SPORObject):
             v (str): Object to validate
 
         Raises:
-            SbSOvRLParserException: If path is not correct, this error is
+            ParserException: If path is not correct, this error is
             thrown.
 
         Returns:
@@ -453,7 +451,7 @@ class SPORObjectCommandLine(SPORObject):
         # v to validate directory path
         path = pathlib.Path(v.split("{}")[0]) if "{}" in v else pathlib.Path(v)
         if not (path.is_dir() and path.exists()):
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "SPORObjectCommandline", "unknown",
                 f"The work_directory path {v} is a valid directory. When using"
                 " multiprocessing placeholder please make sure that the "
@@ -470,8 +468,7 @@ class SPORObjectCommandLine(SPORObject):
             v (str): Object to validate
 
         Raises:
-            SbSOvRLParserException: If path is not correct, this error is
-            thrown.
+            ParserException: If path is not correct, this error is thrown.
 
         Returns:
             str: original path if no validation error occurs.
@@ -484,7 +481,7 @@ class SPORObjectCommandLine(SPORObject):
         else:
             path = v
         if shutil.which(path) is None:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "SPORObjectCommandline", "unknown",
                 f"The execution_command path {v} is not a valid executable.")
         return path
@@ -502,8 +499,7 @@ class SPORObjectCommandLine(SPORObject):
             v (str): Already validated values
 
         Raises:
-            SbSOvRLParserException: If path is not correct, this error is
-            thrown.
+            ParserException: If path is not correct, this error is thrown.
 
         Returns:
             str: value
@@ -513,7 +509,7 @@ class SPORObjectCommandLine(SPORObject):
                     "use_communication_interface"]:
                 pass
             else:
-                raise SbSOvRLParserException(
+                raise ParserException(
                     "SPORObjectCommandline", "add_step_information",
                     f"Please only set the add_step_information variable to "
                     "True if the variable use_communication_interface is also "
@@ -586,7 +582,7 @@ class SPORObjectCommandLine(SPORObject):
             # print(json_step_information)
             interface_options.extend(
                 ["--json_object", "'"+json.dumps(
-                    json_step_information, cls=SbSOvRL_JSONEncoder)+"'"])
+                    json_step_information, cls=JSONEncoder)+"'"])
         return interface_options
 
     def spor_com_interface_read(self, output: bytes, step_dict: Dict):
@@ -842,7 +838,7 @@ class SPORObjectCommandLine(SPORObject):
 SPORObjectTypes = SPORObjectCommandLine
 
 
-class SPORList(SbSOvRL_BaseModel):
+class SPORList(BaseModel):
     """The SPORList defines the custom defined steps.
 
     In the current version these steps take place after the FFD is
@@ -895,7 +891,7 @@ class SPORList(SbSOvRL_BaseModel):
         """Aggregate and compute the reward of the SPORList.
 
         The aggregation method is defined in the variable
-        :py:obj:`SbSOvRL.spor.SPORList.reward_aggregation`.
+        :py:obj:`ReLeSO.spor.SPORList.reward_aggregation`.
 
         Raises:
             RuntimeError: If aggregation method is unknown an error is raised.

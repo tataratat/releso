@@ -6,7 +6,7 @@ plotting function exist but are not part of the library.
 """
 from typing import List, Optional, Tuple
 
-from SbSOvRL.util.util_funcs import ModuleImportRaiser
+from releso.util.util_funcs import ModuleImportRaiser
 
 try:
     import gustav as gus

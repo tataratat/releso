@@ -15,7 +15,7 @@ def get_parser_logger() -> logging.Logger:
     Returns:
         logging.Logger: requested logger
     """
-    return logging.getLogger("SbSOvRL_parser")
+    return logging.getLogger("ReLeSO_parser")
 
 
 class VerbosityLevel(enum.IntEnum):

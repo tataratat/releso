@@ -15,12 +15,12 @@ from stable_baselines3.common.type_aliases import TensorDict
 from torchvision import models, transforms
 
 
-class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
+class FeatureExtractor(BaseFeaturesExtractor):
     """Normal Feature extractor class implementation for ReLeSO.
 
     The standard feature extractor can only be used with a Box defined
     Observation space. For more complex Observations spaces see
-    :py:class:`SbSOvRL.feature_extractor.SbSOvRL_CombinedExtractor`
+    :py:class:`ReLeSO.feature_extractor.CombinedExtractor`
     """
 
     def __init__(
@@ -152,7 +152,7 @@ class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
         return observations
 
 
-class SbSOvRL_CombinedExtractor(BaseFeaturesExtractor):
+class CombinedExtractor(BaseFeaturesExtractor):
     """Combined Extractor can use a Dict definition of the observations space.
 
     Notes: Class is a direct copy from
@@ -201,7 +201,7 @@ class SbSOvRL_CombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if is_image_space(subspace):
-                extractors[key] = SbSOvRL_FeatureExtractor(
+                extractors[key] = FeatureExtractor(
                     observation_space=subspace, features_dim=cnn_output_dim,
                     without_linear=without_linear, network_type=network_type,
                     logger=logger)

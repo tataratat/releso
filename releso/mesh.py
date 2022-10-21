@@ -4,9 +4,9 @@ from typing import Any, Dict, Optional
 
 from pydantic import Field, PrivateAttr
 
-from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.util.logger import get_parser_logger
-from SbSOvRL.util.util_funcs import ModuleImportRaiser
+from releso.exceptions import ParserException
+from releso.util.logger import get_parser_logger
+from releso.util.util_funcs import ModuleImportRaiser
 
 try:
     from gustav import Mesh, load_mixd, load_volume_mixd
@@ -18,10 +18,10 @@ except ImportError:
 from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
 
-from SbSOvRL.base_model import SbSOvRL_BaseModel
+from releso.base_model import BaseModel
 
 
-class Mesh(SbSOvRL_BaseModel):
+class Mesh(BaseModel):
     """Class used to read in the correct base mesh file and load it."""
     #: Please use either the path variable xor the mxyz variable, since if
     #: used both the used mxyz path might not be the one you think.
@@ -64,7 +64,7 @@ class Mesh(SbSOvRL_BaseModel):
             v ([type]): value to validate
 
         Raises:
-            SbSOvRLParserException: If validation fails throws this error.
+            ParserException: If validation fails throws this error.
 
         Returns:
             pathlib.Path:
@@ -75,11 +75,11 @@ class Mesh(SbSOvRL_BaseModel):
             if path.name == "xns":
                 path = path.with_name("_.xns")
             else:
-                raise SbSOvRLParserException(
+                raise ParserException(
                     "Mesh", "export_path",
                     "Currently only the name xns without suffix is supported.")
         elif not path.suffix == ".xns":
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Mesh", "export_path",
                 "Currently only the suffix xns is supported.")
         return path
@@ -153,8 +153,8 @@ class Mesh(SbSOvRL_BaseModel):
             Yes this function is overly complicated but so be it.
 
         Raises:
-            SbSOvRLParserException:
-                Error if the mien or mxyz files could not be found.
+            ParserException: Error if the mien or mxyz files could not be
+            found.
 
         Returns:
             Dict[str, Any]:
@@ -242,20 +242,20 @@ class Mesh(SbSOvRL_BaseModel):
                         get_parser_logger().warning(
                             f"Mesh file given as existing file {path} but "
                             "could not find mxyz nor mien file.")
-                        SbSOvRLParserException(
+                        ParserException(
                             "Mesh", "path", "Could not locate mien nor mxyz"
                             " file path.")
                 # If mien or mxyz file path are not complete throw error.
                 if mxyz_path is None:
-                    SbSOvRLParserException(
+                    ParserException(
                         "Mesh", "path", "Could not locate mxyz file path.")
                 if mien_path is None:
-                    SbSOvRLParserException(
+                    ParserException(
                         "Mesh", "path", "Could not locate mien file path.")
             values["mien_path"] = mien_path
             values["mxyz_path"] = mxyz_path
             values["path"] = mxyz_path.parent
             return values
-        raise SbSOvRLParserException(
+        raise ParserException(
             "Mesh", "[mien_|mxyz_|]path", "Could not locate the correct "
             "mien/mxyz paths.")

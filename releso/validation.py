@@ -10,12 +10,12 @@ from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.type_aliases import GymEnv
 
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.util.logger import get_parser_logger
+from releso.base_model import BaseModel
+from releso.exceptions import ParserException
+from releso.util.logger import get_parser_logger
 
 
-class Validation(SbSOvRL_BaseModel):
+class Validation(BaseModel):
     """Parser class to define the validation to be performed during training.
 
     This class is used for the configuration of how validation is to be
@@ -65,14 +65,14 @@ class Validation(SbSOvRL_BaseModel):
             (here end_episode_on_spline_not_changed is important)
 
         Raises:
-            SbSOvRLParserException: Error is thrown if one of the conditions is
+            ParserException: Error is thrown if one of the conditions is
             not met.
 
         Returns:
             float: reward for the specified occurrence.
         """
         if "end_episode_on_spline_not_changed" not in values:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Validation", "reward_on_spline_not_changed",
                 "Could not find definition of parameter "
                 "end_episode_on_spline_not_changed, please define this "
@@ -81,7 +81,7 @@ class Validation(SbSOvRL_BaseModel):
         if value is not None and (
             values["end_episode_on_spline_not_changed"] is None or
                 not values["end_episode_on_spline_not_changed"]):
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Validation", "reward_on_spline_not_changed",
                 "Reward can only be set if end_episode_on_spline_not_changed "
                 "is true.")
@@ -109,14 +109,14 @@ class Validation(SbSOvRL_BaseModel):
             (here max_timesteps_in_episode is important)
 
         Raises:
-            SbSOvRLParserException: Error is thrown if one of the conditions is
+            ParserException: Error is thrown if one of the conditions is
             not met.
 
         Returns:
             float: reward for the specified occurrence.
         """
         if "max_timesteps_in_episode" not in values:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Validation", "reward_on_episode_exceeds_max_timesteps",
                 "Could not find definition of parameter "
                 "max_timesteps_in_episode, please define this variable since "
@@ -124,7 +124,7 @@ class Validation(SbSOvRL_BaseModel):
         if value is not None and (
             values["max_timesteps_in_episode"] is None or
                 not values["max_timesteps_in_episode"]):
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Validation", "reward_on_episode_exceeds_max_timesteps",
                 "Reward can only be set if max_timesteps_in_episode is a "
                 "positive integer.")
@@ -147,13 +147,13 @@ class Validation(SbSOvRL_BaseModel):
             field (str): name of the current field
 
         Raises:
-            SbSOvRLParserException: Thrown if list is empty
+            ParserException: Thrown if list is empty.
 
         Returns:
             List[float]: validated list
         """
         if len(value) == 0:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Validation", field, "You need to provide validation values")
         return value
 

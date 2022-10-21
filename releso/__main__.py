@@ -2,7 +2,7 @@
 """ReLeSO main file and framework starting point.
 
 File defines the main entry point of the framework if it is called via the
-command line. (via python -m SbSOvRL)
+command line. (via $python -m ReLeSO; or $releso)
 """
 import argparse
 import datetime
@@ -12,7 +12,7 @@ import shutil
 
 import hjson
 
-from SbSOvRL.base_parser import BaseParser
+from releso.base_parser import BaseParser
 
 
 def main(args) -> None:
@@ -77,10 +77,11 @@ def main(args) -> None:
     optimization_object.learn()
 
 
-if __name__ == '__main__':  # pragma: no cover
+def entry():
+    """Entry point if this package is called directly from the command line."""
     parser = argparse.ArgumentParser(
-        description="Spline base Shape Optimization via Reinforcement "
-                    "Learning Toolbox. This python program loads a problem "
+        description="Reinforcement Learning based Shape Optimization (releso) "
+                    "Toolbox. This python program loads a problem "
                     "definition and trains the resulting problem. Further the "
                     "model can be evaluated")
     parser.add_argument(
@@ -98,3 +99,7 @@ if __name__ == '__main__':  # pragma: no cover
     args = parser.parse_args()
     print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     main(args)
+
+
+if __name__ == '__main__':  # pragma: no cover
+    entry()

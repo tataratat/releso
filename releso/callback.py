@@ -1,6 +1,6 @@
 """Non SB3 Callbacks used in ReLeSO.
 
-Defines the custom call backs the SbSOvRL library uses. Works now with
+Defines the custom call backs the ReLeSO library uses. Works now with
 Multi-Environment training and should work with all agents.
 """
 from datetime import datetime

@@ -21,30 +21,29 @@ from pydantic.class_validators import validator
 from pydantic.fields import Field, PrivateAttr
 from stable_baselines3.common.monitor import Monitor
 
-from SbSOvRL.util.util_funcs import ModuleImportRaiser
+from releso.util.util_funcs import ModuleImportRaiser
 
 try:
     from gustav import FreeFormDeformation
 except ImportError:
     FreeFormDeformation = ModuleImportRaiser("gustav")
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.gym_environment import GymEnvironment
-from SbSOvRL.mesh import Mesh
-from SbSOvRL.spline import Spline, VariableLocation
-from SbSOvRL.spor import MultiProcessor, SPORList
-from SbSOvRL.util.load_binary import read_mixd_double
-from SbSOvRL.util.logger import (VerbosityLevel, get_parser_logger,
-                                 set_up_logger)
-from SbSOvRL.util.sbsovrl_types import ObservationType
+from releso.base_model import BaseModel
+from releso.exceptions import ParserException
+from releso.gym_environment import GymEnvironment
+from releso.mesh import Mesh
+from releso.spline import Spline, VariableLocation
+from releso.spor import MultiProcessor, SPORList
+from releso.util.load_binary import read_mixd_double
+from releso.util.logger import VerbosityLevel, get_parser_logger, set_up_logger
+from releso.util.types import ObservationType
 
 try:
-    from SbSOvRL.util.plotting import get_tricontour_solution
+    from releso.util.plotting import get_tricontour_solution
 except ImportError:
     get_tricontour_solution = ModuleImportRaiser("gustav")
 
 
-class MultiProcessing(SbSOvRL_BaseModel):
+class MultiProcessing(BaseModel):
     """Define multiprocessing capability of environment.
 
     Defines if the Problem should use Multiprocessing and with how many
@@ -56,7 +55,7 @@ class MultiProcessing(SbSOvRL_BaseModel):
     number_of_cores: conint(ge=1) = 1
 
 
-class Environment(SbSOvRL_BaseModel):
+class Environment(BaseModel):
     """Parser class of which the environment is based.
 
     Parser Environment object is created by pydantic during the parsing of the
@@ -160,14 +159,14 @@ class Environment(SbSOvRL_BaseModel):
                     (here end_episode_on_spline_not_changed is important)
 
         Raises:
-            SbSOvRLParserException: Error is thrown if one of the conditions is
-             not met.
+            ParserException: Error is thrown if one of the conditions is
+            not met.
 
         Returns:
             float: reward for the specified occurrence.
         """
         if "end_episode_on_spline_not_changed" not in values:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Environment", "reward_on_spline_not_changed",
                 "Could not find definition of parameter "
                 "end_episode_on_spline_not_changed, please defines this "
@@ -176,7 +175,7 @@ class Environment(SbSOvRL_BaseModel):
         if value is not None and (values["end_episode_on_spline_not_changed"]
                                   is None or not
                                   values["end_episode_on_spline_not_changed"]):
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Environment", "reward_on_spline_not_changed",
                 "Reward can only be set if end_episode_on_spline_not_changed "
                 "is true.")
@@ -204,21 +203,21 @@ class Environment(SbSOvRL_BaseModel):
             max_timesteps_in_episode is important)
 
         Raises:
-            SbSOvRLParserException: Error is thrown if one of the conditions is
+            ParserException: Error is thrown if one of the conditions is
             not met.
 
         Returns:
             float: reward for the specified occurrence.
         """
         if "max_timesteps_in_episode" not in values:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Environment", "reward_on_episode_exceeds_max_timesteps",
                 "Could not find definition of parameter "
                 "max_timesteps_in_episode, please defines this variable since "
                 "otherwise this variable would have no function.")
         if value is not None and (values["max_timesteps_in_episode"] is None
                                   or not values["max_timesteps_in_episode"]):
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Environment", "reward_on_episode_exceeds_max_timesteps",
                 "Reward can only be set if max_timesteps_in_episode a positive"
                 " integer.")
@@ -978,7 +977,7 @@ class Environment(SbSOvRL_BaseModel):
             width=height, height=width, dpi=dpi)
         meta_data_dict = {
             "Author": "Clemens Fricke",
-            "Software": "SbSOvRL",
+            "Software": "ReLeSO",
             "Creation Time": str(datetime.datetime.now()),
             "Description": "This is a description"
         }

@@ -1,6 +1,6 @@
 """Parsing of the agents available in ReLeSO.
 
-Out of the box the SbSOvRL package uses agents implemented in the Python
+Out of the box the ReLeSO package uses agents implemented in the Python
 package stable-baselines3. Currently the agents Deep Q-Network (DQN), Proximal
 Policy Optimization (PPO), Soft Actor-Critic (SAC) Advantage Actor Critic (A2C)
 and Deep Deterministic Policy Gradient (DDPG) can be used directly but the
@@ -35,19 +35,16 @@ from pydantic.types import FilePath
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC
 from stable_baselines3.common.base_class import BaseAlgorithm
 
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.exceptions import SbSOvRLAgentUnknownException
-# import numpy as np
-# from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.gym_environment import GymEnvironment
-from SbSOvRL.util.util_funcs import ModuleImportRaiser
+from releso.base_model import BaseModel
+from releso.exceptions import AgentUnknownException
+from releso.gym_environment import GymEnvironment
+from releso.util.util_funcs import ModuleImportRaiser
 
 try:
-    from SbSOvRL.feature_extractor import (SbSOvRL_CombinedExtractor,
-                                           SbSOvRL_FeatureExtractor)
+    from releso.feature_extractor import CombinedExtractor, FeatureExtractor
 except ImportError:
-    SbSOvRL_CombinedExtractor = ModuleImportRaiser("torchvision")
-    SbSOvRL_FeatureExtractor = ModuleImportRaiser("torchvision")
+    CombinedExtractor = ModuleImportRaiser("torchvision")
+    FeatureExtractor = ModuleImportRaiser("torchvision")
 
 # TODO dynamic agent detection via https://stackoverflow.com/a/3862957
 ####################################
@@ -68,11 +65,11 @@ except ImportError:
 # get argument names https://docs.python.org/3/library/inspect.html
 
 
-class BaseAgent(SbSOvRL_BaseModel):
+class BaseAgent(BaseModel):
     """Base agent definition.
 
     The class BaseAgent should be used as the base class for all classes
-    defining agents for the SbSOvRL framework.
+    defining agents for the ReLeSO framework.
     """
     #: base directory of the tensorboard logs if given an experiment name
     #: with a current timestamp is also added.
@@ -96,7 +93,7 @@ class BaseTrainingAgent(BaseAgent):
     """BaseTraining agent definition.
 
     The class BaseAgent should be used as the base class for all classes
-    defining agents for the SbSOvRL framework.
+    defining agents for the ReLeSO framework.
     """
     #: policy defines the network structure which the agent uses
     policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]
@@ -139,20 +136,20 @@ class BaseTrainingAgent(BaseAgent):
             if self.use_custom_feature_extractor:
                 if self.policy == "CnnPolicy":
                     self.policy_kwargs["features_extractor_class"] = \
-                        SbSOvRL_FeatureExtractor
+                        FeatureExtractor
                 elif self.policy == "MultiInputPolicy":
                     self.policy_kwargs["features_extractor_class"] = \
-                        SbSOvRL_CombinedExtractor
+                        CombinedExtractor
                 else:
                     self.get_logger().warning(
                         "Please use the CnnPolicy or the MultiInputPolicy with"
-                        " the SbSOvRL_FeatureExtractors everything else might "
+                        " the FeatureExtractors everything else might "
                         "not work. But I also have no idea what works and what"
                         " not. Will try to use the "
-                        "SbSOvRL_CustomFeatureExtractor, but as said might not"
+                        "CustomFeatureExtractor, but as said might not"
                         " work with the current policy.")
                     self.policy_kwargs["features_extractor_class"] = \
-                        SbSOvRL_FeatureExtractor
+                        FeatureExtractor
                 if self.cfe_without_linear:
                     self.policy_kwargs["features_extractor_kwargs"][
                         "without_linear"] = True
@@ -195,7 +192,7 @@ class PretrainedAgent(BaseAgent):
             normalizer_divisor (int): Currently not used in this function.
 
         Raises:
-            SbSOvRLAgentUnknownException: Possible exception which can be
+            AgentUnknownException: Possible exception which can be
             thrown.
 
         Returns:
@@ -215,7 +212,7 @@ class PretrainedAgent(BaseAgent):
         elif self.type == "A2C":
             return A2C.load(self.path, environment)
         else:
-            raise SbSOvRLAgentUnknownException(self.type)
+            raise AgentUnknownException(self.type)
 
     def get_next_tensorboard_experiment_name(self) -> str:
         """Return the name of the tensorboard experiment.

@@ -16,17 +16,16 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../../src/'))
-
+import releso
 
 # -- Project information -----------------------------------------------------
 
-project = 'SbSOvRL'
+project = 'ReLeSO'
 copyright = '2022, Clemens Fricke'
 author = 'Clemens Fricke'
 
 # The full version, including alpha/beta/rc tags
-release = '1.1'
+release = '0.9'
 
 
 # -- General configuration ---------------------------------------------------
@@ -38,14 +37,15 @@ extensions = [
     'sphinx.ext.duration',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    # 'sphinxcontrib.autodoc_pydantic'
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym",
                         "stable_baselines3", "pandas", "gustav", "numpy",
-                        "vedo", "matplotlib", "imageio"]
+                        "vedo", "matplotlib", "imageio", "torchvision"]
 # autodoc_typehints = 'description'  # show type hints in doc body instead of signature
 # autoclass_content = 'instance'  # get docstring from class level and init simultaneously
 
@@ -54,6 +54,8 @@ autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym",
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+autodoc_pydantic_model_show_json = True
+autodoc_pydantic_settings_show_json = False
 
 # -- Options for HTML output -------------------------------------------------
 

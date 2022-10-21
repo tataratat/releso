@@ -1,7 +1,7 @@
 """Framework experiment definition and experiment conduction.
 
 File defines the base json object which is needed to define the problem setting
-for the command line based usage of the SbSOvRL toolbox/framework.
+for the command line based usage of the ReLeSO toolbox/framework.
 """
 import datetime
 import pathlib
@@ -15,19 +15,19 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import StopTrainingOnMaxEpisodes
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
 
-from SbSOvRL.agent import AgentTypeDefinition
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.callback import EpisodeLogCallback
-from SbSOvRL.exceptions import SbSOvRLValidationNotSet
-from SbSOvRL.parser_environment import Environment
-from SbSOvRL.validation import Validation
-from SbSOvRL.verbosity import Verbosity
+from releso.agent import AgentTypeDefinition
+from releso.base_model import BaseModel
+from releso.callback import EpisodeLogCallback
+from releso.exceptions import ValidationNotSet
+from releso.parser_environment import Environment
+from releso.validation import Validation
+from releso.verbosity import Verbosity
 
 
-class BaseParser(SbSOvRL_BaseModel):
+class BaseParser(BaseModel):
     """Class parses the experiment definition and conducts the training.
 
-    This class can be used to initialize the SbSOvRL Framework from the command
+    This class can be used to initialize the ReLeSO Framework from the command
     line by reading in a json representation of the Spline based Shape
     Optimization problem which is to be solved via Reinforcement Learning.
     """
@@ -61,7 +61,7 @@ class BaseParser(SbSOvRL_BaseModel):
 
     # internal objects
     #: Holds the trainable agent for the RL use case. The
-    #: SbSOvRL.base_parser.BaseParser.agent defines the type and parameters of
+    #: ReLeSO.base_parser.BaseParser.agent defines the type and parameters of
     #: the agent this is the actual trainable agent.
     _agent: Optional[BaseAlgorithm] = PrivateAttr(
         default=None
@@ -195,7 +195,7 @@ class BaseParser(SbSOvRL_BaseModel):
             validation variable is None an error is thrown. Defaults to False.
 
         Raises:
-            SbSOvRLValidationNotSet: Thrown if validation is absolutely needed.
+            ValidationNotSet: Thrown if validation is absolutely needed.
             If not absolutely needed the validation will not be done but no
             error will be thrown.
         """
@@ -219,7 +219,7 @@ class BaseParser(SbSOvRL_BaseModel):
             self.get_logger().info(
                 f"The length per episode was: {episode_length}")
         elif throw_error_if_None:
-            raise SbSOvRLValidationNotSet()
+            raise ValidationNotSet()
 
     def _create_new_environment(self, logger_name: str):
         """Function used for multi environment training.
@@ -232,7 +232,7 @@ class BaseParser(SbSOvRL_BaseModel):
             c_env = deepcopy(self.environment)
             logging_information = {
                 "logger_name": logger_name,
-                "log_file_location": self.verbosity.SbSOvRL_logfile_location,
+                "log_file_location": self.verbosity.logfile_location,
                 "logging_level": self.verbosity.environment
             }
             return c_env.get_gym_environment(
@@ -251,7 +251,7 @@ class BaseParser(SbSOvRL_BaseModel):
                 thrown. Defaults to False.
 
         Raises:
-            SbSOvRLValidationNotSet:
+            ValidationNotSet:
                 Thrown if validation is absolutely needed. If not absolutely
                 needed the validation will not be done but no error will be
                 thrown.
@@ -259,14 +259,14 @@ class BaseParser(SbSOvRL_BaseModel):
         Returns:
             Environment:
                 Validation environment. Is not a 'gym' environment but and
-                SbSOvRL.parser_environment.Environment. Create the gym
+                ReLeSO.parser_environment.Environment. Create the gym
                 environment by calling the function env.get_gym_environment()
         """
         if self.validation is None:
             # ok i have no idea why i made this thingy here but i will keep it
             # for posterity
             if throw_error_if_None:
-                raise SbSOvRLValidationNotSet()
+                raise ValidationNotSet()
             return None
         validation_environment = deepcopy(self.environment)
 
