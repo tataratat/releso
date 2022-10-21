@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="releso",
-    version="0.9.0",
+    version="0.0.9",
     author="Clemens Fricke",
     author_email="clemens.david.fricke@tuwien.ac.at",
     description="""
