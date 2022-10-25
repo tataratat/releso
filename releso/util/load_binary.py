@@ -54,7 +54,7 @@ def load_mixd(
         mesh_file (string): filename / location of the mesh file `mxyz`
         mesh_dim (int): Number of spatial dimensions of the mesh
         solution_file (string): filename / location of the file containing
-            the nodal solutions
+        the nodal solutions
         ndof (int): Number of degrees of freedom per node
 
     Returns:

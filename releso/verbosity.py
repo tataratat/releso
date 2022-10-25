@@ -85,9 +85,7 @@ class Verbosity(BaseModel):
             values ([type]): [description]
 
         Returns:
-            pathlib.Path:
-                pathlib representation of the path with if applicable the
-                current timestamp
+            pathlib.Path: pathlib representation of the path with if applicable the current timestamp
         """
         path: pathlib.Path = None
         if "save_location" in values:

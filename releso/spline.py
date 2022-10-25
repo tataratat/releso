@@ -72,8 +72,8 @@ class VariableLocation(BaseModel):
             field ([type]): Name of the field that is currently validated.
 
         Raises:
-            ParserException:
-                Parser error if current_position is not already validated.
+            ParserException: Parser error if current_position is not already
+            validated.
 
         Returns:
             float: value of the validated value.
@@ -98,9 +98,8 @@ class VariableLocation(BaseModel):
             field ([type]): Name of the field that is currently validated.
 
         Raises:
-            ParserException:
-                Parser error if min_value is not already validated and if min
-                value greater if max value.
+            ParserException: Parser error if min_value is not already validated
+            and if min value greater if max value.
 
         Returns:
             float: value of the validated value.
@@ -130,9 +129,8 @@ class VariableLocation(BaseModel):
             values (Dict[str, Any]): Validated variables of the object.
 
         Returns:
-            Dict[str, Any]:
-                Validated variables but if steps was not given
-                before now it has a value.
+            Dict[str, Any]: Validated variables but if steps was not given
+            before now it has a value.
         """
         step, n_steps, min_value, max_value = values.get("step"), values.get(
             "n_steps"), values.get("min_value"), values.get("max_value")
@@ -155,7 +153,7 @@ class VariableLocation(BaseModel):
 
         Returns:
             bool: True if (self.max_value > self.current_position) or
-                  (self.min_value < self.current_position)
+            (self.min_value < self.current_position)
         """
         if self._is_action is None:
             self._is_action = (self.max_value > self.current_position) or (
