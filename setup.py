@@ -1,12 +1,15 @@
 """Definition of the package and installation of it."""
 import setuptools
 
+with open("releso/_version.py") as f:
+    version = eval(f.read().strip().split("=")[-1])
+
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="releso",
-    version="0.0.9",
+    version=version,
     author="Clemens Fricke",
     author_email="clemens.david.fricke@tuwien.ac.at",
     description="""

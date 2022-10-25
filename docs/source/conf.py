@@ -16,10 +16,15 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
 
-import releso
+try:
+    import releso
+except ModuleNotFoundError:
+    sys.path.insert(0, os.path.abspath('../../'))
+    import releso
 
-sys.path.insert(0, os.path.abspath('../../'))
 
+with open("../../releso/_version.py") as f:
+    version = eval(f.read().strip().split("=")[-1])
 
 # -- Project information -----------------------------------------------------
 
@@ -28,7 +33,7 @@ copyright = '2022, Clemens Fricke'
 author = 'Clemens Fricke'
 
 # The full version, including alpha/beta/rc tags
-release = '0.9'
+release = version
 
 
 # -- General configuration ---------------------------------------------------
