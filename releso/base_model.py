@@ -48,7 +48,7 @@ class BaseModel(pydantic.BaseModel):
     Base class for all ReLeSO classes which are needed for the command line
     based application of this toolbox.
     """
-    #: (Changes if on slurm system) Definition of the save location of the
+    #: Definition of the save location of the
     #: logs and validation results. Should be given as a standard string will
     #: be pre-converted into a pathlib.Path. If {} is present in the string the
     #: current timestamp is added if in a slurm job SLURM_JOB_ID are added.
