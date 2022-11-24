@@ -1,26 +1,26 @@
-"""
+"""ReLeSO logging.
+
 This file holds the verbosity definitions and helper functions for the logger
 used in this package.
 """
+import enum
 import logging
 import pathlib
-import enum
 from typing import Optional
 
 
 def get_parser_logger() -> logging.Logger:
-    """
-    Gets the logger which is to be used during the parsing of the json file.
+    """Get the logger which is to be used during the parsing of the json file.
 
     Returns:
         logging.Logger: requested logger
     """
-    return logging.getLogger("SbSOvRL_parser")
+    return logging.getLogger("ReLeSO_parser")
 
 
 class VerbosityLevel(enum.IntEnum):
-    """Defines the verbosity level of the logger.
-    """
+    """Defines the verbosity level of the logger."""
+
     #: Writes only errors to the log
     ERROR = logging.ERROR
     #: Writes errors and warning to the log
@@ -37,8 +37,7 @@ def set_up_logger(
         verbosity: VerbosityLevel = VerbosityLevel.INFO,
         console_logging: bool = False,
         logger: Optional[logging.Logger] = None) -> logging.Logger:
-    """
-    Create a logger instance with a specified name
+    """Create a logger instance with a specified name.
 
     Author:
         Daniel Wolff (wolff@cats.rwth-aachen.de),

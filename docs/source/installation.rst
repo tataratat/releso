@@ -1,11 +1,11 @@
 Installation
 ============
 
-This page covers the installation process of the framework and its prerequisites. 
+This page covers the installation process of the framework and its prerequisites.
 
 Prerequisites
 -------------
-To use SbSOvRL the following packages have to be installed:
+To use ReLeSO the following packages have to be installed:
  - pydantic
  - stable-baselines3
  - tensorboard
@@ -25,10 +25,10 @@ The first two/three packages can be installed via pip and/or conda with the foll
 
 .. code-block:: console
 
-   (base) $ conda create -n SbSOvRL python=3.9 pydantic tensorboard
-   (base) $ conda activate SbSOvRL
-   (SbSOvRL) $ conda install -c pytorch torchvision 
-   (SbSOvRL) $ pip install stable-baselines3 hjson
+   (base) $ conda create -n releso python=3.9 pydantic tensorboard
+   (base) $ conda activate releso
+   (releso) $ conda install -c pytorch torchvision
+   (releso) $ pip install stable-baselines3 hjson
 
 The next step is to install the ``gustav`` package which is a python interface for the c++ library SplineLib.
 To install ``gustav`` the following repository must be downloaded into an external folder and installed into the venv or conda environment as before. The installation process for the gustav package is documented in the README file of the repository.
@@ -36,28 +36,27 @@ To install ``gustav`` the following repository must be downloaded into an extern
 
 **Development**
 
-To develop the framework further the sphinx package should also be installed with the currently used sphinx html theme ``sphinx_rtd_theme``. 
+To develop the framework further the sphinx package should also be installed with the currently used sphinx html theme ``sphinx_rtd_theme``.
 The this can be done via:
 
 .. code-block:: console
-  
-   (SbSOvRL) $ pip install sphinx sphinx_rtd_theme
+
+   (releso) $ pip install sphinx sphinx_rtd_theme
 
 Framework
 ---------
 
-After installing all prerequisites the framework itself can be installed by running the command below in the main repository folder 
+After installing all prerequisites the framework itself can be installed by running the command below in the main repository folder
 
 **Non-development**
 
 .. code-block:: console
-  
-   (SbSOvRL) $ pip install .
+
+   (releso) $ pip install .
 
 
 **Development**
 
 .. code-block:: console
-   
-   (SbSOvRL) $ pip install -e .
 
+   (releso) $ pip install -e .

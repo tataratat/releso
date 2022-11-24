@@ -1,32 +1,35 @@
-"""
-File defines the FeatureExtractors currently implemented in this framework.
+"""File defines the FeatureExtractors currently implemented in this framework.
+
 These are implemented in a more or less slapdash fashion. Use at own Risk.
 """
 import logging
-from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.type_aliases import TensorDict
+from typing import Any, Dict, Literal, Optional
+
+import numpy as np
 import torch as th
 from gym import Space, spaces
-from typing import Dict, Any, Literal, Optional
-import numpy as np
+from stable_baselines3.common.preprocessing import (get_flattened_obs_dim,
+                                                    is_image_space)
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from stable_baselines3.common.type_aliases import TensorDict
 from torchvision import models, transforms
-from stable_baselines3.common.preprocessing import get_flattened_obs_dim
-from stable_baselines3.common.preprocessing import is_image_space
 
 
-class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
-    """
+class FeatureExtractor(BaseFeaturesExtractor):
+    """Normal Feature extractor class implementation for ReLeSO.
+
     The standard feature extractor can only be used with a Box defined
     Observation space. For more complex Observations spaces see
-    :py:class:`SbSOvRL.feature_extractor.SbSOvRL_CombinedExtractor`
+    :py:class:`ReLeSO.feature_extractor.CombinedExtractor`
     """
 
     def __init__(
-            self, observation_space: Space, features_dim=512,
+            self, observation_space: Space, features_dim: int = 512,
             without_linear: bool = False,
             network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
             logger: Optional[logging.Logger] = None):
-        """
+        """Constructor for normal feature extractor.
+
         The feature extractor is used to also be able to handle image based
         observations better and to give the option to used pretrained networks
         as the feature extractor. Multiple are available please look into the
@@ -34,19 +37,19 @@ class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
         listed in the network_type variable hint.
 
         Args:
-          observation_space (Space):
-            Observations space of the environment.
-          cnn_output_dim (int, optional):
-            How many features the feature extractor should return.
-            Defaults to 256.
-          without_linear (bool, optional):
-            Use the pretrained nets without a linear layer at the end. Setting
-            the output_dim is not possible since the output sie is directly
-            dependent on the input size. Defaults to False.
-          network_type (Literal["resnet18", "mobilenetv2"], optional):
-            Network to use for the cnn extractor. Defaults to "resnet18".
-          logger (Optional[logging.Logger], optional):
-            Logger to use for logging purposes. Defaults to None.
+          observation_space (Space): Observations space of the environment.
+          cnn_output_dim (int, optional): How many features the feature
+          extractor should return. Defaults to 256.
+          features_dim (int, optional): Number of dimensions in the feature
+          dimension.
+          without_linear (bool, optional): Use the pretrained nets without a
+          linear layer at the end. Setting the output_dim is not possible since
+          the output sie is directly dependent on the input size.
+          Defaults to False.
+          network_type (Literal["resnet18", "mobilenetv2"], optional):Network
+          to use for the cnn extractor. Defaults to "resnet18".
+          logger (Optional[logging.Logger], optional): Logger to use for
+          logging purposes. Defaults to None.
 
         """
         super().__init__(observation_space, features_dim=features_dim)
@@ -149,47 +152,45 @@ class SbSOvRL_FeatureExtractor(BaseFeaturesExtractor):
         return observations
 
 
-class SbSOvRL_CombinedExtractor(BaseFeaturesExtractor):
-    """
-      Combined Extractor can use a Dict definition of the observations space.
+class CombinedExtractor(BaseFeaturesExtractor):
+    """Combined Extractor can use a Dict definition of the observations space.
 
-      Notes:
-        Class is a direct copy from
+    Notes: Class is a direct copy from
         stable_baselines3.common.torch_layers.CombinedExtractor. Only change is
         the image feature extractor.
     """
 
     def __init__(
-      self, observation_space: spaces.Dict, cnn_output_dim: int = 256,
-      without_linear: bool = False,
-      network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
-      logger: Optional[logging.Logger] = None):
-        """
-          The feature extractor is used to also be able to handle image based
-          observations better and to give the option to used pretrained
-          networks as the feature extractor. Multiple are available please look
-          into the code to check the currently available pretrained networks.
-          Not all are listed in the network_type variable hint.
+            self, observation_space: spaces.Dict, cnn_output_dim: int = 256,
+            without_linear: bool = False,
+            network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
+            logger: Optional[logging.Logger] = None):
+        """Combined Feature extractor constructor.
 
-          The combined feature extractor extends this capability to non uniform
-          observations space definitions. For example if image based
-          observations are mixed with standard (scalar) observations. Or
-          multiple images are used as an observation.
+        The feature extractor is used to also be able to handle image based
+        observations better and to give the option to used pretrained
+        networks as the feature extractor. Multiple are available please look
+        into the code to check the currently available pretrained networks.
+        Not all are listed in the network_type variable hint.
+
+        The combined feature extractor extends this capability to non uniform
+        observations space definitions. For example if image based
+        observations are mixed with standard (scalar) observations. Or
+        multiple images are used as an observation.
 
         Args:
-            observation_space (spaces.Dict):
-              Observations space of the environment.
-            cnn_output_dim (int, optional):
-              How many features the feature extractor should return.
-              Defaults to 256.
-            without_linear (bool, optional):
-              Use the pretrained nets without a linear layer at the end.
-              Setting the output_dim is not possible since the output sie is
-              directly dependent on the input size. Defaults to False.
-            network_type (Literal["resnet18", "mobilenetv2"], optional):
-              Network to use for the cnn extractor. Defaults to "resnet18".
-            logger (Optional[logging.Logger], optional):
-              Logger to use for logging purposes. Defaults to None.
+            observation_space (spaces.Dict): Observations space of the
+            environment.
+            cnn_output_dim (int, optional): How many features the feature
+            extractor should return. Defaults to 256.
+            without_linear (bool, optional): Use the pretrained nets without a
+            linear layer at the end. Setting the output_dim is not possible
+            since the output is directly dependent on the input size.
+            Defaults to False.
+            network_type (Literal["resnet18", "mobilenetv2"],optional): Network
+            to use for the cnn extractor. Defaults to "resnet18".
+            logger (Optional[logging.Logger], optional): Logger to use for
+            logging purposes. Defaults to None.
         """
         # TODO we do not know features-dim here before going over all the
         # items, so put something there. This is not clean!
@@ -200,7 +201,7 @@ class SbSOvRL_CombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if is_image_space(subspace):
-                extractors[key] = SbSOvRL_FeatureExtractor(
+                extractors[key] = FeatureExtractor(
                     observation_space=subspace, features_dim=cnn_output_dim,
                     without_linear=without_linear, network_type=network_type,
                     logger=logger)

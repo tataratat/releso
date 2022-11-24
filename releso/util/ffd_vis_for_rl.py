@@ -1,13 +1,15 @@
+# noqa
 """
 Author: Daniel Wolf (wolf@avt.rwth-aachen.de)
 """
+import pathlib
+
 import gustav as gus
 import vedo
-import pathlib
 
 
 def plot_undeformed_unit_mesh(
-        FFD: gus.FreeFormDeformation, path: pathlib.Path):
+        FFD: gus.FreeFormDeformation, path: pathlib.Path):  # noqa
     undeformed_unit_mesh_axes = dict(
         # general stuff
         titleFont='SmartCouric',
@@ -52,7 +54,8 @@ def plot_undeformed_unit_mesh(
 # plot_undeformed_unit_mesh
 
 
-def plot_deformed_unit_mesh(FFD: gus.FreeFormDeformation, path: pathlib.Path):
+def plot_deformed_unit_mesh(
+    FFD: gus.FreeFormDeformation, path: pathlib.Path):  # noqa
 
     deformed_unit_mesh_axes = dict(
         # general stuff
@@ -100,7 +103,7 @@ def plot_deformed_unit_mesh(FFD: gus.FreeFormDeformation, path: pathlib.Path):
 # plot_deformed_unit_mesh
 
 
-def plot_undeformed_mesh(FFD: gus.FreeFormDeformation, path: pathlib.Path):
+def plot_undeformed_mesh(FFD: gus.FreeFormDeformation, path: pathlib.Path):  # noqa
 
     # mesh axes
     # https://github.com/marcomusy/vedo/blob/
@@ -152,7 +155,7 @@ def plot_undeformed_mesh(FFD: gus.FreeFormDeformation, path: pathlib.Path):
 # plot_undeformed_mesh
 
 
-def plot_deformed_mesh(FFD: gus.FreeFormDeformation, path: pathlib.Path):
+def plot_deformed_mesh(FFD: gus.FreeFormDeformation, path: pathlib.Path):  # noqa
 
     # mesh axes
     # https://github.com/marcomusy/vedo/blob/
@@ -204,7 +207,7 @@ def plot_deformed_mesh(FFD: gus.FreeFormDeformation, path: pathlib.Path):
 # plot_deformed_mesh
 
 
-def plot_undeformed_spline(FFD: gus.FreeFormDeformation, path: pathlib.Path):
+def plot_undeformed_spline(FFD: gus.FreeFormDeformation, path: pathlib.Path):  # noqa
 
     undeformed_spline_axes = dict(
         # general stuff
@@ -250,7 +253,7 @@ def plot_undeformed_spline(FFD: gus.FreeFormDeformation, path: pathlib.Path):
 # plot_undeformed_spline
 
 
-def plot_deformed_spline(FFD: gus.FreeFormDeformation, path: pathlib.Path):
+def plot_deformed_spline(FFD: gus.FreeFormDeformation, path: pathlib.Path):  # noqa
 
     deformed_spline_axes = dict(
         # general stuff

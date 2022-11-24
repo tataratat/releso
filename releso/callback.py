@@ -1,25 +1,31 @@
-"""
-Defines the custom call backs the SbSOvRL library uses. Works now with
+"""Non SB3 Callbacks used in ReLeSO.
+
+Defines the custom call backs the ReLeSO library uses. Works now with
 Multi-Environment training and should work with all agents.
 """
 from datetime import datetime
-from stable_baselines3.common.callbacks import BaseCallback
-import pandas as pd
-from pathlib import Path
-from typing import List, Optional, Dict, Union
 from itertools import count
+from pathlib import Path
+from typing import Dict, List, Optional, Union
+
+import pandas as pd
+from stable_baselines3.common.callbacks import BaseCallback
 
 
 class EpisodeLogCallback(BaseCallback):
-    """
-    Will most likely break with vectorized environment where training is
-    performed on multiple environments concurrently. Good for vectorized with
-    only a single environment.
-    """
+    """Episode Callback class, even for vectorized environments."""
 
     def __init__(
             self, episode_log_location: Path, verbose: int = 0,
             update_n_episodes: int = 1):
+        """Constructor for the Callback using SB3 interface.
+
+        Args:
+            episode_log_location (Path): Path to the episode log.
+            verbose (int, optional): Verbosity of the callback. Defaults to 0.
+            update_n_episodes (int, optional): Update the episode every n
+            episodes. Defaults to 1.
+        """
         super().__init__(verbose=verbose)
         self.episode_log_location: Path = episode_log_location
         self.episode_log_location.parent.mkdir(parents=True, exist_ok=True)
@@ -43,9 +49,7 @@ class EpisodeLogCallback(BaseCallback):
         self.environment_id: List[int] = []
 
     def _export(self):
-        """
-        Function exports the current information into a csv file.
-        """
+        """Function exports the current information into a csv file."""
         df = pd.DataFrame({
             "steps_in_episode": self.episode_n_steps,
             "episode_reward": self.episode_rewards,
@@ -57,8 +61,7 @@ class EpisodeLogCallback(BaseCallback):
         df.to_csv(self.episode_log_location)
 
     def _on_step(self) -> bool:
-        """
-        Function is called after a step was performed.
+        """Function is called after a step was performed.
 
         Returns:
             bool: If the callback returns False, training is aborted early.
@@ -104,7 +107,5 @@ class EpisodeLogCallback(BaseCallback):
         return continue_training
 
     def _on_training_end(self) -> None:
-        """
-        Function is called when training is terminated.
-        """
+        """Function is called when training is terminated."""
         self._export()

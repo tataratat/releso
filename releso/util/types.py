@@ -1,9 +1,12 @@
-"""
+"""Types and Type Unions defined for the ReLeSO package.
+
 This file contains type definitions of commonly used items in this
-framework/package.
+framework/package. Mostly RL based here. Some more types can be found in other
+files. Here only types with strictly external contents are created.
 """
 
 from typing import Dict, Tuple, Union
+
 from numpy import ndarray
 
 #: Type definition for Observations.

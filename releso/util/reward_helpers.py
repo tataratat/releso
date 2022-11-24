@@ -1,20 +1,22 @@
-"""
+"""SPOR object script helper functions.
+
 This files holds functions which can be used in custom command line spor object
 scripts.
 """
-from typing import List, Optional, Union, Any, Dict
+import argparse
 import json
 from os import PathLike
 from pathlib import Path
-import argparse
+from typing import Any, Dict, List, Optional, Union
+
 from pydantic.types import UUID4
 
 
 def spor_com_parse_arguments(
         own_arguments: Optional[List[str]] = None) -> argparse.Namespace:
-    """
-    Parses the spor com arguments and returns them in a namespace object for
-    easy access.
+    """Parses the spor com arguments.
+
+    The result is returned in a namespace object for easy access.
 
     Returns:
         argparse.Namespace: [description]
@@ -61,8 +63,7 @@ def spor_com_parse_arguments(
 
 
 def spor_com_additional_information(j_str: str) -> Dict[str, Any]:
-    """
-    converts the given string (should hold a json string) into a dictionary
+    """Converts the given string (should hold a json string) into a dictionary.
 
     This function is currently only used for the spor_com_parse_arguments
     function.
@@ -78,19 +79,19 @@ def spor_com_additional_information(j_str: str) -> Dict[str, Any]:
 
 
 def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
-    """
-    Loads data from a given file as a json object. Will create a dummy file if
-    it does not exist.
+    """Loads data from a given file as a json object.
+
+    Will create a dummy file if it does not exist.
 
     Args:
-        f_n (Union[PathLike, str]):
-            Path to the file where the json encoded data is stored.
+        f_n (Union[PathLike, str]): Path to the file where the json encoded
+        data is stored.
 
     Returns:
         Dict[str, Any]: Data loaded from the given file.
     """
     path = Path(f_n)
-    if not(path.exists() and path.is_file()):
+    if not (path.exists() and path.is_file()):
         empty_dict = {}
         with open(path, "w") as wf:
             json.dump(empty_dict, wf)
@@ -99,15 +100,14 @@ def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
 
 
 def write_json(f_n: Union[PathLike, str], obj_dict: Dict[str, Any]):
-    """
-    Write the obj_dict to the given file (json encoded). Can be used to store
-    persistent variables between calls to the same script.
+    """Write the obj_dict to the given file (json encoded).
+
+    Can be used to store persistent variables between calls to the same script.
 
     Args:
-        f_n (Union[PathLike, str]):
-            Path to the file where the json encoded data is to be stored.
-        obj_dict (Dict[str, Any]):
-            Data that is to be stored
+        f_n (Union[PathLike, str]): Path to the file where the json encoded
+        data is to be stored.
+        obj_dict (Dict[str, Any]): Data that is to be stored.
     """
     with open(f_n, "w") as wf:
         json.dump(obj_dict, wf)

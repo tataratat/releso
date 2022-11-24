@@ -1,59 +1,63 @@
+"""Classes used to parse the environment definition.
+
+Files defines the environment used for parsing and also most function which
+hold the functionality for the Reinforcement Learning environment are
+defined here.
 """
-    Files defines the environment used for parsing and also most function which
-     hold the functionality for the Reinforcement Learning environment are
-     defined here.
-"""
+import datetime
 import multiprocessing
 import pathlib
-import datetime
-from typing import Optional, Any, List, Dict, Tuple, Union
-import numpy as np
 from copy import copy
-from uuid import uuid4
 from timeit import default_timer as timer
-import matplotlib.pyplot as plt
-
-from pydantic.class_validators import validator
-from pydantic.fields import Field, PrivateAttr
-from pydantic import conint, UUID4
+from typing import Any, Dict, List, Optional, Tuple, Union
+from uuid import uuid4
 
 import gym
+import matplotlib.pyplot as plt
+import numpy as np
 from gym import spaces
+from pydantic import UUID4, conint
+from pydantic.class_validators import validator
+from pydantic.fields import Field, PrivateAttr
 from stable_baselines3.common.monitor import Monitor
-from SbSOvRL.util.util_funcs import ModuleImportRaiser
+
+from releso.util.util_funcs import ModuleImportRaiser
 
 try:
     from gustav import FreeFormDeformation
 except ImportError:
     FreeFormDeformation = ModuleImportRaiser("gustav")
-from SbSOvRL.exceptions import SbSOvRLParserException
-from SbSOvRL.spline import Spline, VariableLocation
-from SbSOvRL.util.logger import get_parser_logger
-from SbSOvRL.mesh import Mesh
-from SbSOvRL.spor import MultiProcessor, SPORList
-from SbSOvRL.gym_environment import GymEnvironment
-from SbSOvRL.base_model import SbSOvRL_BaseModel
-from SbSOvRL.util.sbsovrl_types import ObservationType
-from SbSOvRL.util.logger import VerbosityLevel, set_up_logger
-from SbSOvRL.util.load_binary import read_mixd_double
+from releso.base_model import BaseModel
+from releso.exceptions import ParserException
+from releso.gym_environment import GymEnvironment
+from releso.mesh import Mesh
+from releso.spline import Spline, VariableLocation
+from releso.spor import MultiProcessor, SPORList
+from releso.util.load_binary import read_mixd_double
+from releso.util.logger import VerbosityLevel, get_parser_logger, set_up_logger
+from releso.util.types import ObservationType
+
 try:
-    from SbSOvRL.util.plotting import get_tricontour_solution
+    from releso.util.plotting import get_tricontour_solution
 except ImportError:
     get_tricontour_solution = ModuleImportRaiser("gustav")
 
-class MultiProcessing(SbSOvRL_BaseModel):
-    """
-        Defines if the Problem should use Multiprocessing and with how many
-        cores the solver can work. Does not force Multiprocessing for example
-        if the solver does not support it.
+
+class MultiProcessing(BaseModel):
+    """Define multiprocessing capability of environment.
+
+    Defines if the Problem should use Multiprocessing and with how many
+    cores the solver can work. Does not force Multiprocessing for example
+    if the solver does not support it.
     """
     #: Maximal number of cores which can be used by the current environment.
     #: Multi-Environments will use multiple of these.
     number_of_cores: conint(ge=1) = 1
 
 
-class Environment(SbSOvRL_BaseModel):
-    """
+class Environment(BaseModel):
+    """Parser class of which the environment is based.
+
     Parser Environment object is created by pydantic during the parsing of the
     json object defining the Spline base Shape optimization. Each object can
     create a gym environment that represents the given problem.
@@ -91,7 +95,7 @@ class Environment(SbSOvRL_BaseModel):
     #: also saves the mesh when an episode is saved with
     #: save_random_good_episode_results, works only if the named option is True
     save_random_good_episode_mesh: bool = False
-    #: do not perform FFD just add the control_points current location to the 
+    #: do not perform FFD just add the control_points current location to the
     #: info of the episode
     only_use_control_points: bool = False
 
@@ -117,14 +121,14 @@ class Environment(SbSOvRL_BaseModel):
     #: How many validations were already evaluated
     _validation_iteration: Optional[int] = PrivateAttr(
         default=0)
-    #: The triangular connectivity of the
+    #: The triangular connectivity of the mesh
     _connectivity: Optional[np.ndarray] = PrivateAttr(
         default=None)
     #: Please check validation definition to see what this does
     _save_image_in_validation: bool = PrivateAttr(default=False)
     #: Please check validation definition to see what this does
     _validation_timestep: int = PrivateAttr(default=0)
-    #: 
+    #: Internal boolean value of observation space should be dict.
     _observation_is_dict: bool = PrivateAttr(default=False)
     #: At these values the validation results are saved
     _result_values_to_save: List[float] = PrivateAttr(default=list(
@@ -143,7 +147,9 @@ class Environment(SbSOvRL_BaseModel):
     @classmethod
     def check_if_reward_given_if_spline_not_change_episode_killer_activated(
             cls, value, values) -> float:
-        """Checks that 1) if a reward is set, also the boolean value for the
+        """Validator reward_on_spline_not_changed.
+
+        Checks that 1) if a reward is set, also the boolean value for the
         end_episode_on_spline_not_changed is True. 2) If
         end_episode_on_spline_not_changed is True a reward value is set.
 
@@ -153,14 +159,14 @@ class Environment(SbSOvRL_BaseModel):
                     (here end_episode_on_spline_not_changed is important)
 
         Raises:
-            SbSOvRLParserException: Error is thrown if one of the conditions is
-             not met.
+            ParserException: Error is thrown if one of the conditions is
+            not met.
 
         Returns:
             float: reward for the specified occurrence.
         """
         if "end_episode_on_spline_not_changed" not in values:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Environment", "reward_on_spline_not_changed",
                 "Could not find definition of parameter "
                 "end_episode_on_spline_not_changed, please defines this "
@@ -169,7 +175,7 @@ class Environment(SbSOvRL_BaseModel):
         if value is not None and (values["end_episode_on_spline_not_changed"]
                                   is None or not
                                   values["end_episode_on_spline_not_changed"]):
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Environment", "reward_on_spline_not_changed",
                 "Reward can only be set if end_episode_on_spline_not_changed "
                 "is true.")
@@ -185,10 +191,11 @@ class Environment(SbSOvRL_BaseModel):
     @classmethod
     def check_if_reward_given_if_max_steps_killer_activated(cls, value,
                                                             values) -> int:
-        """
-            Checks that 1) if a reward is set, also the boolean value for the
-            max_timesteps_in_episode is True. 2) If max_timesteps_in_episode
-            is True a reward value is set.
+        """Validator reward_on_episode_exceeds_max_timesteps.
+
+        Checks that 1) if a reward is set, also the boolean value for the
+        max_timesteps_in_episode is True. 2) If max_timesteps_in_episode
+        is True a reward value is set.
 
         Args:
             value (float): value to validate
@@ -196,21 +203,21 @@ class Environment(SbSOvRL_BaseModel):
             max_timesteps_in_episode is important)
 
         Raises:
-            SbSOvRLParserException: Error is thrown if one of the conditions is
+            ParserException: Error is thrown if one of the conditions is
             not met.
 
         Returns:
             float: reward for the specified occurrence.
         """
         if "max_timesteps_in_episode" not in values:
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Environment", "reward_on_episode_exceeds_max_timesteps",
                 "Could not find definition of parameter "
                 "max_timesteps_in_episode, please defines this variable since "
                 "otherwise this variable would have no function.")
         if value is not None and (values["max_timesteps_in_episode"] is None
                                   or not values["max_timesteps_in_episode"]):
-            raise SbSOvRLParserException(
+            raise ParserException(
                 "Environment", "reward_on_episode_exceeds_max_timesteps",
                 "Reward can only be set if max_timesteps_in_episode a positive"
                 " integer.")
@@ -224,13 +231,16 @@ class Environment(SbSOvRL_BaseModel):
     # object functions
 
     def __init__(self, **data: Any) -> None:
+        """Construct the object."""
         super().__init__(**data)
         if not self.only_use_control_points:
             self._FFD = FreeFormDeformation
 
     def _set_up_actions(self) -> gym.Space:
-        """Creates the action space the gym environment uses to define its
-            action space.
+        """Define actions space of the environment.
+
+        Creates the action space the gym environment uses to define its
+        action space.
 
         Returns:
             gym.Space: action space of the current problem.
@@ -245,7 +255,8 @@ class Environment(SbSOvRL_BaseModel):
         observation_spaces: List[Tuple[str, ObservationType]],
         has_cnn_observations: bool
     ) -> List[Tuple[str, ObservationType]]:
-        """
+        """If possible compress observation space.
+
         If possible will compress the observation space into a single
         :py:`gym.spaces.Box` observation space. This is not possible if cnn
         observations are being used and als not if the shape of the
@@ -305,9 +316,10 @@ class Environment(SbSOvRL_BaseModel):
         return observation_spaces
 
     def _define_observation_space(self) -> gym.Space:
-        """
-            Creates the observation space the gym environment uses to define
-            its observations space.
+        """Define the observation space of the environment.
+
+        Creates the observation space the gym environment uses to define
+        its observations space.
 
         Returns:
             # gym.Space: Observation space of the current problem.
@@ -330,7 +342,8 @@ class Environment(SbSOvRL_BaseModel):
         if spor_obs is not None:
             for item in spor_obs:
                 observation_spaces.append(item.get_observation_definition())
-                if "value_type" in item.__dict__.keys() and  item.value_type == "CNN":
+                if ("value_type" in item.__dict__.keys()
+                        and item.value_type == "CNN"):
                     has_cnn_observations = True
 
         # check if dict is actually necessary
@@ -359,7 +372,7 @@ class Environment(SbSOvRL_BaseModel):
             return observation_spaces[0][1]
 
     def _get_spline_observations(self) -> List[float]:
-        """Collects all observations that are part of the spline.
+        """Collect all observations that are part of the spline.
 
         Returns:
             List[float]: Observation vector containing only the spline values.
@@ -369,9 +382,13 @@ class Environment(SbSOvRL_BaseModel):
         )
 
     def _apply_FFD(self, path: Optional[str] = None) -> None:
-        """
+        """Apply FFD for current spline.
+
+        Might move in the future to a SPORStep. Can be deactivated with
+        only_use_control_points.
+
         Apply the Free Form Deformation using the current spline to the mesh
-         and export the resulting mesh to the path given.
+        and export the resulting mesh to the path given.
 
         Args:
             path (Optional[str]): Path to where the deformed mesh should be
@@ -406,7 +423,8 @@ class Environment(SbSOvRL_BaseModel):
                 action_obj.apply_continuos_action(new_value)
 
     def is_multiprocessing(self) -> int:
-        """
+        """Check if environment uses multiprocessing.
+
         Function checks if the environment is setup to be used with
         multiprocessing Solver. Returns the number of cores the solver should
         use. If no multiprocessing 1 core is returned.
@@ -420,7 +438,8 @@ class Environment(SbSOvRL_BaseModel):
         return self.multi_processing.number_of_cores
 
     def get_validation_id(self) -> Optional[int]:
-        """
+        """Return the validation id of the current run, if applicable.
+
         Checks if current environment has validation values if return the
         correct one otherwise return None.
 
@@ -442,15 +461,16 @@ class Environment(SbSOvRL_BaseModel):
         return None
 
     def step(self, action: Any) -> Tuple[Any, float, bool, Dict[str, Any]]:
-        """
+        """Performs the step of the environment.
+
         Function that is called for each step. Contains all steps that are
         performed during each step inside the environment.
 
         Args:
             action (Any): Action value depends on if the ActionSpace is
-                          discrete (int - Signifier of the action) or
-                          Continuous (List[float] - Value for each continuous
-                          variable.)
+            discrete (int - Signifier of the action) or
+            Continuous (List[float] - Value for each continuous
+            variable.)
 
         Returns:
             Tuple[Any, float, bool, Dict[str, Any]]: [description]
@@ -562,6 +582,17 @@ class Environment(SbSOvRL_BaseModel):
 
     def check_observations(
             self, observations: ObservationType) -> ObservationType:
+        """Processes the observations.
+
+        Transforms the observations from a dict observation to a normal
+        observation if applicable.
+
+        Args:
+            observations (ObservationType): Observations to be processed.
+
+        Returns:
+            ObservationType: Processed Observations.
+        """
         self.get_logger().debug(
             f"The observations are as follows: {observations}")
         new_observation = []
@@ -576,10 +607,10 @@ class Environment(SbSOvRL_BaseModel):
         return new_observation
 
     def reset(self) -> ObservationType:
-        """
-        Function that is called when the agents wants to reset the environment.
-         This can either be the case if the episode is done due to #time_steps
-         or the environment emits the done signal.
+        """Resets the environment.
+
+        This can either be the case if the episode is done due to #time_steps
+        or the environment emits the done signal.
 
         Returns:
             Tuple[Any]: Observation of the newly reset environment.
@@ -661,10 +692,9 @@ class Environment(SbSOvRL_BaseModel):
         return self.check_observations(observations)
 
     def _get_reset_reason_string(self) -> str:
-        """
-        Helper function due to line limit. Only used once but could not figure
-        out how to break up line. Without making it a function. Before it was
-        and inline if statement.
+        """Find reset reason and returns it.
+
+        Returns empty string if no reset reason is provided.
 
         Returns:
             str: Reset reason if it exists else empty string
@@ -682,19 +712,47 @@ class Environment(SbSOvRL_BaseModel):
             reward_on_spline_not_changed: Optional[float] = None,
             reward_on_episode_exceeds_max_timesteps: Optional[float] = None,
             save_image_in_validation: Optional[bool] = False):
-        """
-        Converts the environment to a validation environment. This environment
-        now only sets the goal states to the predefined values.
+        """Converts the environment to a validation environment.
+
+        This environment now only sets the goal states to the predefined
+        values.
 
         Args:
             validation_values (List[float]): List of predefined goal states.
-            base_mesh_path (Optional[str], optional): [description].
-                Defaults to None.
-            end_episode_on_spline_not_change (bool, optional): [description].
-                Defaults to False.
-            max_timesteps_per_episode (int, optional): [description].
-                Defaults to 0.
+            base_mesh_path (Optional[str], optional): Path to the initial mesh.
+            Defaults to None.
+            end_episode_on_spline_not_change (bool, optional): _description_. Defaults to False.
+            max_timesteps_in_episode (int, optional): _description_. Defaults to 0.
+            reward_on_spline_not_changed (Optional[float], optional): _description_. Defaults to None.
+            reward_on_episode_exceeds_max_timesteps(Optional[float],optional):A
+            _description_. Defaults to None.
+            save_image_in_validation (Optional[bool], optional): _description_. Defaults to False.
         """
+    # def as():
+    #     """Converts the environment to a validation environment.
+
+    #     This environment now only sets the goal states to the predefined
+    #     values.
+
+    #     Args:
+    #         validation_values (List[float]): List of predefined goal states.
+    #         base_mesh_path (Optional[str], optional): Path to the initial mesh.
+    #         Defaults to None.
+    #         end_episode_on_spline_not_change (bool, optional): Should the
+    #         episode end if the spline does not change anymore.
+    #         Defaults to False.
+    #         max_timesteps_per_episode (int, optional): After how many timesteps
+    #         should the episode be ended if the goal was not reached.
+    #         Defaults to 0.
+    #         reward_on_spline_not_changed (Optional[float], optional):
+    #         _description_. Defaults to None.
+    #         reward_on_episode_exceeds_max_timesteps (
+    #             Optional[float], optional):
+    #         _description_. Defaults to None.
+    #         save_image_in_validation (Optional[bool], optional):
+    #         _description_. Defaults to False.
+
+    #     """
         self._validation_ids = validation_values
         self._current_validation_idx = 0
         self._validation_base_mesh_path = base_mesh_path
@@ -715,7 +773,8 @@ class Environment(SbSOvRL_BaseModel):
         logging_information: Optional[
             Dict[str, Union[str, pathlib.Path, VerbosityLevel]]] = None
     ) -> gym.Env:
-        """
+        """Creates the parametrized gym environment.
+
         Creates and configures the gym environment so it can be used
         for training.
 
@@ -749,7 +808,8 @@ class Environment(SbSOvRL_BaseModel):
 
     def _set_up_logger(self, logger_name: str, log_file_location: pathlib.Path,
                        logging_level: VerbosityLevel):
-        """
+        """Setup the logger to be multiprocessing aware.
+
         Additional set up logger function for the purpose of multiprocessing
         capable logger initialization.
 
@@ -765,9 +825,9 @@ class Environment(SbSOvRL_BaseModel):
         self.set_logger_name_recursively(resulting_logger.name)
 
     def export_spline(self, file_name: str) -> None:
-        """
-        Export the current spline to the given path. The export will be done
-        via gustav.
+        """Export the current spline to the given path.
+
+        The export will be done via gustav.
 
         Note:
             Gustav often uses the extension to determine the format and the
@@ -780,19 +840,17 @@ class Environment(SbSOvRL_BaseModel):
             self._FFD.deformed_spline.export(file_name)
 
     def export_mesh(self, file_name: str, space_time: bool = False) -> None:
-        """
-        Export the current deformed mesh to the given path. The export will be
-        done via gustav.
+        """Export the current deformed mesh to the given path.
+
+        The export will be done via gustav.
 
         Note:
             Gustav often uses the extension to determine the format and the
             sub files of the export so be careful how you input the file path.
 
         Args:
-            file_name (str):
-                Path to where and how gustav should export the mesh.
-            space_time (bool):
-                Whether or not to use space time during the
+            file_name (str): Path to where and how gustav should export the mesh.
+            space_time (bool): Whether or not to use space time during the
                 export. Currently during the import it is assumed no space
                 time mesh is given.
         """
@@ -800,12 +858,12 @@ class Environment(SbSOvRL_BaseModel):
             self._FFD.deformed_mesh.export(file_name, space_time=space_time)
 
     def close(self):
-        """Function is called when training is stopped.
-        """
+        """Function is called when training is stopped."""
         pass
 
     def apply_random_action(self, seed: Optional[str] = None):
-        """
+        """Apply a random continuous action.
+
         Applying a random continuous action to all movable control point
         variables. Can be activated to be used during the reset of an
         environment.
@@ -834,10 +892,10 @@ class Environment(SbSOvRL_BaseModel):
     def get_visual_representation(self, /, *, sol_len: int = 3,
                                   height: int = 10, width: int = 10,
                                   dpi: int = 20):
-        """
-        Returns an array representing the calculated solution. This function
-        is used to create the array which is used if the solution/cnn
-        representation of the base observations are selected.
+        """Return an array representing the calculated solution.
+
+        This function is used to create the array which is used if the
+        solution/cnn representation of the base observations are selected.
 
         Note:
             The calculated solution can only be found if the
@@ -900,8 +958,8 @@ class Environment(SbSOvRL_BaseModel):
             self, save_location: Union[pathlib.Path, str],
             include_pressure: bool = True, height: int = 10,
             width: int = 10, dpi: int = 400):
-        """
-        Save the current solver solution as an image at the given location.
+        """Save the current solver solution as an image at the given location.
+
         Additional parameters for size can be used.
 
         Args:
@@ -919,7 +977,7 @@ class Environment(SbSOvRL_BaseModel):
             width=height, height=width, dpi=dpi)
         meta_data_dict = {
             "Author": "Clemens Fricke",
-            "Software": "SbSOvRL",
+            "Software": "ReLeSO",
             "Creation Time": str(datetime.datetime.now()),
             "Description": "This is a description"
         }

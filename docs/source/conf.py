@@ -1,28 +1,39 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""Configuration file for the Sphinx documentation builder.
 
-# -- Path setup --------------------------------------------------------------
+This file only contains a selection of the most common options. For a full
+list see the documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+-- Path setup --------------------------------------------------------------
+
+If extensions (or modules to document with autodoc) are in another directory,
+add these directories to sys.path here. If the directory is relative to the
+documentation root, use os.path.abspath to make it absolute, like shown here.
+
+
+"""
+
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../src/'))
 
+try:
+    import releso
+except ModuleNotFoundError:
+    sys.path.insert(0, os.path.abspath('../../'))
+    import releso
+
+
+with open("../../releso/_version.py") as f:
+    version = eval(f.read().strip().split("=")[-1])
 
 # -- Project information -----------------------------------------------------
 
-project = 'SbSOvRL'
+project = 'ReLeSO'
 copyright = '2022, Clemens Fricke'
 author = 'Clemens Fricke'
 
 # The full version, including alpha/beta/rc tags
-release = '1.1'
+release = version
 
 
 # -- General configuration ---------------------------------------------------
@@ -34,14 +45,27 @@ extensions = [
     'sphinx.ext.duration',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    # 'sphinxcontrib.autodoc_pydantic'
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym",
-                        "stable_baselines3", "pandas", "gustav", "numpy",
-                        "vedo", "matplotlib", "imageio"]
+autodoc_mock_imports = [
+    "pydantic",
+    "tensorboard",
+    "hjson",
+    "gym",
+    "stable_baselines3",
+    "pandas",
+    "gustav",
+    "numpy",
+    "vedo",
+    "matplotlib",
+    "imageio",
+    "torchvision",
+    "torch",
+]
 # autodoc_typehints = 'description'  # show type hints in doc body instead of signature
 # autoclass_content = 'instance'  # get docstring from class level and init simultaneously
 
@@ -50,6 +74,8 @@ autodoc_mock_imports = ["pydantic", "tensorboard", "hjson", "gym",
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+autodoc_pydantic_model_show_json = True
+autodoc_pydantic_settings_show_json = False
 
 # -- Options for HTML output -------------------------------------------------
 

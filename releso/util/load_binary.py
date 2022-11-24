@@ -1,12 +1,14 @@
-"""
-    This file contains functions to read the binary files
-    created by the xns solver.
+"""Loads XNS binary/ mixd format files.
+
+This file contains functions to read the binary files
+created by the xns solver.
 """
 
-import numpy as np
 import os
 from struct import unpack
 from typing import Tuple
+
+import numpy as np
 
 
 def read_mixd_double(
@@ -41,8 +43,10 @@ def read_mixd_double(
 def load_mixd(
         mesh_file: str, mesh_dim: int, solution_file: str,
         ndof: int) -> Tuple[np.ndarray, np.ndarray]:
-    """Read in the mesh and the solution of an XNS simulation and store
-    them in the `coordinates` and `solution` attributes
+    """Read in the mesh and the solution of an XNS simulation.
+
+    After reading in the XNS solution it is stored in the correct attributes
+    namely in the `coordinates` and `solution` attributes
 
     Author: Daniel Wolff (wolff@avt.rwth-aachen.de)
 
@@ -50,7 +54,7 @@ def load_mixd(
         mesh_file (string): filename / location of the mesh file `mxyz`
         mesh_dim (int): Number of spatial dimensions of the mesh
         solution_file (string): filename / location of the file containing
-            the nodal solutions
+        the nodal solutions
         ndof (int): Number of degrees of freedom per node
 
     Returns:

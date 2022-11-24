@@ -1,18 +1,18 @@
-.. SbSOvRL documentation master file, created by
+.. ReLeSO documentation master file, created by
    sphinx-quickstart on Mon Nov 29 15:34:28 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to SbSOvRL's documentation!
-===================================
-Spline based Shape Optimization via Reinforcement Learning (SbSOvRL)
-====================================================================
+Welcome to ReLeSO's documentation!
+==================================
+Reinforcement Learning based Shape Optimization (ReLeSO)
+========================================================
 
-**SbSOvRL** stands for ``Spline based Shape Optimization via Reinforcement Learning`` and is a Python framework combining the spline base shape optimization approach with the reinforcement learning.
+**ReLeSO** stands for ``Reinforcement Learning based Shape Optimization`` and is a Python framework combining the spline base shape optimization approach with the reinforcement learning.
 
-This documentation holds just the usage information and possible configuration parameters of this framework but not the theory behind this approach. Please see the thesis "Python Framework for Reinforcement Learning based Shape Optimization" by Clemens Fricke.  Please contact Clemens Fricke (clemens.fricke@rwth-aachen.de) or Daniel Wolff (wolff@cats.rwth-aachen.de) to access it.
+This documentation holds just the usage information and possible configuration parameters of this framework but not the theory behind this approach. Please see the thesis "Python Framework for Reinforcement Learning based Shape Optimization" by Clemens Fricke.  Please contact Clemens Fricke (clemens.david.fricke@tuwien.ac.at) or Daniel Wolff (wolff@cats.rwth-aachen.de) to access it.
 
-This framework is build with upon the Python packages ``pydantic``, ``stable-baselines3`` and ``OpenAI-gym``.
+This framework is mainly build upon the Python packages ``pydantic`` and ``stable-baselines3``.
 
 .. note::
    This project is still under development.
@@ -23,7 +23,7 @@ For guidance on the installation process see :doc:`installation`.
    installation
    usage
    json_schema
-   SbSOvRL
+   ReLeSO
    SPOR
    feature_extractor
    image_based_observations
