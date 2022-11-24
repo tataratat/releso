@@ -11,10 +11,10 @@ from releso.util.logger import get_parser_logger
 from releso.util.util_funcs import ModuleImportRaiser
 
 try:
-    from gustav import NURBS, BSpline
+    from gustaf import NURBS, BSpline
 except ImportError:
-    BSpline = ModuleImportRaiser("gustav")
-    NURBS = ModuleImportRaiser("gustav")
+    BSpline = ModuleImportRaiser("gustaf")
+    NURBS = ModuleImportRaiser("gustaf")
 import copy
 from typing import Any, Dict, List, Optional, Union
 
@@ -475,7 +475,7 @@ class SplineDefinition(BaseModel):
 
     @abstractmethod
     def get_spline(self) -> Any:
-        """Generates the current Spline in the gustav format.
+        """Generates the current Spline in the gustaf format.
 
         Notes:
             This is an abstract method.
@@ -506,7 +506,7 @@ class BSplineDefinition(SplineDefinition):
             BSpline: given by the #degrees and knot_vector in each
             space_dimension and the current control points.
         """
-        self.get_logger().debug("Creating Gustav BSpline.")
+        self.get_logger().debug("Creating Gustaf BSpline.")
         self.get_logger().debug(
             f"With control_points: {self.get_control_points()}")
 
@@ -659,7 +659,7 @@ class NURBSDefinition(SplineDefinition):
         Returns:
             NURBS: NURBSSpline
         """
-        self.get_logger().debug("Creating Gustav NURBS.")
+        self.get_logger().debug("Creating Gustaf NURBS.")
 
         return NURBS(
             [space_dim.degree for space_dim in self.space_dimensions],
@@ -758,7 +758,7 @@ class CubeDefinition(BaseModel):
             for variable in sub_dim if variable.is_action()]
 
     def get_spline(self) -> Any:
-        """Generates the current Spline in the gustav format.
+        """Generates the current Spline in the gustaf format.
 
         Notes:
             This is an abstract method.

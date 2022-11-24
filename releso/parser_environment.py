@@ -21,12 +21,6 @@ from pydantic.class_validators import validator
 from pydantic.fields import Field, PrivateAttr
 from stable_baselines3.common.monitor import Monitor
 
-from releso.util.util_funcs import ModuleImportRaiser
-
-try:
-    from gustav import FreeFormDeformation
-except ImportError:
-    FreeFormDeformation = ModuleImportRaiser("gustav")
 from releso.base_model import BaseModel
 from releso.exceptions import ParserException
 from releso.gym_environment import GymEnvironment
@@ -35,12 +29,15 @@ from releso.spline import Spline, VariableLocation
 from releso.spor import MultiProcessor, SPORList
 from releso.util.load_binary import read_mixd_double
 from releso.util.logger import VerbosityLevel, get_parser_logger, set_up_logger
+from releso.util.plotting import get_tricontour_solution
 from releso.util.types import ObservationType
 
 try:
-    from releso.util.plotting import get_tricontour_solution
+    from gustaf.io import mixd
+    from gustaf.spline.ffd import FFD
 except ImportError:
-    get_tricontour_solution = ModuleImportRaiser("gustav")
+    from releso.util.util_funcs import ModuleImportRaiser
+    FFD = ModuleImportRaiser("gustaf")
 
 
 class MultiProcessing(BaseModel):
@@ -65,9 +62,13 @@ class Environment(BaseModel):
     #: defines if multi-processing can be used.
     multi_processing: Optional[MultiProcessing] = Field(
         default_factory=MultiProcessor)
-    spline: Spline  #: definition of the spline
-    mesh: Optional[Mesh] = None  #: definition of the mesh TODO make optional
-    spor: SPORList  #: definition of the spor objects
+    #: definition of the spline
+    spline: Spline
+    #: definition of the mesh. Needs to be defined if do_not_perform_ffd is
+    #: False.
+    mesh: Optional[Mesh] = None
+    #: definition of the spor objects
+    spor: SPORList
     #: Whether or not to use discrete actions if False continuous actions
     #: will be used.
     discrete_actions: bool = True
@@ -97,7 +98,7 @@ class Environment(BaseModel):
     save_random_good_episode_mesh: bool = False
     #: do not perform FFD just add the control_points current location to the
     #: info of the episode
-    only_use_control_points: bool = False
+    do_not_perform_ffd: bool = False
 
     # object variables
     #: id if the environment, important for multi-environment learning
@@ -105,15 +106,16 @@ class Environment(BaseModel):
     _actions: List[VariableLocation] = PrivateAttr()    #: list of actions
     #: if validation environment validation ids are stored here
     _validation_ids: Optional[List[float]] = PrivateAttr(default=None)
+    #: id of the current validation id
     _current_validation_idx: Optional[int] = PrivateAttr(
-        default=None)  #: id of the current validation id
+        default=None)
     #: number of timesteps currently spend in the episode
     _timesteps_in_episode: Optional[int] = PrivateAttr(default=0)
     #: last observation from the last step used to determine whether or not the
     #: spline has changed between episodes
     _last_observation: Optional[ObservationType] = PrivateAttr(default=None)
     #: FreeFormDeformation used for the spline based shape optimization
-    _FFD: Optional[FreeFormDeformation] = PrivateAttr(None)
+    _FFD: Optional[FFD] = PrivateAttr(None)
     #: StepReturn values from last step
     _last_step_results: Dict[str, Any] = PrivateAttr(default={})
     #: path where the mesh should be saved to for validation
@@ -233,8 +235,8 @@ class Environment(BaseModel):
     def __init__(self, **data: Any) -> None:
         """Construct the object."""
         super().__init__(**data)
-        if not self.only_use_control_points:
-            self._FFD = FreeFormDeformation
+        if not self.do_not_perform_ffd:
+            self._FFD: FFD = FFD()
 
     def _set_up_actions(self) -> gym.Space:
         """Define actions space of the environment.
@@ -385,7 +387,7 @@ class Environment(BaseModel):
         """Apply FFD for current spline.
 
         Might move in the future to a SPORStep. Can be deactivated with
-        only_use_control_points.
+        do_not_perform_ffd.
 
         Apply the Free Form Deformation using the current spline to the mesh
         and export the resulting mesh to the path given.
@@ -395,8 +397,9 @@ class Environment(BaseModel):
                                   exported to. If None try to get path from
                                   mesh definition.
         """
-        self._FFD.set_deformed_spline(self.spline.get_spline())
-        self._FFD.deform_mesh()
+        self._FFD.spline = self.spline.get_spline()
+        # since self._FFD.mesh (this will perform the ffd) is called in the
+        # export function it does not need to be called here
         self.export_mesh(
             path if path is not None else self.mesh.get_export_path())
 
@@ -485,7 +488,7 @@ class Environment(BaseModel):
         reward = 0.
         info = dict()
 
-        if not self.only_use_control_points:
+        if not self.do_not_perform_ffd:
             # apply Free Form Deformation
             self._apply_FFD()
             info["mesh_path"] = str(self.mesh.mxyz_path)
@@ -630,7 +633,7 @@ class Environment(BaseModel):
         done = False
         reward = 0.
         info = dict()
-        if not self.only_use_control_points:
+        if not self.do_not_perform_ffd:
             # apply Free Form Deformation
             self._apply_FFD()
             info["mesh_path"] = str(self.mesh.mxyz_path)
@@ -796,8 +799,8 @@ class Environment(BaseModel):
                 "and not before.")
 
         self._actions = self.spline.get_actions()
-        if not self.only_use_control_points:
-            self._FFD.set_mesh(self.mesh.get_mesh())
+        if not self.do_not_perform_ffd:
+            self._FFD.mesh = self.mesh.get_mesh()
             self.mesh.adapt_export_path(self._id)
         env = GymEnvironment(self._set_up_actions(),
                              self._define_observation_space())
@@ -827,35 +830,35 @@ class Environment(BaseModel):
     def export_spline(self, file_name: str) -> None:
         """Export the current spline to the given path.
 
-        The export will be done via gustav.
+        The export will be done via gustaf.
 
         Note:
-            Gustav often uses the extension to determine the format and the
+            Gustaf often uses the extension to determine the format and the
             sub files of the export so be careful how you input the file path.
 
         Args:
             file_name (str): [description]
         """
-        if not self.only_use_control_points:
-            self._FFD.deformed_spline.export(file_name)
+        if not self.do_not_perform_ffd:
+            self._FFD.spline.export(file_name)
 
     def export_mesh(self, file_name: str, space_time: bool = False) -> None:
         """Export the current deformed mesh to the given path.
 
-        The export will be done via gustav.
+        The export will be done via gustaf.
 
         Note:
-            Gustav often uses the extension to determine the format and the
+            Gustaf often uses the extension to determine the format and the
             sub files of the export so be careful how you input the file path.
 
         Args:
-            file_name (str): Path to where and how gustav should export the mesh.
+            file_name (str): Path to where and how gustaf should export the mesh.
             space_time (bool): Whether or not to use space time during the
                 export. Currently during the import it is assumed no space
                 time mesh is given.
         """
-        if not self.only_use_control_points:
-            self._FFD.deformed_mesh.export(file_name, space_time=space_time)
+        if not self.do_not_perform_ffd:
+            mixd.export(self._FFD.mesh, file_name, space_time=space_time)
 
     def close(self):
         """Function is called when training is stopped."""
@@ -945,7 +948,7 @@ class Environment(BaseModel):
                 "The given mesh has a dimension unequal two. This function "
                 "was designed to work only with meshes of dimension two.")
         solution = read_mixd_double(solution_location/"ins.out", 3)
-        coordinates = self._FFD.deformed_unit_mesh_.vertices
+        coordinates = self._FFD.mesh.vertices
         # Plotting and creating resulting array
         limits_max = [1, 1, 0.2e8]
         limits_min = [-1, -1, -0.2e8]

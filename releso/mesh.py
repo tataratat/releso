@@ -3,22 +3,19 @@ import pathlib
 from typing import Any, Dict, Optional
 
 from pydantic import Field, PrivateAttr
-
-from releso.exceptions import ParserException
-from releso.util.logger import get_parser_logger
-from releso.util.util_funcs import ModuleImportRaiser
-
-try:
-    from gustav import Mesh, load_mixd, load_volume_mixd
-except ImportError:
-    Mesh = ModuleImportRaiser("gustav")
-    load_mixd = ModuleImportRaiser("gustav")
-    load_volume_mixd = ModuleImportRaiser("gustav")  # TODO add raiseif helper
-
 from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
 
 from releso.base_model import BaseModel
+from releso.exceptions import ParserException
+from releso.util.logger import get_parser_logger
+from releso.util.types import MeshType
+
+try:
+    from gustaf.io import mixd
+except ImportError:
+    from releso.util.util_funcs import ModuleImportRaiser
+    mixd = ModuleImportRaiser("gustaf")
 
 
 class Mesh(BaseModel):
@@ -84,32 +81,27 @@ class Mesh(BaseModel):
                 "Currently only the suffix xns is supported.")
         return path
 
-    def get_mesh(self) -> Mesh:
-        """Calls the correct method to load the mesh for the gustav library.
+    def get_mesh(self) -> MeshType:
+        """Calls the correct method to load the mesh for the gustaf library.
 
         Note:
-            There is an error in a version of gustav during the loading process
+            There is an error in a version of gustaf during the loading process
             . Please check with the maintainer of this package if you have
             trouble.
 
         Returns:
-            gustav.Mesh: Mesh in gustav library format.
+            gustaf.Mesh: Mesh in gustaf library format.
         """
-        if self.dimensions > 2:
-            self.get_logger().debug(
-                f"Loading volume mesh with mxyz file ({self.mxyz_path}) and "
-                f"mien file ({self.mien_path}) ...")
-            mesh = load_volume_mixd(
-                dim=self.dimensions, mxyz=self.mxyz_path,
-                mien=self.mien_path, hexa=self.hypercube)
-            self.get_logger().info("Done loading volume mesh.")
-        else:
-            self.get_logger().debug(
-                f"Loading mesh with mxyz file ({self.mxyz_path}) and mien "
-                f"file ({self.mien_path}) ...")
-            mesh = load_mixd(dim=self.dimensions, mxyz=self.mxyz_path,
-                             mien=self.mien_path, quad=self.hypercube)
-            self.get_logger().info("Done loading mesh.")
+        self.get_logger().debug(
+            f"Loading volume mesh with mxyz file ({self.mxyz_path}) and "
+            f"mien file ({self.mien_path}) ...")
+        mesh = mixd.load(
+            simplex=not self.hypercube,
+            volume=True if self.dimensions == 3 else False,
+            mxyz=self.mxyz_path,
+            mien=self.mien_path
+        )
+        self.get_logger().info("Done loading mesh.")
         return mesh
 
     def adapt_export_path(self, environment_id: str):

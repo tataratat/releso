@@ -58,7 +58,7 @@ autodoc_mock_imports = [
     "gym",
     "stable_baselines3",
     "pandas",
-    "gustav",
+    "gustaf",
     "numpy",
     "vedo",
     "matplotlib",

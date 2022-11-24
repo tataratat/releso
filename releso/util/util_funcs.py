@@ -149,7 +149,7 @@ class ModuleImportRaiser():
     Class used to have better import error handling in the case that a package
     package is not installed. This is necessary due to that some packages are
     not a dependency of `gustaf`, but some parts require them to function.
-    Examples are `gustav` and `torchvision`.
+    Examples are `gustaf` and `torchvision`.
     """
 
     def __init__(self, lib_name: str) -> None:
