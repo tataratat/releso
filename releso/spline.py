@@ -12,9 +12,9 @@ from releso.util.util_funcs import ModuleImportRaiser
 
 try:
     from gustaf import NURBS, BSpline
-except ImportError:
-    BSpline = ModuleImportRaiser("gustaf")
-    NURBS = ModuleImportRaiser("gustaf")
+except ImportError as err:
+    BSpline = ModuleImportRaiser("gustaf", err)
+    NURBS = ModuleImportRaiser("gustaf", err)
 import copy
 from typing import Any, Dict, List, Optional, Union
 

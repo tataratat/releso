@@ -49,7 +49,7 @@ class MultiProcessor(BaseModel):
         :py:class:`ReLeSO.spor.MPIClusterMultiProcessor`.
     """
     #: command prefix which is needed to parallelize the give task
-    command: str = "mpiexec -np"
+    command: str = "mpiexec -n"
     #: Max core count to use for this parallelization option. This variable
     #: is not shared between tasks or environments so the user has to split
     #: these up before hand.
@@ -427,7 +427,9 @@ class SPORObjectCommandLine(SPORObject):
     _run_func: Optional[Any] = PrivateAttr(default=None)
     #: logger which is used for the internalized python functions
     _run_logger: Optional[Any] = PrivateAttr(default=None)
-
+    #: persistent function data is not touched by releso
+    _func_data: Optional[Any] = PrivateAttr(default=None)
+ 
     @validator("working_directory")
     def validate_working_directory_path(cls, v: str):
         """Validator working_directory.
@@ -770,11 +772,13 @@ class SPORObjectCommandLine(SPORObject):
                 current_dir = os.getcwd()
                 try:
                     os.chdir(self.working_directory)
-                    output = self._run_func(args, self._run_logger)
+                    output, self._func_data = self._run_func(
+                        args, self._run_logger, self._func_data
+                    )
                 except Exception as err:
                     self.get_logger().warning(
-                        f"Could not run the internalized python spor function"
-                        f" without error. The follwing error was thrown {err}."
+                        f"Could not run the internalized python spor function "
+                        f"without error. The following error was thrown {err}."
                         " Please check if this is a user error.")
                     exit_code = 404
                 os.chdir(current_dir)

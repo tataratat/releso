@@ -149,10 +149,10 @@ class ModuleImportRaiser():
     Class used to have better import error handling in the case that a package
     package is not installed. This is necessary due to that some packages are
     not a dependency of `gustaf`, but some parts require them to function.
-    Examples are `gustaf` and `torchvision`.
+    Examples are `gustaf`, `torchvision`, and `imageio`.
     """
 
-    def __init__(self, lib_name: str) -> None:
+    def __init__(self, lib_name: str, error_mesg: Optional[str] = None) -> None:
         """Constructor of object of class ModuleImportRaiser.
 
         Args:
@@ -165,6 +165,7 @@ class ModuleImportRaiser():
             f"external `{lib_name}` package which could not be found on "
             "your system. Please refer to the installation instructions "
             "for more information."
+            f"{f'Original error message {error_mesg}' if error_mesg else ''}"
         )
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:

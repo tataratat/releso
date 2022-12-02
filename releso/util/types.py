@@ -11,10 +11,10 @@ from numpy import ndarray
 
 try:
     from gustaf import Faces, Volumes
-except ModuleNotFoundError:
+except ModuleNotFoundError as err:
     from releso.util.util_funcs import ModuleImportRaiser
-    Volumes = ModuleImportRaiser("gustaf")
-    Faces = ModuleImportRaiser("gustaf")
+    Volumes = ModuleImportRaiser("gustaf", err)
+    Faces = ModuleImportRaiser("gustaf", err)
 
 
 #: Type definition for Observations.
