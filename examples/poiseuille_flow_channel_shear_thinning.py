@@ -1,6 +1,6 @@
 from nutils import mesh, function, solver, export
 from nutils.expression_v2 import Namespace
-from typing import Tuple
+from typing import Tuple, Dict, Any, Set
 import numpy as np
 
 
@@ -89,7 +89,7 @@ def run_simulation(
     geometry_tpl : Tuple, 
     namespace : Namespace, 
     intrpl_dgr : int = 4
-):
+) -> Tuple(np.ndarray, np.ndarray):
     '''
     Simulate the shear-thinning Stokes flow in a contracting channel geometry.
 
@@ -189,7 +189,9 @@ def run_simulation(
     print(f'Outflow 3 {area_3:>15.7f} {mass_flow_3:>15.7f}')
     print()
 
-    return (state0, state1)
+    return (
+        np.array([area_1,area_2,area_3]),
+        np.array([mass_flow_1, mass_flow_2, mass_flow_3]))
 
 
 def post_process(geometry_tpl : Tuple, ns : Namespace, states_tpl : Tuple):
@@ -215,6 +217,97 @@ def post_process(geometry_tpl : Tuple, ns : Namespace, states_tpl : Tuple):
     export.triplot('stokes_p.png', x, p, tri=bezier.tri, hull=bezier.hull)
     export.triplot('stokes_eta.png', x, eta, tri=bezier.tri, hull=bezier.hull)
 
+def compute_quality_criterion(
+    area : np.ndarray,
+    mass_flow : np.ndarray) -> Tuple(np.ndarray, np.ndarray):
+
+    # compute total mass flow over and area of outflow boundary
+    totalMassFlow = mass_flow.sum()
+    totalArea = area.sum()
+    # compute the average velocity at the outflow
+    averageVelocity = totalMassFlow / totalArea
+
+    localVelocity = mass_flow / area
+    ratio = localVelocity / averageVelocity
+    qualityCriterion = (ratio-1) / np.max(
+        np.hstack(ratio, np.ones_like(ratio)), axis=1)
+
+    return ratio, qualityCriterion
+
+def calculate_reward(
+    quality_criterions: np.ndarray,
+    last_quality_criterions: np.ndarray, **kwargs) -> float:
+    """Function that actually calculates the reward.
+
+    Note: Currently the reward is calculated the same way Michael calculated it.
+
+    Args:
+        quality_criterions (List[float]): Current quality criterion values.
+        last_quality_criterions (Optional[List[float]], optional): To track progress the last quality criterions is also an input. Defaults to None.
+
+    Returns:
+        float: Calculated reward
+    """
+    acceptance_value: float = 0.358
+    info = {}
+    reward = 0
+    quality_reward_sum = (quality_criterions**2).sum()
+    last_quality_reward_sum =  (last_quality_criterions**2).sum()
+    done = False
+    
+    if quality_reward_sum < acceptance_value:   # achieved goal quality 
+        reward = 5
+        done = True
+        info["reset_reason"] = "goal_achieved"
+    else:   # last_quality_reward_sum >= quality_reward_sum result got worse relative to last step
+        reward = quality_reward_sum * -1.0
+    return reward, info, done
+
+def main(args, logger, func_data) -> Set[Dict[str, Any], Any]:
+    mesh_path = './2DChannelTria.msh2'
+
+    # first time initialization
+    if func_data is None:
+        func_data = dict()
+    
+    if "domain" not in func_data.keys():
+        func_data["domain"], func_data["geom"] = setup_mesh(
+            mesh_path=mesh_path)
+        func_data["basis"] = func_data["domain"].basis("std", degree=1).vector(
+            func_data["domain"].ndims)
+    
+    # adapt geometry
+    #TODO  args.json_object['info']['mesh_coords']
+    coords = np.array([[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0]])
+
+    func_data["geom"] = (func_data["basis"][:, np.newaxis] * coords).sum(0)
+
+    namespace = setup_namespace((func_data["domain"],func_data["geom"]))
+
+    ratio, quality_criterion = compute_quality_criterion(*run_simulation(
+        (func_data["domain"],func_data["geom"]), namespace
+    ))
+    
+    #first time or on reset
+    if "last_quality_criterion" not in func_data.keys() or args.reset:
+        func_data["last_quality_criterion"] = quality_criterion
+
+    reward, info, done = calculate_reward(
+        quality_criterion, func_data["last_quality_criterion"])
+
+    # overwrite old quality_criterion
+    func_data["last_quality_criterion"] = quality_criterion
+
+    return_dict = {
+        "reward": reward,
+        "done": done,
+        "info": info,
+        "observations": [
+            quality_criterion.tolist()
+        ]
+    }
+
+    return return_dict, func_data
 
 if __name__ == '__main__':
 
