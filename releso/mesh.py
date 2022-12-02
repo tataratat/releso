@@ -13,9 +13,9 @@ from releso.util.types import MeshType
 
 try:
     from gustaf.io import mixd
-except ImportError:
+except ImportError as err:
     from releso.util.util_funcs import ModuleImportRaiser
-    mixd = ModuleImportRaiser("gustaf")
+    mixd = ModuleImportRaiser("gustaf", err)
 
 
 class Mesh(BaseModel):
