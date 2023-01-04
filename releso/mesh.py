@@ -1,6 +1,7 @@
 """File holds definition classes for the mesh implementation."""
 import pathlib
-from typing import Any, Dict, Optional
+from abc import abstractmethod
+from typing import Any, Dict, Literal, Optional
 
 from pydantic import Field, PrivateAttr
 from pydantic.class_validators import root_validator, validator
@@ -9,7 +10,7 @@ from pydantic.types import FilePath, conint
 from releso.base_model import BaseModel
 from releso.exceptions import ParserException
 from releso.util.logger import get_parser_logger
-from releso.util.types import MeshType
+from releso.util.types import GustafMeshTypes
 
 try:
     from gustaf.io import mixd
@@ -18,8 +19,137 @@ except ImportError as err:
     mixd = ModuleImportRaiser("gustaf", err)
 
 
+class MeshExporter(BaseModel):
+    """Class which defines in which format and where the mesh is exported."""
+    #: format to which the mesh should be exported to
+    format: Literal["mixd"] = "mixd"
+    #: path to where the mesh should be exported to
+    export_path: str
+
+    #: internal variable if the export path was changed from a different value.
+    #: This is the value is returned when the export path is queried.
+    _export_path_changed: Optional[str] = PrivateAttr(default=None)
+
+    @root_validator
+    @classmethod
+    def validate_path_has_correct_ending(cls, values) -> pathlib.Path:
+        """Validator export_path.
+
+        Validate, that the given path has the correct suffix and that the path
+        exists.
+
+        Args:
+            v ([type]): value to validate
+
+        Raises:
+            ParserException: If validation fails throws this error.
+
+        Returns:
+            pathlib.Path:
+                Path to where the mesh should per default be exported to.
+        """
+        path = pathlib.Path(values.get('export_path')).expanduser().resolve()
+        format = values.get("format")
+
+        if format == "mixd":
+            if path.suffix == '':
+                path = path.with_name("_.xns")
+            elif not path.suffix == ".xns":
+                raise ParserException(
+                    "MeshExporter", "export_path",
+                    "The format and the path suffix do not math. The format"
+                    f" is defined as {format} but the suffix is {path.suffix}")
+        else:
+            raise ParserException(
+                "MeshExporter", "format", f"{format=} is not supported.")
+        return path
+
+    def get_export_path(self) -> pathlib.Path:
+        """Direct return of object variable.
+
+        Returns:
+            str:
+                Path to the default export location of the mesh during
+                environment operations. (So that the solver can use it.)
+        """
+        if not self._export_path_changed:
+            self.adapt_export_path()
+        return self._export_path_changed
+
+    def adapt_export_path(self, environment_id: str = "0"):
+        """If placeholder in export path insert environment_id into it.
+
+        Args:
+            environment_id (str): Environment ID
+        """
+        self._export_path_changed = pathlib.Path(
+            str(self.export_path).format(environment_id))
+        self._export_path_changed.parent.mkdir(parents=True, exist_ok=True)
+        self.get_logger().debug(
+            f"Adapted mesh export path to the following value "
+            f"{self._export_path_changed}.")
+
+    def export_mesh(self, mesh: GustafMeshTypes, space_time: bool = False):
+        """Exports the mesh.
+
+        Args:
+            mesh (GustafMeshTypes): _description_
+            space_time (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            RuntimeError: _description_
+        """
+        if self.format == "mixd":
+            mixd.export(mesh, self.export_path, space_time=space_time)
+        else:
+            raise RuntimeError(f"The requested {format=} is no supported.")
+
+
 class Mesh(BaseModel):
-    """Class used to read in the correct base mesh file and load it."""
+    """Abstract class used to read in the mesh file and load it."""
+    #: path to the mesh file (might be not used in case of mixd )
+    path: Optional[str] = None
+    #: Path to the default export location of the mesh during environment
+    #: operations. (So that the solver can use it.)
+    export: Optional[MeshExporter]
+    #: Number of dimensions of the mesh.
+    dimensions: conint(ge=1)
+
+    @abstractmethod
+    def get_mesh(self) -> GustafMeshTypes:
+        """Calls the correct method to load the mesh for the gustaf library.
+
+        Note:
+            There is an error in a version of gustaf during the loading process
+            . Please check with the maintainer of this package if you have
+            trouble.
+
+        Returns:
+            gustaf.Mesh: Mesh in gustaf library format.
+        """
+        pass
+
+    def adapt_export_path(self, environment_id: str):
+        """If placeholder in export path insert environment_id into it.
+
+        Args:
+            environment_id (str): Environment ID
+        """
+        self.export.adapt_export_path(environment_id=environment_id)
+
+    def get_export_path(self) -> pathlib.Path:
+        """Direct return of object variable.
+
+        Returns:
+            str:
+                Path to the default export location of the mesh during
+                environment operations. (So that the solver can use it.)
+        """
+        return self.export.get_export_path()
+
+
+class MixdMesh(Mesh):
+    """Class used to read in the correct mixd mesh file and load it."""
     #: Please use either the path variable xor the mxyz variable, since if
     #: used both the used mxyz path might not be the one you think.
     mxyz_path: Optional[FilePath] = Field(
@@ -32,56 +162,13 @@ class Mesh(BaseModel):
         default=None, description="Please use either the path variable xor the"
         " mien variable, since if used both the used mien path might not be "
         "the one you think.")
-    #: after validation Tuple["mxyz_path", "mien_path"]
-    path: Optional[str] = None
-    #: Path to the default export location of the mesh during environment
-    #: operations. (So that the solver can use it.)
-    export_path: str
-    #: If True Mesh is made of hypercubes. If False Mesh is made of simplexes
-    #: (triangles).
     hypercube: bool = Field(
         description="If True Mesh is made of hypercubes. If False Mesh is made"
         " of simplexes (triangles).", default=True)
     #: Number of dimensions of the mesh.
     dimensions: conint(ge=1)
 
-    #: internal variable if the export path was changed from a different value.
-    #: This is the value is returned when the export path is queried.
-    _export_path_changed: Optional[str] = PrivateAttr(default=None)
-
-    @validator("export_path")
-    @classmethod
-    def validate_path_has_correct_ending(cls, v) -> pathlib.Path:
-        """Validator export_path.
-
-        Validate that the given path has a xns suffix or if no suffix xns as
-        name. Also converts str to pathlib.Path
-
-        Args:
-            v ([type]): value to validate
-
-        Raises:
-            ParserException: If validation fails throws this error.
-
-        Returns:
-            pathlib.Path:
-                Path to where the mesh should per default be exported to.
-        """
-        path = pathlib.Path(v).expanduser().resolve()
-        if path.suffix == '':
-            if path.name == "xns":
-                path = path.with_name("_.xns")
-            else:
-                raise ParserException(
-                    "Mesh", "export_path",
-                    "Currently only the name xns without suffix is supported.")
-        elif not path.suffix == ".xns":
-            raise ParserException(
-                "Mesh", "export_path",
-                "Currently only the suffix xns is supported.")
-        return path
-
-    def get_mesh(self) -> MeshType:
+    def get_mesh(self) -> GustafMeshTypes:
         """Calls the correct method to load the mesh for the gustaf library.
 
         Note:
@@ -103,31 +190,6 @@ class Mesh(BaseModel):
         )
         self.get_logger().info("Done loading mesh.")
         return mesh
-
-    def adapt_export_path(self, environment_id: str):
-        """If placeholder in export path insert environment_id into it.
-
-        Args:
-            environment_id (str): Environment ID
-        """
-        self._export_path_changed = pathlib.Path(
-            str(self.export_path).format(environment_id))
-        self._export_path_changed.parent.mkdir(parents=True, exist_ok=True)
-        self.get_logger().debug(
-            f"Adapted mesh export path to the following value "
-            f"{self._export_path_changed}.")
-
-    def get_export_path(self) -> pathlib.Path:
-        """Direct return of object variable.
-
-        Returns:
-            str:
-                Path to the default export location of the mesh during
-                environment operations. (So that the solver can use it.)
-        """
-        if not self._export_path_changed:
-            self.adapt_export_path()
-        return self._export_path_changed
 
     @root_validator
     @classmethod
@@ -251,3 +313,6 @@ class Mesh(BaseModel):
         raise ParserException(
             "Mesh", "[mien_|mxyz_|]path", "Could not locate the correct "
             "mien/mxyz paths.")
+
+
+MeshTypes = MixdMesh

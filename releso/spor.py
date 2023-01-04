@@ -429,7 +429,7 @@ class SPORObjectCommandLine(SPORObject):
     _run_logger: Optional[Any] = PrivateAttr(default=None)
     #: persistent function data is not touched by releso
     _func_data: Optional[Any] = PrivateAttr(default=None)
- 
+
     @validator("working_directory")
     def validate_working_directory_path(cls, v: str):
         """Validator working_directory.
