@@ -7,8 +7,8 @@ import copy
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
-from pydantic.class_validators import validator
-from pydantic.types import confloat, conint
+from pydantic.class_validators import root_validator, validator
+from pydantic.types import conint
 
 from releso.base_model import BaseModel
 from releso.exceptions import ParserException
@@ -122,13 +122,11 @@ class SplineDefinition(ShapeDefinition):
     #: spline_dimensions variable
     control_points: Optional[List[List[VariableLocation]]]
 
-    @validator("control_points", always=True, pre=True)
+    @root_validator(pre=True)
     @classmethod
     def make_default_control_point_grid(
-            cls, v, values) -> List[List[VariableLocation]]:
+            cls, values: Dict[str, Any]) -> List[List[VariableLocation]]:
         """Validator for control_point_variables.
-
-        TODO this does not seem to work currently I think
 
         If value is None a equidistant grid of control points will be given
         with variability of half the space between the each control point.
@@ -144,7 +142,7 @@ class SplineDefinition(ShapeDefinition):
         Returns:
             List[List[VariableLocation]]: Definition of the control_points
         """
-        if v is None:
+        if not values.get("control_points"):
             if "space_dimensions" not in values.keys():
                 raise ParserException(
                     "SplineDefinition", "control_point_variables",
@@ -152,7 +150,7 @@ class SplineDefinition(ShapeDefinition):
                     f"space_dimensions was not present. {str(values)}")
             spline_dimensions = values["space_dimensions"]
             n_points_in_dim = [
-                dim.number_of_points for dim in spline_dimensions]
+                dim["number_of_points"] for dim in spline_dimensions]
             n_points_in_dim.reverse()
             # this can be done in a smaller and faster footprint but for
             # readability and understanding
@@ -165,6 +163,7 @@ class SplineDefinition(ShapeDefinition):
             # create each control point for by concatenating each value in each
             # list with each value of all other lists
             save_location = str(values["save_location"])
+            v = None
             for inner_dim, dim_spacing in zip(dimension_lists, dim_spacings):
                 # first iteration the v vector must be initialized with the
                 # first dimension vector
@@ -222,7 +221,8 @@ class SplineDefinition(ShapeDefinition):
                                         max_value=element+dim_spacing,
                                         save_location=save_location)] + elem)
                     v = temp_v
-        return v
+            values["control_points"] = v
+        return values
 
     def get_number_of_points(self) -> int:
         """Returns the number of points in the Spline.

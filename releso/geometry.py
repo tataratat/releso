@@ -278,7 +278,8 @@ class FFDGeometry(Geometry):
         Args:
             environment_id (UUID): Environment id.
         """
-        super().setup()
+        super().setup(environment_id=environment_id)
+        self._FFD.mesh = self.mesh.get_mesh()
         if self.export_mesh:
             self.export_mesh.adapt_export_path(environment_id=environment_id)
 
