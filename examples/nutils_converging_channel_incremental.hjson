@@ -20,9 +20,14 @@
                         "name": "zeta",
                         "number_of_points": 3,
                         "degree": 2
+                    },
+                    {
+                        "name": "beta",
+                        "number_of_points": 1,
+                        "degree": 1
                     }
                 ],
-                "spline_dimension": 2,
+                "spline_dimension": 3,
                 "control_points": [
                     [
                         {
@@ -30,6 +35,9 @@
                         },
                         {
                             "current_position": 0.0
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -42,6 +50,9 @@
                             "max_value": 0.25,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -54,6 +65,9 @@
                             "max_value": 0.25,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -66,6 +80,9 @@
                             "max_value": 0.25,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -78,6 +95,9 @@
                             "max_value": 0.25,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -90,6 +110,9 @@
                             "max_value": 0.25,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -102,11 +125,17 @@
                             "max_value": 0.25,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
                         {
                             "current_position": 1.0
+                        },
+                        {
+                            "current_position": 0.0
                         },
                         {
                             "current_position": 0.0
@@ -118,6 +147,9 @@
                         },
                         {
                             "current_position": 0.5
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -130,6 +162,9 @@
                             "max_value": 0.75,
                             "n_steps": 10,
                             "step": 0.05
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -142,6 +177,9 @@
                             "max_value": 0.75,
                             "n_steps": 10,
                             "step": 0.05
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -154,6 +192,9 @@
                             "max_value": 0.75,
                             "n_steps": 10,
                             "step": 0.05
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -166,6 +207,9 @@
                             "max_value": 0.75,
                             "n_steps": 10,
                             "step": 0.05
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -178,6 +222,9 @@
                             "max_value": 0.75,
                             "n_steps": 10,
                             "step": 0.05
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -190,6 +237,9 @@
                             "max_value": 0.75,
                             "n_steps": 10,
                             "step": 0.05
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -198,6 +248,9 @@
                         },
                         {
                             "current_position": 0.5
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -206,6 +259,9 @@
                         },
                         {
                             "current_position": 1.0
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -218,6 +274,9 @@
                             "max_value": 1.0,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -230,6 +289,9 @@
                             "max_value": 1.0,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -242,6 +304,9 @@
                             "max_value": 1.0,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -254,6 +319,9 @@
                             "max_value": 1.0,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -266,6 +334,9 @@
                             "max_value": 1.0,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -278,6 +349,9 @@
                             "max_value": 1.0,
                             "n_steps": 10,
                             "step": 0.025
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ],
                     [
@@ -286,6 +360,9 @@
                         },
                         {
                             "current_position": 1.0
+                        },
+                        {
+                            "current_position": 0.0
                         }
                     ]
                 ]
