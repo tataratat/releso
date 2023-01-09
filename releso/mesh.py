@@ -62,7 +62,8 @@ class MeshExporter(BaseModel):
         else:
             raise ParserException(
                 "MeshExporter", "format", f"{format=} is not supported.")
-        return path
+        values["export_path"] = path
+        return values
 
     def get_export_path(self) -> pathlib.Path:
         """Direct return of object variable.
@@ -100,7 +101,7 @@ class MeshExporter(BaseModel):
             RuntimeError: _description_
         """
         if self.format == "mixd":
-            mixd.export(mesh, self.export_path, space_time=space_time)
+            mixd.export(mesh, self._export_path_changed, space_time=space_time)
         else:
             raise RuntimeError(f"The requested {format=} is no supported.")
 
