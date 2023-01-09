@@ -324,7 +324,7 @@ class FFDGeometry(Geometry):
         # export function it does not need to be called here
         if self.export_mesh:
             self.export_mesh.export_mesh(self._FFD.mesh)
-            return None
+            return self.export_mesh.get_export_path()
         else:
             return self._FFD.mesh.vertices
 
