@@ -325,8 +325,8 @@ def main(args, logger, func_data) -> Set[Dict[str, Any], Any]:
 
     # adapt geometry
     # TODO  args.json_object['info']['mesh_coords']
-    coords = np.array([[0, 0], [0, 0], [0, 0], [0, 0], [
-                      0, 0], [0, 0], [0, 0], [0, 0], [0, 0]])
+    print(np.array(args.json_object["info"]))
+    coords = np.array(args.json_object["info"]["geometry_information"])
 
     func_data["geom"] = (func_data["basis"][:, np.newaxis] * coords).sum(0)
 

@@ -1,7 +1,7 @@
 """File holds definition classes for the mesh implementation."""
 import pathlib
 from abc import abstractmethod
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, Union
 
 from pydantic import Field, PrivateAttr
 from pydantic.class_validators import root_validator, validator
@@ -13,7 +13,7 @@ from releso.util.logger import get_parser_logger
 from releso.util.types import GustafMeshTypes
 
 try:
-    from gustaf.io import mixd
+    from gustaf.io import meshio, mixd
 except ImportError as err:
     from releso.util.util_funcs import ModuleImportRaiser
     mixd = ModuleImportRaiser("gustaf", err)
@@ -217,13 +217,12 @@ class MixdMesh(Mesh):
                 mxyz paths
         """
         get_parser_logger().debug("Validating mesh file:")
-        if "mxyz_path" in values.keys() and values["mxyz_path"] is not None \
-                and "mien_path" in values.keys() and \
-                values["mien_path"] is not None:
+        if "mxyz_path" in values and values["mxyz_path"] and \
+                "mien_path" in values and values["mien_path"]:
             get_parser_logger().info(
                 "Mesh files are defined by mxyz_path and mien_path.")
             return values
-        elif "path" in values.keys():
+        elif "path" in values.keys() and values["path"]:
             get_parser_logger().debug(
                 "Trying to find mxyz_path and mien_path from path variable.")
             path = pathlib.Path(values["path"]).expanduser().resolve()
@@ -297,15 +296,15 @@ class MixdMesh(Mesh):
                         get_parser_logger().warning(
                             f"Mesh file given as existing file {path} but "
                             "could not find mxyz nor mien file.")
-                        ParserException(
+                        raise ParserException(
                             "Mesh", "path", "Could not locate mien nor mxyz"
                             " file path.")
                 # If mien or mxyz file path are not complete throw error.
                 if mxyz_path is None:
-                    ParserException(
+                    raise ParserException(
                         "Mesh", "path", "Could not locate mxyz file path.")
                 if mien_path is None:
-                    ParserException(
+                    raise ParserException(
                         "Mesh", "path", "Could not locate mien file path.")
             values["mien_path"] = mien_path
             values["mxyz_path"] = mxyz_path
@@ -316,4 +315,59 @@ class MixdMesh(Mesh):
             "mien/mxyz paths.")
 
 
-MeshTypes = MixdMesh
+class MeshIOMesh(Mesh):
+    """Provides an interface to load meshio meshes.
+
+    Since gustaf currently only really supports .msh files, this also only
+    supports files with this ending. If and when gustaf implements support
+    for additional files types already supported by meshio. This will be
+    updated.
+    """
+    @validator("path")
+    def check_if_extension_is_supported_by_gustaf(cls, value) -> pathlib.Path:
+        """Checks if the path given exists and the mesh type is supported.
+
+        Args:
+            value (Optional[str]): _description_
+
+        Returns:
+            pathlib.Path: Absolute path to the file.
+        """
+        if value:
+            path = pathlib.Path(value).resolve().expanduser()
+            if path.exists():
+                if path.suffix in [".msh", ".msh2"]:
+                    path.with_suffix(".msh")
+                else:
+                    raise ParserException(
+                        "MeshIOMesh", "path", "Mesh type not supported.")
+            else:
+                raise ParserException(
+                    "MeshIOMesh", "path", "Could not locate the mesh file.")
+
+        else:
+            raise ParserException(
+                "MeshIOMesh", "path",
+                "For MeshIO base mesh import a path must be provided."
+            )
+        return path
+
+    def get_mesh(self) -> GustafMeshTypes:
+        """Calls the correct method to load the mesh for the gustaf library.
+
+        Note:
+            There is an error in a version of gustaf during the loading process
+            . Please check with the maintainer of this package if you have
+            trouble.
+
+        Returns:
+            gustaf.Mesh: Mesh in gustaf library format.
+        """
+        self.get_logger().debug(
+            f"Loading mesh from path ({self.path}).")
+        mesh = meshio.load(fname=self.path)
+        self.get_logger().info("Done loading mesh.")
+        return mesh
+
+
+MeshTypes = Union[MixdMesh, MeshIOMesh]
