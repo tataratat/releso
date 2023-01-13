@@ -17,6 +17,7 @@ import os
 import pathlib
 import shutil
 import sys
+import traceback
 import warnings
 from ast import literal_eval
 from timeit import default_timer as timer
@@ -651,7 +652,8 @@ class SPORObjectPythonFunction(SPORObjectExecutor):
                 self.get_logger().warning(
                     f"Could not run the internalized python spor function "
                     f"without error. The following error was thrown {err}."
-                    " Please check if this is a user error.")
+                    " Please check if this is a user error."
+                    f"Traceback is written into the console output.")
                 exit_code = 404
             os.chdir(current_dir)
 

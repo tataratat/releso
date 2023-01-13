@@ -3,6 +3,7 @@ import pathlib
 from abc import abstractmethod
 from typing import Any, Dict, Literal, Optional, Union
 
+import numpy as np
 from pydantic import Field, PrivateAttr
 from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
@@ -306,9 +307,13 @@ class MixdMesh(Mesh):
                 if mien_path is None:
                     raise ParserException(
                         "Mesh", "path", "Could not locate mien file path.")
-            values["mien_path"] = mien_path
-            values["mxyz_path"] = mxyz_path
-            values["path"] = mxyz_path.parent
+            if mien_path:
+                values["mien_path"] = mien_path
+                values["mxyz_path"] = mxyz_path
+                values["path"] = mxyz_path.parent
+            else:
+                ParserException(
+                    "MixdMesh", "path", "Could not locate mien and mxyz path")
             return values
         raise ParserException(
             "Mesh", "[mien_|mxyz_|]path", "Could not locate the correct "
@@ -367,7 +372,24 @@ class MeshIOMesh(Mesh):
             f"Loading mesh from path ({self.path}).")
         mesh = meshio.load(fname=self.path)
         self.get_logger().info("Done loading mesh.")
+        return self.delete_dimension_if_possible(mesh)
+
+    def delete_dimension_if_possible(self, mesh: GustafMeshTypes):
+        """_summary_.
+
+        Args:
+            mesh (GustafMeshTypes): _description_
+        """
+        keep_dims = [0, 1, 2]
+        if self.dimensions < mesh.vertices.shape[1]:
+            bounds = mesh.bounds()
+            for idx, (lower, upper) in enumerate(zip(*bounds)):
+                if lower == upper:
+                    self.get_logger().info(
+                        f"Found empty dimension {idx}. Will remove it now.")
+                    keep_dims.pop(idx)
+                    mesh.vertices = mesh.vertices[:, keep_dims]
         return mesh
 
 
-MeshTypes = Union[MixdMesh, MeshIOMesh]
+MeshTypes = MeshIOMesh
