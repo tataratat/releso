@@ -263,9 +263,7 @@ def compute_quality_criterion(
 
     localVelocity = mass_flow / area
     ratio = localVelocity / averageVelocity
-    qualityCriterion = (ratio-1) / np.max(
-        np.hstack(ratio, np.ones_like(ratio)), axis=1)
-
+    qualityCriterion = (ratio-1) / np.maximum(ratio, np.ones_like(ratio))
     return ratio, qualityCriterion
 
 
@@ -322,16 +320,18 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
     if "domain" not in func_data.keys():
         func_data["domain"], func_data["geom"] = setup_mesh(
             mesh_path=mesh_path, logger=logger)
-        func_data["basis"] = func_data["domain"].basis("std", degree=1).vector(
-            func_data["domain"].ndims)
+        func_data["basis"] = func_data["domain"].basis("std", degree=1)
+        # .vector(
+        # func_data["domain"].ndims)
         logger.warning("Mesh setup.")
+    else:
+        logger.warning("Mesh already setup.")
     # adapt geometry
     # TODO  args.json_object['info']['mesh_coords']
     # print(np.array(args.json_object["info"]))
-    coords = np.array(args.json_object["info"]["geometry_information"])
-    print(func_data["geom"].shape, func_data["basis"].shape)
-    func_data["geom"][:, :2] = (
-        func_data["basis"][:, np.newaxis] * coords).sum(0)
+    coords = np.array(args.json_object["info"]
+                      ["geometry_information"])*[1., 0.4]
+    func_data["geom"] = (func_data["basis"][:, np.newaxis] * coords).sum(0)
 
     namespace = setup_namespace((func_data["domain"], func_data["geom"]))
 
@@ -355,9 +355,7 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
         "reward": reward,
         "done": done,
         "info": info,
-        "observations": [
-            quality_criterion.tolist()
-        ]
+        "observations": quality_criterion.tolist()
     }
 
     return return_dict, func_data

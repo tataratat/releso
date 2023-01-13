@@ -653,7 +653,7 @@ class SPORObjectPythonFunction(SPORObjectExecutor):
                     f"Could not run the internalized python spor function "
                     f"without error. The following error was thrown {err}."
                     " Please check if this is a user error."
-                    f"Traceback is written into the console output.")
+                    f"Traceback is {traceback.format_exc()}.")
                 exit_code = 404
             os.chdir(current_dir)
 
