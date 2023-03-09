@@ -38,7 +38,7 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 from releso.base_model import BaseModel
 from releso.exceptions import AgentUnknownException
 from releso.gym_environment import GymEnvironment
-from releso.util.util_funcs import ModuleImportRaiser
+from releso.util.module_import_raiser import ModuleImportRaiser
 
 try:
     from releso.feature_extractor import CombinedExtractor, FeatureExtractor

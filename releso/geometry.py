@@ -19,9 +19,9 @@ from releso.util.types import ObservationType
 
 try:
     from gustaf.spline.ffd import FFD
-except ImportError:
-    from releso.util.util_funcs import ModuleImportRaiser
-    FFD = ModuleImportRaiser("gustaf")
+except ImportError as err:
+    from releso.util.module_import_raiser import ModuleImportRaiser
+    FFD = ModuleImportRaiser("gustaf - FFD", err)
 
 ShapeTypes = Union[ShapeDefinition, BSplineDefinition, NURBSDefinition]
 
@@ -251,7 +251,7 @@ class FFDGeometry(Geometry):
     export_mesh: Optional[MeshExporter] = None
 
     #: FreeFormDeformation used for the spline based shape optimization
-    _FFD: FFD = PrivateAttr()
+    _FFD: None = PrivateAttr()
 
     def __init__(self, **data: Any) -> None:
         """Geometry based on a FFD transformation.

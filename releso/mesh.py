@@ -16,7 +16,7 @@ from releso.util.types import GustafMeshTypes
 try:
     from gustaf.io import meshio, mixd
 except ImportError as err:
-    from releso.util.util_funcs import ModuleImportRaiser
+    from releso.util.module_import_raiser import ModuleImportRaiser
     mixd = ModuleImportRaiser("gustaf", err)
 
 
