@@ -4,10 +4,15 @@ This file contains type definitions of commonly used items in this
 framework/package. Mostly RL based here. Some more types can be found in other
 files. Here only types with strictly external contents are created.
 """
+from __future__ import annotations
 
-from typing import Dict, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Tuple, Union
 
 from numpy import ndarray
+
+if TYPE_CHECKING:
+    from releso.shape_parameterization import ShapeDefinition
+    from releso.spline import BSplineDefinition, NURBSDefinition
 
 try:
     from gustaf import Faces, Volumes
@@ -28,7 +33,7 @@ RewardType = float
 DoneType = bool
 
 #: All possible classes that can make up a mesh
-MeshType = Union[Volumes, Faces]
+GustafMeshTypes = Union[Volumes, Faces]
 #: Type definition for the return value of a Step. A step return the steps
 #: observation, generated reward, whether or not the current step is complete
 #: and additional info.

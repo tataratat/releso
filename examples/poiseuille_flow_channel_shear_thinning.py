@@ -3,6 +3,7 @@
 This file holds functions which load the mesh file into nutils and execute the
 simulation. In addition the observations and the reward is calculated.
 """
+import traceback
 from typing import Any, Dict, Set, Tuple
 
 import numpy as np
@@ -10,13 +11,15 @@ from nutils import export, function, mesh, solver
 from nutils.expression_v2 import Namespace
 
 
-def setup_mesh(mesh_path: str):
+def setup_mesh(mesh_path: str, logger=None):
     """Load a gmsh mesh from file.
 
     Parameters
     -----------
     mesh_path : :class:`str`
         String containg the path to the mesh file.
+    logger : blub
+        badsadasdsad.
 
     Returns
     --------
@@ -27,7 +30,6 @@ def setup_mesh(mesh_path: str):
     """
     # create the geometry and the mesh from a gmsh file
     domain, geom = mesh.gmsh(mesh_path)
-
     # with mesh_path as f:
     #     mesh_data = mesh.parsegmsh(f)
 
@@ -95,7 +97,7 @@ def run_simulation(
     geometry_tpl: Tuple,
     namespace: Namespace,
     intrpl_dgr: int = 4
-) -> Tuple(np.ndarray, np.ndarray):
+) -> Tuple[np.ndarray, np.ndarray]:
     """Simulate shear-thinning Stokes flow in a converging channel geometry.
 
     Parameters
@@ -203,12 +205,12 @@ def run_simulation(
     col1 = 'RNG'
     col2 = 'area'
     col3 = 'mass flow'
-    print()
-    print(f'{col1:>9} {col2:>15} {col3:>15}')
-    print(f'Outflow 1 {area_1:>15.7f} {mass_flow_1:>15.7f}')
-    print(f'Outflow 2 {area_2:>15.7f} {mass_flow_2:>15.7f}')
-    print(f'Outflow 3 {area_3:>15.7f} {mass_flow_3:>15.7f}')
-    print()
+    # print()
+    # print(f'{col1:>9} {col2:>15} {col3:>15}')
+    # print(f'Outflow 1 {area_1:>15.7f} {mass_flow_1:>15.7f}')
+    # print(f'Outflow 2 {area_2:>15.7f} {mass_flow_2:>15.7f}')
+    # print(f'Outflow 3 {area_3:>15.7f} {mass_flow_3:>15.7f}')
+    # print()
 
     return (
         np.array([area_1, area_2, area_3]),
@@ -243,7 +245,7 @@ def post_process(geometry_tpl: Tuple, ns: Namespace, states_tpl: Tuple):
 
 def compute_quality_criterion(
         area: np.ndarray,
-        mass_flow: np.ndarray) -> Tuple(np.ndarray, np.ndarray):
+        mass_flow: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Compute the quality criterion of the given pathes and ratio if needed.
 
     Args:
@@ -261,9 +263,7 @@ def compute_quality_criterion(
 
     localVelocity = mass_flow / area
     ratio = localVelocity / averageVelocity
-    qualityCriterion = (ratio-1) / np.max(
-        np.hstack(ratio, np.ones_like(ratio)), axis=1)
-
+    qualityCriterion = (ratio-1) / np.maximum(ratio, np.ones_like(ratio))
     return ratio, qualityCriterion
 
 
@@ -297,7 +297,7 @@ def calculate_reward(
     return reward, info, done
 
 
-def main(args, logger, func_data) -> Set[Dict[str, Any], Any]:
+def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
     """Function which is called from the spor step.
 
     The parameters need to conform to the SPOR_COMM interface defined by
@@ -311,23 +311,26 @@ def main(args, logger, func_data) -> Set[Dict[str, Any], Any]:
     Returns:
         Set[Dict[str, Any], Any]: _description_
     """
-    mesh_path = './2DChannelTria.msh'
+    mesh_path = './examples/2DChannelTria.msh'
 
     # first time initialization
     if func_data is None:
         func_data = dict()
-
+    logger.warning("Func data setup.")
     if "domain" not in func_data.keys():
         func_data["domain"], func_data["geom"] = setup_mesh(
-            mesh_path=mesh_path)
-        func_data["basis"] = func_data["domain"].basis("std", degree=1).vector(
-            func_data["domain"].ndims)
-
+            mesh_path=mesh_path, logger=logger)
+        func_data["basis"] = func_data["domain"].basis("std", degree=1)
+        # .vector(
+        # func_data["domain"].ndims)
+        logger.warning("Mesh setup.")
+    else:
+        logger.warning("Mesh already setup.")
     # adapt geometry
     # TODO  args.json_object['info']['mesh_coords']
-    coords = np.array([[0, 0], [0, 0], [0, 0], [0, 0], [
-                      0, 0], [0, 0], [0, 0], [0, 0], [0, 0]])
-
+    # print(np.array(args.json_object["info"]))
+    coords = np.array(args.json_object["info"]
+                      ["geometry_information"])*[1., 0.4]
     func_data["geom"] = (func_data["basis"][:, np.newaxis] * coords).sum(0)
 
     namespace = setup_namespace((func_data["domain"], func_data["geom"]))
@@ -346,13 +349,13 @@ def main(args, logger, func_data) -> Set[Dict[str, Any], Any]:
     # overwrite old quality_criterion
     func_data["last_quality_criterion"] = quality_criterion
 
+    # print(quality_criterion.tolist())
+
     return_dict = {
         "reward": reward,
         "done": done,
         "info": info,
-        "observations": [
-            quality_criterion.tolist()
-        ]
+        "observations": quality_criterion.tolist()
     }
 
     return return_dict, func_data
@@ -360,7 +363,7 @@ def main(args, logger, func_data) -> Set[Dict[str, Any], Any]:
 
 if __name__ == '__main__':
 
-    geometry_tpl = setup_mesh('./2DChannelTria.msh')
+    geometry_tpl = setup_mesh('./examples/2DChannelTria.msh')
     namespace = setup_namespace(geometry_tpl)
     states_tpl = run_simulation(geometry_tpl, namespace)
     post_process(geometry_tpl, namespace, states_tpl)

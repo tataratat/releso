@@ -152,13 +152,16 @@ class ModuleImportRaiser():
     Examples are `gustaf`, `torchvision`, and `imageio`.
     """
 
-    def __init__(self, lib_name: str, error_mesg: Optional[str] = None) -> None:
+    def __init__(
+            self, lib_name: str, error_mesg: Optional[str] = None) -> None:
         """Constructor of object of class ModuleImportRaiser.
 
         Args:
             lib_name (str): Name of the library which can not be loaded. Will
-            be inserted into the error message of the deferred import Error.
-            Is not checked for correctness.
+                be inserted into the error message of the deferred import
+                Error. Is not checked for correctness.
+            error_mesg (Optional[str], optional): Original error msg. Defaults
+                to None.
         """
         self._message = str(
             "Parts of the requested functionality in ReLeSO depend on the "

@@ -17,6 +17,7 @@ import os
 import pathlib
 import shutil
 import sys
+import traceback
 import warnings
 from ast import literal_eval
 from timeit import default_timer as timer
@@ -31,6 +32,8 @@ from pydantic.fields import PrivateAttr
 
 from releso.base_model import BaseModel
 from releso.exceptions import ParserException
+from releso.observation import (ObservationDefinition,
+                                ObservationDefinitionMulti)
 from releso.util.logger import VerbosityLevel, set_up_logger
 from releso.util.reward_helpers import spor_com_parse_arguments
 from releso.util.types import ObservationType, RewardType, StepReturnType
@@ -124,103 +127,6 @@ class MPIClusterMultiProcessor(MultiProcessor):
             f"{os.environ[self.command.replace('$', '')]} and additional "
             f"flags {local_mpi_flags}")
         return f"{self.command} {local_mpi_flags}"
-
-
-class ObservationDefinition(BaseModel):
-    """Definition of an Observation.
-
-    Definition of a single Observations by providing the name of the
-    value and the range in which the value is limited to.
-
-    The range is necessary due to normalization of the input of the agent
-    networks.
-    """
-    name: str   #: Name of the observation
-    #: minimum of the range in which the observation is bound
-    value_min: float
-    #: maximum of the range in which the observation is bound
-    value_max: float
-
-    def get_observation_definition(self) -> Tuple[str, Space]:
-        """Provide definition of the defined observations space.
-
-        Returns a tuple of name and observation definition defined via the
-        gym.observation interface
-
-        Returns:
-            Tuple[str, Space]: Tuple of the name of the observation and a
-            gym.Box definition
-        """
-        return (
-            self.name,
-            Box(
-                self.value_min, self.value_max, shape=([1]), dtype=np.float32))
-
-    def get_default_observation(self) -> np.ndarray:
-        """Provide default observations.
-
-        Gives a default observations of the correct shape, purpose is when the
-        observation fails that the observation can still be generated so that
-        the training does not error out.
-
-        Returns:
-            np.ndarray: An array filled with ones in the correct shape and size
-            of the observation.
-        """
-        return np.ones((1,))*self.value_min
-
-
-class ObservationDefinitionMulti(ObservationDefinition):
-    """Define a multidimensional Observations space.
-
-    Definition of a single Observations by providing the name of the value
-    and the range in which the value is limited to.
-
-    The range is necessary due to normalization of the input of the agent
-    networks.
-    """
-    #: Shape of the Observation space. List of number of elements per dimension
-    observation_shape: List[int]
-    #: Type of the Observation space. If float uses the value_min etc
-    #: definition for the limits of the space. If CNN uses [0, 255] limits.
-    value_type: Literal["float", "CNN"]
-
-    def get_observation_definition(self) -> Tuple[str, Space]:
-        """Provide definition of the defined observations space.
-
-        Returns a tuple of name and observation definition defined via the
-        gym.observation interface
-
-        Returns:
-            Tuple[str, Space]: Tuple of the name of the observation
-                and a gym.Box definition
-        """
-        if self.value_type == "CNN":
-            return (
-                self.name,
-                Box(
-                    low=0, high=255, shape=self.observation_shape,
-                    dtype=np.uint8))
-        return (
-            self.name,
-            Box(
-                self.value_min, self.value_max, shape=(self.observation_shape),
-                dtype=np.float32))
-
-    def get_default_observation(self) -> np.ndarray:
-        """Provide default observations.
-
-        Gives a default observations of the correct shape, purpose is when the
-        observation fails that the observation can still be generated so that
-        the training does not error out.
-
-        Returns:
-            np.ndarray: An array filled with ones in the correct shape and size
-            of the observation.
-        """
-        if self.value_type == "CNN":
-            return np.zeros(self.observation_shape, dtype=np.uint8)
-        return np.ones(self.observation_shape, dtype=np.float32)*self.value_min
 
 
 class SPORObject(BaseModel):
@@ -382,7 +288,7 @@ class SPORObject(BaseModel):
         return NotImplementedError
 
 
-class SPORObjectCommandLine(SPORObject):
+class SPORObjectExecutor(SPORObject):
     """Base definition of a SPORCommandLineObject. Can be instantiated.
 
     Base class for all possible SPOR object classes which use the command
@@ -405,31 +311,19 @@ class SPORObjectCommandLine(SPORObject):
     #: Defaults to *False*.
     use_communication_interface: bool = False
     # : whether or not to add the step information to the SPOR communications
-    #: interface commandline options
+    #: interface commandline options including the observations, info, done,
+    #: reward
     add_step_information: bool = False
     #: Path to the directory in which the program should run in helpful for
     #: programs using relative paths. When {} appear in the string a UUID will
     #: be inserted for multiprocessing purposes.
     working_directory: str
-    #: Command which calls the program/script for this SPOR step.
-    execution_command: str
-    #: Command line options to add to the execution command. These do not
-    #: include those from the communication interface these will be, if
-    #: applicable, added separately.
-    command_options: List[str] = []
 
     # communication_interface_variables
     #: If the communication interface is used this UUID will be used to
     #: identify the job/correct worker
     _run_id: UUID4 = PrivateAttr(default=None)
-    #: function handler used for python functions which are loaded inside the
-    #: program envelop from the outside
-    _run_func: Optional[Any] = PrivateAttr(default=None)
-    #: logger which is used for the internalized python functions
-    _run_logger: Optional[Any] = PrivateAttr(default=None)
-    #: persistent function data is not touched by releso
-    _func_data: Optional[Any] = PrivateAttr(default=None)
- 
+
     @validator("working_directory")
     def validate_working_directory_path(cls, v: str):
         """Validator working_directory.
@@ -460,34 +354,6 @@ class SPORObjectCommandLine(SPORObject):
                 "directory before the placeholder is valid.")
         return v
 
-    @validator("execution_command", )
-    def validate_execution_command_path(cls, v: str):
-        """Validator execution_command.
-
-        Check if path to execution command exist.
-
-        Args:
-            v (str): Object to validate
-
-        Raises:
-            ParserException: If path is not correct, this error is thrown.
-
-        Returns:
-            str: original path if no validation error occurs.
-        """
-        # check if placeholder for multiprocessing is available if not use v
-        # to validate directory path
-        path = pathlib.Path(v)
-        if path.exists():
-            path = path.expanduser().resolve().as_posix()
-        else:
-            path = v
-        if shutil.which(path) is None:
-            raise ParserException(
-                "SPORObjectCommandline", "unknown",
-                f"The execution_command path {v} is not a valid executable.")
-        return path
-
     @validator("add_step_information")
     def validate_add_step_information_only_true_if_also_spor_com_is_true(
             cls, v: str, values: Dict[str, Any]):
@@ -517,6 +383,31 @@ class SPORObjectCommandLine(SPORObject):
                     "True if the variable use_communication_interface is also "
                     "True.")
         return v
+
+    def setup_working_directory(self, environment_id: UUID4):
+        """Set up the working directory for the SPORStep.
+
+        Args:
+            environment_id (UUID4): Id of the environment. This is the working
+                directory.
+        """
+        if "{}" in self.working_directory:
+            self.working_directory = self.working_directory.format(
+                environment_id)
+            self.get_logger().info(
+                f"Found placeholder for step with name {self.name}. New "
+                f"working directory is {self.working_directory}")
+
+            # create run folder if necessary
+            path = pathlib.Path(
+                self.working_directory).expanduser().resolve()
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
+
+            # TODO this is a XNS specific case
+            if self.name == "main_solver":
+                shutil.copyfile(path.parent/"xns_multi.in", path/"xns.in")
+                self.get_logger().info(f"Copying file please.....")
 
     def get_multiprocessing_prefix(self, core_count: int) -> str:
         """Add commandline prefix for mpi multiprocessor.
@@ -647,6 +538,454 @@ class SPORObjectCommandLine(SPORObject):
             self, step_information: StepReturnType, environment_id: UUID4,
             validation_id: Optional[int] = None, core_count: int = 1,
             reset: bool = False) -> StepReturnType:
+        """Run method for the Execution types of SPORSteps.
+
+        Abstract method.
+
+        Args:
+            step_information (StepReturnType): _description_
+            environment_id (UUID4): _description_
+            validation_id (Optional[int], optional): _description_. Defaults to None.
+            core_count (int, optional): _description_. Defaults to 1.
+            reset (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            NotImplementedError: _description_
+
+        Returns:
+            StepReturnType: _description_
+        """
+        raise NotImplementedError
+
+
+class SPORObjectPythonFunction(SPORObjectExecutor):
+    """Base definition of a SPORCommandLineObject. Can be instantiated.
+
+    Base class for all possible SPOR object classes which use the command
+    line. This class is meant to add some default functionality, so that
+    users do not need to add them themselves. These are:
+
+    1. access to the (MPI) Multi-processors via
+        :py:class:`ReLeSO.spor.MultiProcessor`
+    2. command line command
+    3. additional flags
+    4. working directory
+    5. whether or not to use the
+        :ref:`SPOR Communication Interface <sporcominterface>`
+
+    """
+    #: function handler used for python functions which are loaded inside the
+    #: program envelop from the outside
+    _run_func: Optional[Any] = PrivateAttr(default=None)
+    #: logger which is used for the internalized python functions
+    _run_logger: Optional[Any] = PrivateAttr(default=None)
+    #: persistent function data is not touched by releso
+    _func_data: Optional[Any] = PrivateAttr(default=None)
+
+    def run(
+            self, step_information: StepReturnType, environment_id: UUID4,
+            validation_id: Optional[int] = None, core_count: int = 1,
+            reset: bool = False) -> StepReturnType:
+        """This function loads and executes the defined python file.
+
+        The herein defined python file needs to have a function called `main`
+        with three parameters.
+
+        1. args: Namespace see SPORCommInterface
+        2. logger: logger to be used in the function
+        3. func_data: data variable can be used to store persistent data
+
+
+        Args:
+            step_information (StepReturnType):
+                Previously collected step values. Should be up-to-date.
+            environment_id (UUID4):
+                Environment ID which is used to distinguish different
+                environments which run in parallel.
+            validation_id (Optional[int], optional):
+                During validation the validation id signifies the validation
+                episode. If none the current episode is not a validation
+                episode. Defaults to None.
+            core_count (int, optional):
+                Can only be one since no multi processing is possible in this
+                case.
+            reset (bool, optional):
+                Boolean on whether or not this object is called because of a
+                reset. Defaults to False.
+
+        Returns:
+            StepReturnType:
+                The full compliment of the step information are returned.
+                The include observation, reward, done, info.
+        """
+        env_logger = self.get_logger()
+        step_return: Dict = {
+            "observation": step_information[0],
+            "reward": step_information[1],
+            "done": step_information[2],
+            "info": step_information[3]
+        }
+        # skips the step without doing anything if reset and not run_on_reset
+        # add observations if the skipped step has some
+        if reset and not self.run_on_reset:
+            if self.additional_observations is not None:
+                step_return["observation"] = self.get_default_observation(
+                    step_return["observation"])
+        else:   # executes the step
+            args = spor_com_parse_arguments(
+                self.spor_com_interface(
+                    reset=reset,
+                    environment_id=environment_id,
+                    validation_id=validation_id,
+                    step_information=step_information
+                )
+            )
+            exit_code = 0
+            output = None
+            current_dir = os.getcwd()
+            try:
+                os.chdir(self.working_directory)
+                output, self._func_data = self._run_func(
+                    args, self._run_logger, self._func_data
+                )
+            except Exception as err:
+                self.get_logger().warning(
+                    f"Could not run the internalized python spor function "
+                    f"without error. The following error was thrown {err}."
+                    " Please check if this is a user error."
+                    f"Traceback is {traceback.format_exc()}.")
+                exit_code = 404
+            os.chdir(current_dir)
+
+            step_return["info"][self.name] = {
+                "output": output,
+                "exit_code": int(exit_code)
+            }
+            self.get_logger().debug(f"The return step return of the current "
+                                    f"command is: {step_return}")
+            if exit_code != 0:  # error thrown during command execution
+                env_logger.info(f"SPOR Step {self.name} thrown error.")
+                if self.stop_after_error:
+                    env_logger.info(
+                        "Will stop episode now, due to thrown error.")
+                    step_return["done"] = True
+                    step_return["info"]["reset_reason"] = (
+                        f"ExecutionFailed-{self.name}")
+                step_return["reward"] = self.reward_on_error
+                if self.additional_observations is not None:
+                    step_return["observation"] = self.get_default_observation(
+                        step_return["observation"])
+            else:
+                if self.use_communication_interface:
+                    if isinstance(output, dict):
+                        self.spor_com_interface_add(output, step_return)
+                    else:
+                        self.spor_com_interface_read(output, step_return)
+                if self.reward_on_completion:
+                    if step_return["reward"]:
+                        env_logger.warning(
+                            f"A reward {step_return['reward']} is already set "
+                            f"but a default reward {self.reward_on_completion}"
+                            " on completion is also set. The default reward "
+                            "will overwrite the already set reward. Please "
+                            "check if this is the wanted behavior, if not set "
+                            "the reward on completion to None.")
+                    step_return["reward"] = self.reward_on_completion
+
+        return step_return["observation"], step_return["reward"],\
+            step_return["done"], step_return["info"]
+
+
+class SPORObjectInternalPythonFunction(SPORObjectPythonFunction):
+    """Base definition of a SPORCommandLineObject. Can be instantiated.
+
+    Base class for all possible SPOR object classes which use the command
+    line. This class is meant to add some default functionality, so that
+    users do not need to add them themselves. These are:
+
+    1. access to the (MPI) Multi-processors via
+        :py:class:`ReLeSO.spor.MultiProcessor`
+    2. command line command
+    3. additional flags
+    4. working directory
+    5. whether or not to use the
+        :ref:`SPOR Communication Interface <sporcominterface>`
+
+    """
+    function_name: Literal["xns_cnn"]
+
+    #: function handler used for python functions which are loaded inside the
+    #: program envelop from the outside
+    _run_func: Optional[Any] = PrivateAttr(default=None)
+    #: logger which is used for the internalized python functions
+    _run_logger: Optional[Any] = PrivateAttr(default=None)
+    #: persistent function data is not touched by releso
+    _func_data: Optional[Any] = PrivateAttr(default=None)
+
+    def __init__(self, **kwargs):
+        """Internalized python function init function.
+
+        Initializes the function and adds the observation data.
+
+        Raises:
+            ValueError: Requested function not found.
+        """
+        super().__init__(**kwargs)
+        if self.function_name == "xns_cnn":
+            from releso.util import cnn_xns_observations
+            self._run_func = cnn_xns_observations.main
+            self.additional_observations = \
+                cnn_xns_observations.define_observation_space()
+        else:
+            raise ValueError(
+                f"The function {self.function_name} is unknown. Please check"
+                " the spelling and version of the package.")
+
+    def run(
+            self, step_information: StepReturnType, environment_id: UUID4,
+            validation_id: Optional[int] = None, core_count: int = 1,
+            reset: bool = False) -> StepReturnType:
+        """This function loads and executes the defined python file.
+
+        The herein defined python file needs to have a function called `main`
+        with three parameters.
+
+        1. args: Namespace see SPORCommInterface
+        2. logger: logger to be used in the function
+        3. func_data: data variable can be used to store persistent data
+
+
+        Args:
+            step_information (StepReturnType):
+                Previously collected step values. Should be up-to-date.
+            environment_id (UUID4):
+                Environment ID which is used to distinguish different
+                environments which run in parallel.
+            validation_id (Optional[int], optional):
+                During validation the validation id signifies the validation
+                episode. If none the current episode is not a validation
+                episode. Defaults to None.
+            core_count (int, optional):
+                Can only be one since no multi processing is possible in this
+                case.
+            reset (bool, optional):
+                Boolean on whether or not this object is called because of a
+                reset. Defaults to False.
+
+        Returns:
+            StepReturnType:
+                The full compliment of the step information are returned.
+                The include observation, reward, done, info.
+        """
+        if self._first_time_setup_not_done:
+            self.setup_working_directory(environment_id)
+            self._first_time_setup_not_done = False
+
+        return super().run(
+            step_information,
+            environment_id,
+            validation_id,
+            core_count,
+            reset
+        )
+
+
+class SPORObjectExternalPythonFunction(SPORObjectPythonFunction):
+    """Base definition of a SPORCommandLineObject. Can be instantiated.
+
+    Base class for all possible SPOR object classes which use the command
+    line. This class is meant to add some default functionality, so that
+    users do not need to add them themselves. These are:
+
+    1. access to the (MPI) Multi-processors via
+        :py:class:`ReLeSO.spor.MultiProcessor`
+    2. command line command
+    3. additional flags
+    4. working directory
+    5. whether or not to use the
+        :ref:`SPOR Communication Interface <sporcominterface>`
+
+    """
+    python_file_path: Union[str, pathlib.Path]
+
+    #: function handler used for python functions which are loaded inside the
+    #: program envelop from the outside
+    _run_func: Optional[Any] = PrivateAttr(default=None)
+    #: logger which is used for the internalized python functions
+    _run_logger: Optional[Any] = PrivateAttr(default=None)
+    #: persistent function data is not touched by releso
+    _func_data: Optional[Any] = PrivateAttr(default=None)
+
+    @validator("python_file_path")
+    def validate_execution_command_path(cls, v: str):
+        """Validator of the path to the python file.
+
+        Check if path to execution command exist.
+
+        Does not check if the file is correct or the function inside this file
+        exists.
+
+        TODO check if the correct function signature exists inside the file
+
+        Args:
+            v (str): Object to validate
+
+        Raises:
+            ParserException: If path is not correct, this error is thrown.
+
+        Returns:
+            pathlib.Path: original path if no validation error occurs.
+        """
+        # check if placeholder for multiprocessing is available if not use v
+        # to validate directory path
+        path = pathlib.Path(v)
+        if path.exists() and path.is_file() and path.suffix == ".py":
+            path = path.expanduser().resolve().as_posix()
+        else:
+            raise ParserException(
+                "SPORObjectCommandline", "python_file_path",
+                f"The path {v} does not exist.")
+        return path
+
+    def run(
+            self, step_information: StepReturnType, environment_id: UUID4,
+            validation_id: Optional[int] = None, core_count: int = 1,
+            reset: bool = False) -> StepReturnType:
+        """This function loads and executes the defined python file.
+
+        The herein defined python file needs to have a function called `main`
+        with three parameters.
+
+        1. args: Namespace see SPORCommInterface
+        2. logger: logger to be used in the function
+        3. func_data: data variable can be used to store persistent data
+
+
+        Args:
+            step_information (StepReturnType):
+                Previously collected step values. Should be up-to-date.
+            environment_id (UUID4):
+                Environment ID which is used to distinguish different
+                environments which run in parallel.
+            validation_id (Optional[int], optional):
+                During validation the validation id signifies the validation
+                episode. If none the current episode is not a validation
+                episode. Defaults to None.
+            core_count (int, optional):
+                Can only be one since no multi processing is possible in this
+                case.
+            reset (bool, optional):
+                Boolean on whether or not this object is called because of a
+                reset. Defaults to False.
+
+        Returns:
+            StepReturnType:
+                The full compliment of the step information are returned.
+                The include observation, reward, done, info.
+        """
+        if self._first_time_setup_not_done:
+            self.python_file_path = pathlib.Path(self.python_file_path)
+            self.setup_working_directory(environment_id)
+            self.get_logger().info(
+                f"Setup is performed for step with name {self.name}. For "
+                f"environment with id {environment_id}.")
+            self.setup_working_directory(environment_id)
+
+            ret_path = shutil.copy(
+                self.python_file_path,
+                self.save_location/self.python_file_path.name)
+            self.get_logger().debug(
+                f"Successfully copied the python file {str(ret_path)}")
+
+            # trying to internalize the function
+            try:
+                sys.path.insert(0, f'{self.python_file_path.parent}{os.sep}')
+                func = importlib.import_module(self.python_file_path.stem)
+            except ModuleNotFoundError as err:
+                raise RuntimeError(
+                    f"Could not load the python file at "
+                    f"{str(self.python_file_path)}.")
+            else:
+                try:
+                    self._run_func = func.main
+                except AttributeError as err:
+                    raise RuntimeError(
+                        f"Could not get main function from python file"
+                        f" {str(self.python_file_path)}.")
+                else:
+                    self._run_logger = set_up_logger(
+                        f"spor_step_logger_"
+                        f"{self.name.replace(' ','_')}",
+                        pathlib.Path(self.save_location/"logging"),
+                        VerbosityLevel.INFO, console_logging=False)
+                    self.get_logger().info(
+                        f"Initialized internal python function calling"
+                        f" for step {self.name}.")
+
+            self._first_time_setup_not_done = False
+
+        return super().run(
+            step_information,
+            environment_id,
+            validation_id,
+            core_count,
+            reset
+        )
+
+
+class SPORObjectCommandLine(SPORObjectExecutor):
+    """Base definition of a SPORCommandLineObject. Can be instantiated.
+
+    Base class for all possible SPOR object classes which use the command
+    line. This class is meant to add some default functionality, so that
+    users do not need to add them themselves. These are:
+
+    1. access to the (MPI) Multi-processors via
+        :py:class:`ReLeSO.spor.MultiProcessor`
+    2. command line command
+    3. additional flags
+    4. working directory
+    5. whether or not to use the
+        :ref:`SPOR Communication Interface <sporcominterface>`
+
+    """
+    #: Command which calls the program/script for this SPOR step.
+    execution_command: str
+    #: Command line options to add to the execution command. These do not
+    #: include those from the communication interface these will be, if
+    #: applicable, added separately.
+    command_options: List[str] = []
+
+    @validator("execution_command", )
+    def validate_execution_command_path(cls, v: str):
+        """Validator execution_command.
+
+        Check if path to execution command exist.
+
+        Args:
+            v (str): Object to validate
+
+        Raises:
+            ParserException: If path is not correct, this error is thrown.
+
+        Returns:
+            str: original path if no validation error occurs.
+        """
+        path = pathlib.Path(v)
+        if path.exists():
+            path = path.expanduser().resolve().as_posix()
+        else:
+            path = v
+        if shutil.which(path) is None:
+            raise ParserException(
+                "SPORObjectCommandline", "unknown",
+                f"The execution_command path {v} is not a valid executable.")
+        return path
+
+    def run(
+            self, step_information: StepReturnType, environment_id: UUID4,
+            validation_id: Optional[int] = None, core_count: int = 1,
+            reset: bool = False) -> StepReturnType:
         """This function runs the defined command line command.
 
         With the defined arguments adding if necessary multi-processing flags
@@ -678,68 +1017,7 @@ class SPORObjectCommandLine(SPORObject):
             self.get_logger().info(
                 f"Setup is performed for step with name {self.name}. For "
                 f"environment with id {environment_id}.")
-            # add environment_id to working path if necessary
-            if "{}" in self.working_directory:
-                self.working_directory = self.working_directory.format(
-                    environment_id)
-                self.get_logger().info(
-                    f"Found placeholder for step with name {self.name}. New "
-                    f"working directory is {self.working_directory}")
-
-                # create run folder if necessary
-                path = pathlib.Path(
-                    self.working_directory).expanduser().resolve()
-                if not path.exists():
-                    path.mkdir(parents=True, exist_ok=True)
-
-                if self.name == "main_solver":
-                    shutil.copyfile(path.parent/"xns_multi.in", path/"xns.in")
-                    self.get_logger().info(f"Copying file please.....")
-            # checks if the defined function is a python function and if it the
-            # function is loaded into the program envelop and internalized.
-            # This can bring big time savings if big libraries are loaded by
-            # the function.
-            if len(self.command_options) == 1:
-                possible_file = pathlib.Path(
-                    self.command_options[0]).resolve().absolute()
-                if possible_file.exists() and possible_file.is_file() and \
-                        possible_file.suffix == ".py":
-                    # cop python file so that changes to it during computation
-                    # are not crashing the training run.
-                    ret_path = shutil.copy(
-                        possible_file, self.save_location/possible_file.name)
-                    self.get_logger().debug(
-                        f"Successfully copied the python file {str(ret_path)}")
-
-                    # trying to internalize the function
-                    try:
-                        sys.path.insert(0, f'{possible_file.parent}{os.sep}')
-                        func = importlib.import_module(possible_file.stem)
-                    except ModuleNotFoundError as err:
-                        self.get_logger().warning(
-                            f"Could not load the python file at "
-                            f"{str(possible_file)}. This means the python file"
-                            " will be run externally. The runtime will be"
-                            " longer.")
-                    else:
-                        try:
-                            self._run_func = func.main
-                        except AttributeError as err:
-                            self.get_logger().warning(
-                                f"Could not get main function from python file"
-                                f" {str(possible_file)}. This means the python"
-                                " file will be run externally. The runtime "
-                                "will be longer.")
-                        else:
-                            self._run_logger = set_up_logger(
-                                f"spor_step_logger_"
-                                f"{self.name.replace(' ','_')}",
-                                pathlib.Path(self.save_location/"logging"),
-                                VerbosityLevel.INFO, console_logging=False)
-                            self.get_logger().info(
-                                f"Initialized internal python function calling"
-                                f" for step {self.name}.")
-
+            self.setup_working_directory(environment_id)
             self._first_time_setup_not_done = False
         # first set up done
 
@@ -764,28 +1042,13 @@ class SPORObjectCommandLine(SPORObject):
                 *self.command_options,
                 *self.spor_com_interface(
                     reset, environment_id, validation_id, step_information)]
-            if self._run_func is not None:
-                # using internalized python function
-                args = spor_com_parse_arguments(command_list[3:])
-                exit_code = 0
-                output = None
-                current_dir = os.getcwd()
-                try:
-                    os.chdir(self.working_directory)
-                    output, self._func_data = self._run_func(
-                        args, self._run_logger, self._func_data
-                    )
-                except Exception as err:
-                    self.get_logger().warning(
-                        f"Could not run the internalized python spor function "
-                        f"without error. The following error was thrown {err}."
-                        " Please check if this is a user error.")
-                    exit_code = 404
-                os.chdir(current_dir)
-            else:   # using command line to call the defined command
-                command = " ".join(command_list)
-                exit_code, output = call_commandline(
-                    command, self.working_directory, env_logger)
+
+            command = " ".join(command_list)
+
+            # using command line to call the defined command
+            exit_code, output = call_commandline(
+                command, self.working_directory, env_logger)
+
             step_return["info"][self.name] = {
                 "output": output,
                 "exit_code": int(exit_code)
@@ -839,7 +1102,11 @@ class SPORObjectCommandLine(SPORObject):
             step_return["done"], step_return["info"]
 
 
-SPORObjectTypes = SPORObjectCommandLine
+SPORObjectTypes = Union[
+    SPORObjectCommandLine,
+    SPORObjectExternalPythonFunction,
+    SPORObjectInternalPythonFunction
+]
 
 
 class SPORList(BaseModel):
