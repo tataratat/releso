@@ -11,7 +11,7 @@ To use ReLeSO the following packages have to be installed:
  - tensorboard
  - torchvision
  - hjson
- - gustav
+ - gustaf
 
 The first two/three packages can be installed via pip and/or conda with the following command:
 
@@ -30,8 +30,8 @@ The first two/three packages can be installed via pip and/or conda with the foll
    (releso) $ conda install -c pytorch torchvision
    (releso) $ pip install stable-baselines3 hjson
 
-The next step is to install the ``gustav`` package which is a python interface for the c++ library SplineLib.
-To install ``gustav`` the following repository must be downloaded into an external folder and installed into the venv or conda environment as before. The installation process for the gustav package is documented in the README file of the repository.
+The next step is to install the ``gustaf`` package which is a python interface for the c++ library SplineLib.
+To install ``gustaf`` the following repository must be downloaded into an external folder and installed into the venv or conda environment as before. The installation process for the gustaf package is documented in the README file of the repository.
 
 
 **Development**

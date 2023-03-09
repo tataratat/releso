@@ -42,9 +42,9 @@ from releso.util.util_funcs import ModuleImportRaiser
 
 try:
     from releso.feature_extractor import CombinedExtractor, FeatureExtractor
-except ImportError:
-    CombinedExtractor = ModuleImportRaiser("torchvision")
-    FeatureExtractor = ModuleImportRaiser("torchvision")
+except ImportError as err:
+    CombinedExtractor = ModuleImportRaiser("torchvision", err)
+    FeatureExtractor = ModuleImportRaiser("torchvision", err)
 
 # TODO dynamic agent detection via https://stackoverflow.com/a/3862957
 ####################################

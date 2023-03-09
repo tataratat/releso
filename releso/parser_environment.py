@@ -4,7 +4,6 @@ Files defines the environment used for parsing and also most function which
 hold the functionality for the Reinforcement Learning environment are
 defined here.
 """
-import datetime
 import multiprocessing
 import pathlib
 from copy import copy
@@ -13,7 +12,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 import gym
-import matplotlib.pyplot as plt
 import numpy as np
 from gym import spaces
 from pydantic import UUID4, conint
@@ -21,26 +19,13 @@ from pydantic.class_validators import validator
 from pydantic.fields import Field, PrivateAttr
 from stable_baselines3.common.monitor import Monitor
 
-from releso.util.util_funcs import ModuleImportRaiser
-
-try:
-    from gustav import FreeFormDeformation
-except ImportError:
-    FreeFormDeformation = ModuleImportRaiser("gustav")
 from releso.base_model import BaseModel
 from releso.exceptions import ParserException
+from releso.geometry import GeometryTypes
 from releso.gym_environment import GymEnvironment
-from releso.mesh import Mesh
-from releso.spline import Spline, VariableLocation
 from releso.spor import MultiProcessor, SPORList
-from releso.util.load_binary import read_mixd_double
 from releso.util.logger import VerbosityLevel, get_parser_logger, set_up_logger
 from releso.util.types import ObservationType
-
-try:
-    from releso.util.plotting import get_tricontour_solution
-except ImportError:
-    get_tricontour_solution = ModuleImportRaiser("gustav")
 
 
 class MultiProcessing(BaseModel):
@@ -65,16 +50,10 @@ class Environment(BaseModel):
     #: defines if multi-processing can be used.
     multi_processing: Optional[MultiProcessing] = Field(
         default_factory=MultiProcessor)
-    spline: Spline  #: definition of the spline
-    mesh: Optional[Mesh] = None  #: definition of the mesh TODO make optional
-    spor: SPORList  #: definition of the spor objects
-    #: Whether or not to use discrete actions if False continuous actions
-    #: will be used.
-    discrete_actions: bool = True
-    #: Whether or not to reset the controllable control point variables to a
-    #: random state (True) or the default original state (False).
-    #: Default False.
-    reset_with_random_control_points: bool = False
+    #: definition of the Geometry
+    geometry: GeometryTypes
+    #: definition of the spor objects
+    spor: SPORList
     #: maximal number of timesteps to run each episode for
     max_timesteps_in_episode: Optional[conint(ge=1)] = None
     #: whether or not to reset the environment if the spline has not change
@@ -86,8 +65,12 @@ class Environment(BaseModel):
     reward_on_episode_exceeds_max_timesteps: Optional[float] = None
     #: use a cnn based feature extractor, if false the base observations will
     #: be supplied by the movable spline coordinates current values.
+    #: TODO check if this moves into a separate SPOR step?
     use_cnn_observations: bool = False
     #: periodically save the end result of the optimization T-junction use case
+    #: TODO the next few cases I see personally more in a separate SPOR Step
+    #: but I am not sure how this can be worked since it needs data from other
+    #: sources
     save_good_episode_results: bool = False
     #: periodically save the end result of the optimization converging channel
     #: use case
@@ -95,25 +78,20 @@ class Environment(BaseModel):
     #: also saves the mesh when an episode is saved with
     #: save_random_good_episode_results, works only if the named option is True
     save_random_good_episode_mesh: bool = False
-    #: do not perform FFD just add the control_points current location to the
-    #: info of the episode
-    only_use_control_points: bool = False
 
     # object variables
     #: id if the environment, important for multi-environment learning
     _id: UUID4 = PrivateAttr(default=None)
-    _actions: List[VariableLocation] = PrivateAttr()    #: list of actions
     #: if validation environment validation ids are stored here
     _validation_ids: Optional[List[float]] = PrivateAttr(default=None)
+    #: id of the current validation id
     _current_validation_idx: Optional[int] = PrivateAttr(
-        default=None)  #: id of the current validation id
+        default=None)
     #: number of timesteps currently spend in the episode
     _timesteps_in_episode: Optional[int] = PrivateAttr(default=0)
     #: last observation from the last step used to determine whether or not the
     #: spline has changed between episodes
     _last_observation: Optional[ObservationType] = PrivateAttr(default=None)
-    #: FreeFormDeformation used for the spline based shape optimization
-    _FFD: Optional[FreeFormDeformation] = PrivateAttr(None)
     #: StepReturn values from last step
     _last_step_results: Dict[str, Any] = PrivateAttr(default={})
     #: path where the mesh should be saved to for validation
@@ -233,22 +211,6 @@ class Environment(BaseModel):
     def __init__(self, **data: Any) -> None:
         """Construct the object."""
         super().__init__(**data)
-        if not self.only_use_control_points:
-            self._FFD = FreeFormDeformation
-
-    def _set_up_actions(self) -> gym.Space:
-        """Define actions space of the environment.
-
-        Creates the action space the gym environment uses to define its
-        action space.
-
-        Returns:
-            gym.Space: action space of the current problem.
-        """
-        if self.discrete_actions:
-            return spaces.Discrete(len(self._actions) * 2)
-        else:
-            return spaces.Box(low=-1, high=1, shape=(len(self._actions),))
 
     def _compress_observation_space_definition(
         self,
@@ -327,14 +289,9 @@ class Environment(BaseModel):
         # TODO This needs to be changed
         observation_spaces: List[Tuple[str, gym.Space]] = []
         # define base observation
-        if self.use_cnn_observations:
-            observation_spaces.append(("base_observation", spaces.Box(
-                low=0, high=255, shape=(3, 200, 200), dtype=np.uint8)))
-        else:
+        if self.geometry.action_based_observation:
             observation_spaces.append(
-                ("base_observation", spaces.Box(low=0, high=1,
-                                                shape=(len(self._actions), ),
-                                                dtype=np.float32)))
+                self.geometry.get_observation_definition())
 
         # define spor observations
         has_cnn_observations = False
@@ -371,57 +328,6 @@ class Environment(BaseModel):
             # returned without a name
             return observation_spaces[0][1]
 
-    def _get_spline_observations(self) -> List[float]:
-        """Collect all observations that are part of the spline.
-
-        Returns:
-            List[float]: Observation vector containing only the spline values.
-        """
-        return np.array(
-            [variable.current_position for variable in self._actions]
-        )
-
-    def _apply_FFD(self, path: Optional[str] = None) -> None:
-        """Apply FFD for current spline.
-
-        Might move in the future to a SPORStep. Can be deactivated with
-        only_use_control_points.
-
-        Apply the Free Form Deformation using the current spline to the mesh
-        and export the resulting mesh to the path given.
-
-        Args:
-            path (Optional[str]): Path to where the deformed mesh should be
-                                  exported to. If None try to get path from
-                                  mesh definition.
-        """
-        self._FFD.set_deformed_spline(self.spline.get_spline())
-        self._FFD.deform_mesh()
-        self.export_mesh(
-            path if path is not None else self.mesh.get_export_path())
-
-    def apply_action(self, action: Union[List[float], int]) -> None:
-        """Function that applies a given action to the Spline.
-
-        Args:
-            action ([type]):  Action value depends on if the ActionSpace is
-                              discrete (int - Signifier of the action) or
-                              Continuous (List[float] - Value for each
-                              continuous variable.)
-        """
-        # self.get_logger().debug(f"Applying action {action}")
-        if self.discrete_actions:
-            increasing: bool = (action % 2 == 0)
-            action_index: int = int(action/2)
-            self.get_logger().debug(
-                f"Setting discrete action, of variable {action_index}.")
-            self._actions[action_index].apply_discrete_action(increasing)
-            # TODO check if this is correct
-        else:
-            action: List[int]
-            for new_value, action_obj in zip(action, self._actions):
-                action_obj.apply_continuos_action(new_value)
-
     def is_multiprocessing(self) -> int:
         """Check if environment uses multiprocessing.
 
@@ -447,14 +353,6 @@ class Environment(BaseModel):
             Optional[int]: Check text above.
         """
         if self._validation_ids is not None:
-            # if self._validation_iteration >= len(self._validation_ids):
-            #     before = self._validation_iteration
-            #     self._validation_iteration = 0
-            #     self.get_logger().warning(f"Resetting the validation "
-            #                                "iteration of value {before} to "
-            #                                "the first validation value 0. If"
-            #                                " this happens please investigate"
-            #                                " why this happens.")
             return self._validation_ids[
                 self._current_validation_idx % len(self._validation_ids)
             ]
@@ -476,22 +374,17 @@ class Environment(BaseModel):
             Tuple[Any, float, bool, Dict[str, Any]]: [description]
         """
         start = timer()
-        # apply new action
-        self.get_logger().info(f"Action {action}")
-        self.apply_action(action)
 
         observations = {}
         done = False
         reward = 0.
         info = dict()
 
-        if not self.only_use_control_points:
-            # apply Free Form Deformation
-            self._apply_FFD()
-            info["mesh_path"] = str(self.mesh.mxyz_path)
-        info["control_points"] = self.spline.get_control_points()
+        # apply new action
+        self.get_logger().info(f"Action {action}")
+        info["geometry_information"] = self.geometry.apply_action(action)
 
-        # run solver
+        # run SPOR
         observations, reward, done, info = self.spor.run(step_information=(
             observations, done, reward, info),
             validation_id=self.get_validation_id(),
@@ -508,14 +401,8 @@ class Environment(BaseModel):
                 done = True
                 reward += self.reward_on_episode_exceeds_max_timesteps
                 info["reset_reason"] = "max_timesteps"
-            # self.get_logger().info(f"Checked if max timestep was reached: "
-            # "{self._max_timesteps_in_episode > 0 and "
-            # "self._timesteps_in_episode > self._max_timesteps_in_episode}.")
-            if self.end_episode_on_spline_not_changed and \
-               self._last_observation is not None:
-                if np.allclose(np.array(self._last_observation),
-                               np.array(observations)
-                               ):  # check
+            if self.end_episode_on_spline_not_changed:
+                if self.geometry.is_geometry_changed():  # check
                     self.get_logger().info("The Spline observation have"
                                            " not changed will exit episode.")
                     reward += self.reward_on_spline_not_changed
@@ -523,32 +410,33 @@ class Environment(BaseModel):
                     info["reset_reason"] = "SplineNotChanged"
             self._last_observation = copy(observations)
         else:
-            if reward >= 5.:
-                if self.save_good_episode_results:
-                    for elem in self._result_values_to_save:
-                        if np.isclose(
-                            list(observations.values())[0][1],
-                            elem, atol=0.05
-                        ):
-                            self.save_current_solution_as_png(
-                                self.save_location/"episode_end_results"
-                                ""/str(elem)/f""
-                                f"{list(observations.values())[0][1]}"
-                                f"_{self._approximate_episode}.png",
-                                height=2, width=2, dpi=400)
-                            break
-                if self.save_random_good_episode_results:
-                    if self._number_exported < 200:
-                        if np.random.default_rng().random() < 5:
-                            self.save_current_solution_as_png(
-                                self.save_location/"episode_end_results" /
-                                f"{self._approximate_episode}.png",
-                                height=2, width=2, dpi=400)
-                            if self.save_random_good_episode_mesh:
-                                self.export_mesh(
-                                    self.save_location/"episode_end_results" /
-                                    "mesh"/f"{self._approximate_episode}.xns")
-                            self._number_exported += 1
+            pass  # TODO convert to separate SPOR Steps
+            # if reward >= 5.:
+            #     if self.save_good_episode_results:
+            #         for elem in self._result_values_to_save:
+            #             if np.isclose(
+            #                 list(observations.values())[0][1],
+            #                 elem, atol=0.05
+            #             ):
+            #                 self.save_current_solution_as_png(
+            #                     self.save_location/"episode_end_results"
+            #                     ""/str(elem)/f""
+            #                     f"{list(observations.values())[0][1]}"
+            #                     f"_{self._approximate_episode}.png",
+            #                     height=2, width=2, dpi=400)
+            #                 break
+            #     if self.save_random_good_episode_results:
+            #         if self._number_exported < 200:
+            #             if np.random.default_rng().random() < 5:
+            #                 self.save_current_solution_as_png(
+            #                     self.save_location/"episode_end_results" /
+            #                     f"{self._approximate_episode}.png",
+            #                     height=2, width=2, dpi=400)
+            #                 if self.save_random_good_episode_mesh:
+            #                     self.export_mesh(
+            #                         self.save_location/"episode_end_results" /
+            #                         "mesh"/f"{self._approximate_episode}.xns")
+            #                 self._number_exported += 1
 
         self.get_logger().info(
             f"Current reward {reward} and episode is done: {done}.")
@@ -560,21 +448,18 @@ class Environment(BaseModel):
             "info": info
         }
         self.get_logger().debug(self._last_step_results)
-        if self._validation_ids and self._save_image_in_validation:
-            self._validation_timestep += 1
-            self.save_current_solution_as_png(
-                self.save_location/"validation"
-                / str(self._validation_iteration)
-                / str(self._current_validation_idx)
-                / f"{self._validation_timestep}.png")
+        # TODO convert to a SPOR Step
+        # if self._validation_ids and self._save_image_in_validation:
+        #     self._validation_timestep += 1
+        #     self.save_current_solution_as_png(
+        #         self.save_location/"validation"
+        #         / str(self._validation_iteration)
+        #         / str(self._current_validation_idx)
+        #         / f"{self._validation_timestep}.png")
 
-        if self.use_cnn_observations:
-            # Need to transpose because torch wants
-            # channel first representation
-            observations["base_observation"] = self.get_visual_representation(
-                sol_len=3).T
-        else:
-            observations["base_observation"] = self._get_spline_observations()
+        observations["geometry_observation"] = self.geometry.get_observation()
+        if observations["geometry_observation"] is None:
+            del observations["geometry_observation"]
         end = timer()
         self.get_logger().debug(f"Step took {end-start} seconds.")
 
@@ -616,25 +501,15 @@ class Environment(BaseModel):
             Tuple[Any]: Observation of the newly reset environment.
         """
         self.get_logger().info("Resetting the Environment.")
-        # reset spline
-
-        # reset spline with new positions of the spline control points
-        if self.reset_with_random_control_points:
-            self.apply_random_action(self.get_validation_id())
-        # reset the control points of the spline to the original position
-        # (positions defined in the json file)
-        else:
-            self.spline.reset()
 
         observations = {}
         done = False
         reward = 0.
         info = dict()
-        if not self.only_use_control_points:
-            # apply Free Form Deformation
-            self._apply_FFD()
-            info["mesh_path"] = str(self.mesh.mxyz_path)
-        info["control_points"] = self.spline.get_control_points()
+
+        # reset geometry
+        info["geometry_information"] = self.geometry.reset(
+            self.get_validation_id())
 
         self._timesteps_in_episode = 0
         self._approximate_episode += 1
@@ -649,23 +524,24 @@ class Environment(BaseModel):
         # obs = self._get_observations(observations, done=done)
 
         if self._validation_ids:
+            # TODO move to SPOR step
             # export mesh at end of validation
-            if self._current_validation_idx > 0 and \
-                    self._validation_base_mesh_path:
-                # validation is performed in single environment
-                # with no multi threading so this is not necessary.
-                base_path = pathlib.Path(
-                    self._validation_base_mesh_path).parents[0]/str(
-                    self._validation_iteration)/str(
-                    self._current_validation_idx)
-                file_name = pathlib.Path(self._validation_base_mesh_path).name
-                if "_." in self._validation_base_mesh_path:
-                    validation_mesh_path = base_path / str(file_name).replace(
-                        "_.", f"{self._get_reset_reason_string()}.")
-                else:
-                    validation_mesh_path = self._validation_base_mesh_path
-                self.export_mesh(validation_mesh_path)
-                self.export_spline(validation_mesh_path.with_suffix(".xml"))
+            # if self._current_validation_idx > 0 and \
+            #         self._validation_base_mesh_path:
+            #     # validation is performed in single environment
+            #     # with no multi threading so this is not necessary.
+            #     base_path = pathlib.Path(
+            #         self._validation_base_mesh_path).parents[0]/str(
+            #         self._validation_iteration)/str(
+            #         self._current_validation_idx)
+            #     file_name = pathlib.Path(self._validation_base_mesh_path).name
+            #     if "_." in self._validation_base_mesh_path:
+            #         validation_mesh_path = base_path / str(file_name).replace(
+            #             "_.", f"{self._get_reset_reason_string()}.")
+            #     else:
+            #         validation_mesh_path = self._validation_base_mesh_path
+            #     self.export_mesh(validation_mesh_path)
+            #     self.export_spline(validation_mesh_path.with_suffix(".xml"))
             if self._current_validation_idx >= len(self._validation_ids):
                 self.get_logger().info(
                     "The validation callback resets the environment one time "
@@ -675,19 +551,18 @@ class Environment(BaseModel):
                 self._current_validation_idx = 0
                 self._validation_iteration += 1
         self.get_logger().info("Resetting the Environment DONE.")
-        if self._validation_ids and self._save_image_in_validation:
-            self._validation_timestep = 0
-            self.save_current_solution_as_png(
-                self.save_location/"validation" /
-                str(self._validation_iteration) /
-                str(self._current_validation_idx) /
-                f"{self._validation_timestep}.png")
-        if self.use_cnn_observations:
-            # Need to transpose bc torch wants channel first representation
-            observations["base_observation"] = self.get_visual_representation(
-                sol_len=3).T
-        else:
-            observations["base_observation"] = self._get_spline_observations()
+        # TODO move to separate SPOR Step
+        # if self._validation_ids and self._save_image_in_validation:
+        #     self._validation_timestep = 0
+        #     self.save_current_solution_as_png(
+        #         self.save_location/"validation" /
+        #         str(self._validation_iteration) /
+        #         str(self._current_validation_idx) /
+        #         f"{self._validation_timestep}.png")
+
+        observations["geometry_observation"] = self.geometry.get_observation()
+        if observations["geometry_observation"] is None:
+            del observations["geometry_observation"]
 
         return self.check_observations(observations)
 
@@ -795,11 +670,8 @@ class Environment(BaseModel):
                 "use this function only after multiplying the environments "
                 "and not before.")
 
-        self._actions = self.spline.get_actions()
-        if not self.only_use_control_points:
-            self._FFD.set_mesh(self.mesh.get_mesh())
-            self.mesh.adapt_export_path(self._id)
-        env = GymEnvironment(self._set_up_actions(),
+        self.geometry.setup(self._id)
+        env = GymEnvironment(self.geometry.get_action_definition(),
                              self._define_observation_space())
         env.step = self.step
         env.reset = self.reset
@@ -824,164 +696,6 @@ class Environment(BaseModel):
             logger_name, log_file_location, logging_level, logger=logger)
         self.set_logger_name_recursively(resulting_logger.name)
 
-    def export_spline(self, file_name: str) -> None:
-        """Export the current spline to the given path.
-
-        The export will be done via gustav.
-
-        Note:
-            Gustav often uses the extension to determine the format and the
-            sub files of the export so be careful how you input the file path.
-
-        Args:
-            file_name (str): [description]
-        """
-        if not self.only_use_control_points:
-            self._FFD.deformed_spline.export(file_name)
-
-    def export_mesh(self, file_name: str, space_time: bool = False) -> None:
-        """Export the current deformed mesh to the given path.
-
-        The export will be done via gustav.
-
-        Note:
-            Gustav often uses the extension to determine the format and the
-            sub files of the export so be careful how you input the file path.
-
-        Args:
-            file_name (str): Path to where and how gustav should export the mesh.
-            space_time (bool): Whether or not to use space time during the
-                export. Currently during the import it is assumed no space
-                time mesh is given.
-        """
-        if not self.only_use_control_points:
-            self._FFD.deformed_mesh.export(file_name, space_time=space_time)
-
     def close(self):
         """Function is called when training is stopped."""
         pass
-
-    def apply_random_action(self, seed: Optional[str] = None):
-        """Apply a random continuous action.
-
-        Applying a random continuous action to all movable control point
-        variables. Can be activated to be used during the reset of an
-        environment.
-
-        Args:
-            seed (Optional[str], optional): Seed for the generation of the
-                random action. The same seed will result in always the same
-                action. This functionality is chosen to make validation
-                possible. If None (default) a random seed will be used and
-                the action will be different each time. Defaults to None.
-        """
-        def _parse_string_to_int(string: str) -> int:
-            chars_as_ints = [ord(char) for char in str(string)]
-            string_as_int = sum(chars_as_ints)
-            return string_as_int
-        seed = _parse_string_to_int(str(seed)) if seed is not None else seed
-        self.get_logger().debug(
-            f"A random action is applied during reset with the following "
-            f"seed {str(seed)}")
-        rng_gen = np.random.default_rng(seed)
-        random_action = (rng_gen.random((len(self._actions),))*2)-1
-        for new_value, action_obj in zip(random_action, self._actions):
-            action_obj.apply_continuos_action(new_value)
-        return random_action
-
-    def get_visual_representation(self, /, *, sol_len: int = 3,
-                                  height: int = 10, width: int = 10,
-                                  dpi: int = 20):
-        """Return an array representing the calculated solution.
-
-        This function is used to create the array which is used if the
-        solution/cnn representation of the base observations are selected.
-
-        Note:
-            The calculated solution can only be found if the
-            :py:class:`SporObject` of the solver is called main_solver and uses
-            the xns solver.
-        #TODO make it broader in its application e.g. other solvers?
-
-        Args:
-            sol_len (int, optional): Number of variables to return per data
-                point, input can be more but not less. Assumed is u,v,p.
-                Defaults to 3.
-            height (int, optional): Height of the image array in inches.
-                Defaults to 10.
-            width (int, optional): Width of the image array in inches.
-                Defaults to 10.
-            dpi (int, optional): DPI of the image array. Together with the
-                height and width, this variable defines the shape of the
-                return array shape=(height*dpi, width*dpi, sol_len).
-                Defaults to 20.
-
-        Raises:
-            RuntimeError: could not find solution file, mesh is of the
-                incorrect type (needs to be triangular), mesh is of the
-                incorrect dimensions (needs to be dim=2)
-        """
-        # Loading the correct data and checking if correct attributes are set.
-        if self._connectivity is None:
-            self._connectivity = read_mixd_double(
-                self.mesh.get_export_path().parent/"mien",
-                3, 4, ">i").astype(int)-1
-        solution_location = next(
-            (x for x in self.spor.steps if x.name == "main_solver"), None)
-        if solution_location:
-            solution_location = pathlib.Path(
-                solution_location.working_directory).expanduser().resolve()
-        else:
-            raise RuntimeError(
-                "Could not find the main_solver spor step. Please check if "
-                "you actually want to use this function, as it only works "
-                "with the XNS solver.")
-        if self.mesh.hypercube:
-            raise RuntimeError(
-                "The given mesh is not a mesh with triangular entities. "
-                "This function was designed to work with only those.")
-        if not self.mesh.dimensions == 2:
-            raise RuntimeError(
-                "The given mesh has a dimension unequal two. This function "
-                "was designed to work only with meshes of dimension two.")
-        solution = read_mixd_double(solution_location/"ins.out", 3)
-        coordinates = self._FFD.deformed_unit_mesh_.vertices
-        # Plotting and creating resulting array
-        limits_max = [1, 1, 0.2e8]
-        limits_min = [-1, -1, -0.2e8]
-
-        return get_tricontour_solution(width, height, dpi, coordinates,
-                                       self._connectivity, solution, sol_len,
-                                       limits_min, limits_max)
-
-    def save_current_solution_as_png(
-            self, save_location: Union[pathlib.Path, str],
-            include_pressure: bool = True, height: int = 10,
-            width: int = 10, dpi: int = 400):
-        """Save the current solver solution as an image at the given location.
-
-        Additional parameters for size can be used.
-
-        Args:
-            save_location (Union[pathlib.Path, str]): Where the image is to
-                be saved to. Please add solution specific path, else the file
-                will be overwritten if multiple solution are saved.
-            include_pressure (bool, optional): Not only use x-,y-velocity
-                fields but also the pressure field. Defaults to True.
-            height (int, optional): Self explanatory. Defaults to 10.
-            width (int, optional): Self explanatory. Defaults to 10.
-            dpi (int, optional): Self explanatory. Defaults to 400.
-        """
-        image_arr = self.get_visual_representation(
-            sol_len=3 if include_pressure else 2,
-            width=height, height=width, dpi=dpi)
-        meta_data_dict = {
-            "Author": "Clemens Fricke",
-            "Software": "ReLeSO",
-            "Creation Time": str(datetime.datetime.now()),
-            "Description": "This is a description"
-        }
-        if isinstance(save_location, str):
-            save_location = pathlib.Path(save_location)
-        save_location.parent.mkdir(parents=True, exist_ok=True)
-        plt.imsave(save_location, image_arr, metadata=meta_data_dict)

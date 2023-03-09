@@ -1,0 +1,430 @@
+{
+    "agent": {
+        "type": "PPO",
+        "policy": "MlpPolicy",
+        "tensorboard_log": "tensorboard"
+    },
+    "environment": {
+        "multi_processing": {
+            "number_of_cores": 4
+        },
+        "geometry": {
+            "shape_definition": {
+                // "space_dimensions": [
+                //     {
+                //         "name": "phi",
+                //         "number_of_points": 8,
+                //         "degree": 2
+                //     },
+                //     {
+                //         "name": "zeta",
+                //         "number_of_points": 3,
+                //         "degree": 2
+                //     },
+                //     // {
+                //     //     "name": "beta",
+                //     //     "number_of_points": 1,
+                //     //     "degree": 1
+                //     // }
+                // ],
+                // "spline_dimension": 2,
+                // "control_points": [
+                //     [
+                //         {
+                //             "current_position": 0.0
+                //         },
+                //         {
+                //             "current_position": 0.0
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.14285714285714285
+                //         },
+                //         {
+                //             "current_position": 0.0,
+                //             "min_value": 0.0,
+                //             "max_value": 0.25,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.2857142857142857
+                //         },
+                //         {
+                //             "current_position": 0.0,
+                //             "min_value": 0.0,
+                //             "max_value": 0.25,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.42857142857142855
+                //         },
+                //         {
+                //             "current_position": 0.0,
+                //             "min_value": 0.0,
+                //             "max_value": 0.25,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.5714285714285714
+                //         },
+                //         {
+                //             "current_position": 0.0,
+                //             "min_value": 0.0,
+                //             "max_value": 0.25,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.7142857142857142
+                //         },
+                //         {
+                //             "current_position": 0.0,
+                //             "min_value": 0.0,
+                //             "max_value": 0.25,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.8571428571428571
+                //         },
+                //         {
+                //             "current_position": 0.0,
+                //             "min_value": 0.0,
+                //             "max_value": 0.25,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 1.0
+                //         },
+                //         {
+                //             "current_position": 0.0
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.0
+                //         },
+                //         {
+                //             "current_position": 0.5
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.14285714285714285
+                //         },
+                //         {
+                //             "current_position": 0.5,
+                //             "min_value": 0.25,
+                //             "max_value": 0.75,
+                //             "n_steps": 10,
+                //             "step": 0.05
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.2857142857142857
+                //         },
+                //         {
+                //             "current_position": 0.5,
+                //             "min_value": 0.25,
+                //             "max_value": 0.75,
+                //             "n_steps": 10,
+                //             "step": 0.05
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.42857142857142855
+                //         },
+                //         {
+                //             "current_position": 0.5,
+                //             "min_value": 0.25,
+                //             "max_value": 0.75,
+                //             "n_steps": 10,
+                //             "step": 0.05
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.5714285714285714
+                //         },
+                //         {
+                //             "current_position": 0.5,
+                //             "min_value": 0.25,
+                //             "max_value": 0.75,
+                //             "n_steps": 10,
+                //             "step": 0.05
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.7142857142857142
+                //         },
+                //         {
+                //             "current_position": 0.5,
+                //             "min_value": 0.25,
+                //             "max_value": 0.75,
+                //             "n_steps": 10,
+                //             "step": 0.05
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.8571428571428571
+                //         },
+                //         {
+                //             "current_position": 0.5,
+                //             "min_value": 0.25,
+                //             "max_value": 0.75,
+                //             "n_steps": 10,
+                //             "step": 0.05
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 1.0
+                //         },
+                //         {
+                //             "current_position": 0.5
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.0
+                //         },
+                //         {
+                //             "current_position": 1.0
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.14285714285714285
+                //         },
+                //         {
+                //             "current_position": 1.0,
+                //             "min_value": 0.75,
+                //             "max_value": 1.0,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.2857142857142857
+                //         },
+                //         {
+                //             "current_position": 1.0,
+                //             "min_value": 0.75,
+                //             "max_value": 1.0,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.42857142857142855
+                //         },
+                //         {
+                //             "current_position": 1.0,
+                //             "min_value": 0.75,
+                //             "max_value": 1.0,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.5714285714285714
+                //         },
+                //         {
+                //             "current_position": 1.0,
+                //             "min_value": 0.75,
+                //             "max_value": 1.0,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.7142857142857142
+                //         },
+                //         {
+                //             "current_position": 1.0,
+                //             "min_value": 0.75,
+                //             "max_value": 1.0,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 0.8571428571428571
+                //         },
+                //         {
+                //             "current_position": 1.0,
+                //             "min_value": 0.75,
+                //             "max_value": 1.0,
+                //             "n_steps": 10,
+                //             "step": 0.025
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ],
+                //     [
+                //         {
+                //             "current_position": 1.0
+                //         },
+                //         {
+                //             "current_position": 1.0
+                //         },
+                //         // {
+                //         //     "current_position": 0.0
+                //         // }
+                //     ]
+                // ]
+                "space_dimensions": [
+                    {
+                        "name": "phi",
+                        "number_of_points": 3,
+                        "degree": 2
+                    },
+                    {
+                        "name": "zeta",
+                        "number_of_points": 3,
+                        "degree": 2
+                    },
+                ],
+                "spline_dimension": 2,
+                // "control_points": [[0.0,0.0],[0.5,0.0],[1.0,0.0],[0.0,0.2],[0.5,0.2],[1.0,0.2],[0.0,0.4],[0.5,0.4],[1.0,0.4]]
+            },
+            "mesh": {
+                "path": "examples/2DChannelTria.msh",
+                "dimensions": 2
+            },
+            "discrete_actions": true,
+        },
+        "spor": {
+            "steps": [
+                {
+                    "name": "nutils_solver",
+                    "stop_after_error": true,
+                    "reward_on_error": -10,
+                    "run_on_reset": true,
+                    "use_communication_interface": true,
+                    "working_directory": "./",
+                    "python_file_path": "examples/poiseuille_flow_channel_shear_thinning.py",
+                    "add_step_information": true,
+                    "additional_observations": 3
+                }
+            ],
+            "reward_aggregation": "sum"
+        },
+        "max_timesteps_in_episode": 50
+    },
+    "number_of_timesteps": 250000,
+    "number_of_episodes": 100000,
+    "save_location": "training_releso_nutils_continuous_ppo_{}/",
+    "verbosity": {
+        "environment": "DEBUG",
+        "parser": "INFO"
+    },
+    "validation": {
+        "validation_freq": 3000,
+        "validation_values": [
+            1.95,
+            0.24,
+            0.12,
+            1.1,
+            0.7
+        ],
+        "save_best_agent": true,
+        "validate_on_training_end": true,
+        "mesh_base_path_extension": "mesh/_.xns",
+        "max_timesteps_in_episode": 50,
+        "reward_on_episode_exceeds_max_timesteps": -5
+    }
+}
