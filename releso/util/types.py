@@ -14,10 +14,11 @@ if TYPE_CHECKING:
     from releso.shape_parameterization import ShapeDefinition
     from releso.spline import BSplineDefinition, NURBSDefinition
 
+from releso.util.module_import_raiser import ModuleImportRaiser
+
 try:
     from gustaf import Faces, Volumes
 except ModuleNotFoundError as err:
-    from releso.util.util_funcs import ModuleImportRaiser
     Volumes = ModuleImportRaiser("gustaf", err)
     Faces = ModuleImportRaiser("gustaf", err)
 

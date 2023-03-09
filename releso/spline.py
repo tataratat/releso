@@ -18,7 +18,7 @@ from releso.util.logger import get_parser_logger
 try:
     from gustaf import NURBS, BSpline
 except ImportError as err:
-    from releso.util.util_funcs import ModuleImportRaiser
+    from releso.util.module_import_raiser import ModuleImportRaiser
     BSpline = ModuleImportRaiser("gustaf", err)
     NURBS = ModuleImportRaiser("gustaf", err)
 
