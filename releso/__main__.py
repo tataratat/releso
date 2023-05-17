@@ -12,6 +12,7 @@ import shutil
 
 import hjson
 
+from releso.__version__ import version
 from releso.base_parser import BaseParser
 
 
@@ -83,9 +84,11 @@ def entry():
         description="Reinforcement Learning based Shape Optimization (releso) "
                     "Toolbox. This python program loads a problem "
                     "definition and trains the resulting problem. Further the "
-                    "model can be evaluated")
+                    "model can be evaluated"
+                    f"The package version is: {version}."
+    )
     parser.add_argument(
-        "-i", "--input_file", action="store", required=True,
+        "-i", "--input_file", action="store",
         help="Path to the json file storing the optimization definition.")
     parser.add_argument(
         "-v", "--validate_only", action="store_true",
@@ -96,7 +99,20 @@ def entry():
         "-j", "--json_only", dest="json_validate", action="store_true",
         help="If this is set only the json validation is performed, nothing "
         "else.")
+    parser.add_argument(
+        "--version", dest="version", action="store_true",
+        help="Returns the version of the package.")
     args = parser.parse_args()
+    if args.version:
+        print(f"releso: {version}")
+        return
+    if args.input_file is None:
+        print(
+            "The command option for the input_file is required.\n",
+            "An input file can be added via the -i option.\n",
+            "Please use the -h option to see the help."
+        )
+        return
     print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     main(args)
 
