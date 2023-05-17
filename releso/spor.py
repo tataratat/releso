@@ -21,7 +21,7 @@ import traceback
 import warnings
 from ast import literal_eval
 from timeit import default_timer as timer
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import uuid4
 
 import numpy as np
@@ -735,7 +735,7 @@ class SPORObjectInternalPythonFunction(SPORObjectPythonFunction):
             from releso.util import cnn_xns_observations
             self._run_func = cnn_xns_observations.main
             self.additional_observations = \
-                cnn_xns_observations.define_observation_space()
+                cnn_xns_observations.define_observation_definition()
         else:
             raise ValueError(
                 f"The function {self.function_name} is unknown. Please check"
