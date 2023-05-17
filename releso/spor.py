@@ -104,20 +104,24 @@ class MPIClusterMultiProcessor(MultiProcessor):
         """
         # self.get_logger().warning("Using Cluster mpi")
         # check if environment variable for mpi has the correct core number.
-        if core_count == 1:
+        if min(core_count, self.max_core_count) == 1:
             return ""
         environ_mpi_flags: List = str(
             os.environ[self.mpi_flags_variable.replace("$", '')]).split()
         local_mpi_flags = self.mpi_flags_variable
-        if len(environ_mpi_flags) != 2:
+        if len(environ_mpi_flags) == 0:
+            core_qualifier = "-n"
+            set_core_count = -1
+        elif len(environ_mpi_flags) == 2:
+            core_qualifier, set_core_count = environ_mpi_flags
+        else:
             self.get_logger().error(
                 "The environment variable for mpi cluster did not look as "
                 "expected. Please use standard MultiProcessor or revise the "
-                "code.")
+                f"code. The variable is as follow {environ_mpi_flags, len(environ_mpi_flags)}")
             raise RuntimeError(
                 "Could not complete Task. Please see log for more "
                 "information.")
-        core_qualifier, set_core_count = environ_mpi_flags
         if set_core_count != core_count:
             local_mpi_flags = \
                 f"{core_qualifier} "\
