@@ -292,7 +292,6 @@ class Environment(BaseModel):
         if self.geometry.action_based_observation:
             observation_spaces.append(
                 self.geometry.get_observation_definition())
-
         # define spor observations
         has_cnn_observations = False
         spor_obs = self.spor.get_number_of_observations()
@@ -323,7 +322,7 @@ class Environment(BaseModel):
             # single observation space necessary
             self.get_logger().info(
                 f"Observation space is NOT of type Dict and has the following"
-                " description: {observation_spaces[0][1].shape}")
+                f" description: {observation_spaces[0][1].shape}")
             # no dict space is needed so only the base observation space is
             # returned without a name
             return observation_spaces[0][1]

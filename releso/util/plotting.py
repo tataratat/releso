@@ -33,7 +33,7 @@ def get_tricontour_solution(
     arrays: List[np.ndarray] = []
     for i in range(sol_len):
         fig = plt.figure(figsize=(width, height), dpi=dpi)
-        if i == 2:
+        if i == 2:  # pressure is special
             mappable = plt.gca().tricontourf(
                 coordinates[:, 0], coordinates[:, 1],
                 np.clip(solution[:, i], limits_min[i], limits_max[i])-1,
