@@ -1,4 +1,4 @@
-"""releso/releso/version.py.
+"""releso/releso/__version__.py.
 
 Current version.
 """

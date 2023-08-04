@@ -29,10 +29,12 @@ This page covers the installation process of the framework and its prerequisites
 Prerequisites
 -------------
 To use SbSOvRL the following packages have to be installed:
- - pydantic
+ - pydantic<2
  - stable-baselines3
  - tensorboard
  - hjson
+
+ > The *pydantic* package currently needs to be on version 1.\*, we welcome anyone wanting to update *releso* to the new *pydantic* version.
 
 The packages can be installed via pip or conda with the following commands:
 

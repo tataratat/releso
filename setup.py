@@ -1,7 +1,7 @@
 """Definition of the package and installation of it."""
 import setuptools
 
-with open("releso/_version.py") as f:
+with open("releso/__version__.py") as f:
     version = eval(f.read().strip().split("=")[-1])
 
 with open("README.md", "r", encoding="utf-8") as fh:

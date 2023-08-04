@@ -392,4 +392,4 @@ class MeshIOMesh(Mesh):
         return mesh
 
 
-MeshTypes = MeshIOMesh
+MeshTypes = Union[MeshIOMesh, MixdMesh]

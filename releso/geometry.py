@@ -45,31 +45,6 @@ class Geometry(BaseModel):
     #: positions of all actions values of the previous step
     _last_actions: List[VariableLocation] = PrivateAttr()
 
-    @validator("reset_with_random_action_values")
-    def check_reset_with_random_action_values(cls, v, values):
-        """Check if reset with random action values variable is possible.
-
-        This variable can only be True if the actions are continuous.
-
-        Args:
-            v (_type_): value to be checked
-            values (_type_): already checked values
-
-        Raises:
-            ParserException:
-                Actions are discrete, can not reset with random values.
-
-        Returns:
-            _type_: value if everything it is ok
-        """
-        if values.get("discrete_actions") and v:
-            raise ParserException(
-                "Geometry", "reset_with_random_action_values",
-                "Random action values can only be set to true if continuous"
-                "actions are used."
-            )
-        return v
-
     def __init__(self, **data: Any) -> None:
         """Definition of the Geometry.
 
@@ -207,10 +182,6 @@ class Geometry(BaseModel):
     def reset(self, validation_id: Optional[int] = None) -> Any:
         """Resets the spline to its initial values."""
         if self.reset_with_random_action_values:
-            if self.discrete_actions:
-                raise RuntimeError(
-                    "Can only reset with random action for continuous actions."
-                )
             self.apply_random_action(validation_id)
         else:
             self.shape_definition.reset()

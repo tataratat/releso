@@ -74,9 +74,6 @@ def get_visual_representation(connectivity: np.ndarray, sol_len: int = 3,
     solution = read_mixd_double("ins.out", 3)
     coordinates = np.fromfile(
         "mesh/mxyz", dtype=">d").astype(np.float64).reshape(-1, int(2))
-    print(solution.max(), solution.min())
-    print(coordinates.max(), coordinates.min())
-    print(connectivity.max(), connectivity.min())
 
     # Plotting and creating resulting array
     limits_max = [1, 1, 0.2e8]
@@ -142,7 +139,6 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
         func_data["connectivity"] = (np.fromfile(
             "mesh/mien", dtype=">i") - 1).astype(np.int64).reshape(-1, 3)
 
-    print(func_data["connectivity"].max(), func_data["connectivity"].min())
     # Loading the correct data and checking if correct attributes are set.
     cnn_observation = get_visual_representation(
         connectivity=func_data["connectivity"])
@@ -151,7 +147,7 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
         "reward": 0,
         "done": False,
         "info": {},
-        "observations": [cnn_observation]
+        "observations": [cnn_observation.T]
     }
 
     return return_dict, func_data
