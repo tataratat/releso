@@ -1,4 +1,4 @@
-pydantic
+pydantic<2
 stable_baselines3
 tensorboard
 hjson
