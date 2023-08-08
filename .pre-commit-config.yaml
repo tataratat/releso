@@ -1,7 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 default_language_version:
-    python: python3.9
+    python: python3.10
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
@@ -20,10 +20,14 @@ repos:
     -   id: detect-private-key
     -   id: end-of-file-fixer
     -   id: mixed-line-ending
--   repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v1.7.0
+-   repo: https://github.com/psf/black
+    rev: 23.7.0
     hooks:
-    -   id: autopep8
+      - id: black
+# -   repo: https://github.com/pre-commit/mirrors-autopep8
+#     rev: v1.7.0
+#     hooks:
+#     -   id: autopep8
 # -   repo: https://github.com/pre-commit/mirrors-yapf
 #     rev: v0.32.0
 #     hooks:
@@ -35,7 +39,8 @@ repos:
     -   id: pydocstyle
         args:
         - --convention=google
--   repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
-    hooks:
-    -   id: isort
+        files: ^releso/
+# -   repo: https://github.com/PyCQA/isort
+#     rev: 5.10.1
+#     hooks:
+#     -   id: isort
