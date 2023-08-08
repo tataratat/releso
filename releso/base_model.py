@@ -15,7 +15,8 @@ from releso.util.util_funcs import get_path_extension
 
 
 def add_save_location_if_elem_is_o_dict(
-        possible_value: Any, save_location: pathlib.Path):
+    possible_value: Any, save_location: pathlib.Path
+):
     """Add the save_location keyword to the element of it is a dict.
 
     This function adds the save_location to all ordered dicts in possible_value
@@ -31,8 +32,9 @@ def add_save_location_if_elem_is_o_dict(
         the save_location.
         save_location (str): string that defines the location
     """
-    if isinstance(possible_value, OrderedDict) \
-            or isinstance(possible_value, Dict):
+    if isinstance(possible_value, OrderedDict) or isinstance(
+        possible_value, Dict
+    ):
         if "save_location" not in possible_value:
             possible_value["save_location"] = save_location
     elif isinstance(possible_value, list):
@@ -48,6 +50,7 @@ class BaseModel(pydantic.BaseModel):
     Base class for all ReLeSO classes which are needed for the command line
     based application of this toolbox.
     """
+
     #: Definition of the save location of the
     #: logs and validation results. Should be given as a standard string will
     #: be pre-converted into a pathlib.Path. If {} is present in the string the
@@ -63,15 +66,18 @@ class BaseModel(pydantic.BaseModel):
         if "save_location" in data:
             # This is so that the save location always gets the same
             if type(data["save_location"]) is str:
-                data["save_location"] = \
-                    BaseModel.convert_to_pathlib_add_datetime(
-                        data["save_location"])
+                data[
+                    "save_location"
+                ] = BaseModel.convert_to_pathlib_add_datetime(
+                    data["save_location"]
+                )
             # if a save_location is present in the current object definition
             #  add this save_location also to all object definition which are
             #  direct dependents
             for name, value in data.items():
                 add_save_location_if_elem_is_o_dict(
-                    value, data["save_location"])
+                    value, data["save_location"]
+                )
         super().__init__(**data)
 
     @classmethod
@@ -93,8 +99,9 @@ class BaseModel(pydantic.BaseModel):
         Returns:
             pathlib.Path: Path like object. If applicable with identifications.
         """
-        path = pathlib.Path(v.format(get_path_extension())
-                            ).expanduser().resolve()
+        path = (
+            pathlib.Path(v.format(get_path_extension())).expanduser().resolve()
+        )
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -153,5 +160,6 @@ class BaseModel(pydantic.BaseModel):
     # makes it that pydantic returns an error if unknown keywords are given
     class Config:
         """Used to add pydantic configurations."""
+
         #: Forbids superfluous keywords for object definitions.
         extra = pydantic.Extra.forbid

@@ -18,6 +18,7 @@ from pydantic.types import conint
 
 from releso.base_model import BaseModel
 from releso.exceptions import ParserException
+from releso.util.logger import get_parser_logger
 
 
 class VariableLocation(BaseModel):
@@ -26,6 +27,7 @@ class VariableLocation(BaseModel):
     Object of this class defines the position and movement possibilities for a
     single dimensions of a single control point of the spline.
     """
+
     #: coordinate of the current position of the current control point in the
     #: dimension
     current_position: float
@@ -50,11 +52,15 @@ class VariableLocation(BaseModel):
     def __init__(__pydantic_self__, **data: Any) -> None:
         """Constructor for VariableLocation."""
         super().__init__(**data)
+        __pydantic_self__._original_position = (
+            __pydantic_self__.current_position
+        )
 
     @validator("min_value", "max_value", always=True)
     @classmethod
     def set_variable_to_current_position_if_not_given(
-            cls, v, values, field) -> float:
+        cls, v, values, field
+    ) -> float:
         """Validator for min_value and max_value.
 
         Validation of the min and max values for the current VariableLocation.
@@ -77,37 +83,58 @@ class VariableLocation(BaseModel):
                 return values["current_position"]
             else:
                 raise ParserException(
-                    "VariableLocation", field,
-                    "Please correctly define the current position.")
+                    "VariableLocation",
+                    field,
+                    "Please correctly define the current position.",
+                )
         return v
 
     @validator("max_value", always=True)
     @classmethod
-    def max_value_is_greater_than_min_value(cls, v, values, field) -> float:
-        """Validates that the max value is greater or equal to the min value.
+    def max_value_is_greater_than_current_value(
+        cls, v, values, field
+    ) -> float:
+        """Validates that the max value is greater-equal to the current value.
 
         Args:
             v ([type]): Value to validate.
             values ([type]): Already validated values.
             field ([type]): Name of the field that is currently validated.
 
-        Raises:
-            ParserException: Parser error if min_value is not already validated
-            and if min value greater if max value.
+        Returns:
+            float: value of the validated value.
+        """
+        if v < values["current_position"]:
+            raise ParserException(
+                "VariableLocation",
+                field,
+                f"The current_value {values['current_position']} must be smaller "
+                f"or equal to the max_value {v}.",
+            )
+        return v
+
+    @validator("min_value", always=True)
+    @classmethod
+    def min_value_is_smaller_than_current_value(
+        cls, v, values, field
+    ) -> float:
+        """Validates that the min value is smaller-equal to the current value.
+
+        Args:
+            v ([type]): Value to validate.
+            values ([type]): Already validated values.
+            field ([type]): Name of the field that is currently validated.
 
         Returns:
             float: value of the validated value.
         """
-        if "min_value" not in values.keys():
+        if v > values["current_position"]:
             raise ParserException(
-                "VariableLocation", field, "Please define the min_value.")
-        if v is None:
-            raise RuntimeError("This should not have happened.")
-        if v < values["min_value"]:
-            raise ParserException(
-                "VariableLocation", field,
-                f"The min_value {values['min_value']} must be smaller or equal"
-                f" to the max_value {v}.")
+                "VariableLocation",
+                field,
+                f"The current_value {values['current_position']} must be bigger "
+                f"or equal to the max_value {v}.",
+            )
         return v
 
     @root_validator
@@ -126,16 +153,26 @@ class VariableLocation(BaseModel):
             Dict[str, Any]: Validated variables but if steps was not given
             before now it has a value.
         """
-        step, n_steps, min_value, max_value = values.get("step"), values.get(
-            "n_steps"), values.get("min_value"), values.get("max_value")
+        step, n_steps, min_value, max_value = (
+            values.get("step"),
+            values.get("n_steps"),
+            values.get("min_value"),
+            values.get("max_value"),
+        )
         value_range = max_value - min_value
         if step is not None:
+            if step > value_range:
+                get_parser_logger().warning(
+                    f"The defined step {step} is greater than the interval for"
+                    f" this variable {value_range}. This is not intended "
+                    "behavior."
+                )
             return values  # if step length is defined ignore n_steps
         elif n_steps is None:
             # if discrete but neither step nor n_steps is defined a default 10
             # steps are assumed.
             n_steps = 10
-        step = value_range/n_steps
+        step = value_range / n_steps
         values["step"] = step
         return values
 
@@ -151,7 +188,8 @@ class VariableLocation(BaseModel):
         """
         if self._is_action is None:
             self._is_action = (self.max_value > self.current_position) or (
-                self.min_value < self.current_position)
+                self.min_value < self.current_position
+            )
         return self._is_action
 
     def apply_discrete_action(self, increasing: bool) -> float:
@@ -167,14 +205,13 @@ class VariableLocation(BaseModel):
         Returns:
             float: Value of the position that the current position is now at.
         """
-        if self._original_position is None:
-            self._original_position = self.current_position
         step = self.step if increasing else -self.step
         self.current_position = np.clip(
-            self.current_position + step, self.min_value, self.max_value)
+            self.current_position + step, self.min_value, self.max_value
+        )
         return self.current_position
 
-    def apply_continuos_action(self, value: float) -> float:
+    def apply_continuous_action(self, value: float) -> float:
         """Apply a continuous action the variable.
 
         Apply the zero-mean normalized value as the new current position.
@@ -187,12 +224,11 @@ class VariableLocation(BaseModel):
         Returns:
             float: New clipped value.
         """
-        if self._original_position is None:
-            self._original_position = self.current_position
         delta = self.max_value - self.min_value
-        descaled_value = ((value+1.)/2.) * delta
+        descaled_value = ((value + 1.0) / 2.0) * delta
         self.current_position = np.clip(
-            descaled_value+self.min_value, self.min_value, self.max_value)
+            descaled_value + self.min_value, self.min_value, self.max_value
+        )
         return self.current_position
 
     def reset(self) -> None:
@@ -212,18 +248,19 @@ class ShapeDefinition(BaseModel):
     def get_number_of_points(self) -> int:
         """Returns the number of points in the Cube.
 
-        Number of control points multiplied bz the number of dimensions for
+        Number of control points multiplied by the number of dimensions for
         each cp.
 
         Returns:
             int: number of points in the spline
         """
-        return int(len(self.control_points)*len(self.control_points[0]))
+        return int(len(self.control_points) * len(self.control_points[0]))
 
-    @validator("control_points", each_item=True)
+    @validator("control_points", each_item=True, pre=True)
     @classmethod
     def convert_all_control_point_locations_to_variable_locations(
-            cls, v, values):
+        cls, v, values
+    ):
         """Validator control_points.
 
         Converts all control points values into VariableLocations if the value
@@ -238,16 +275,22 @@ class ShapeDefinition(BaseModel):
         """
         new_list = []
         for element in v:
-            new_list.append(
-                VariableLocation(
-                    current_position=element,
-                    save_location=values["save_location"]
-                ) if type(element) is float else element)
-            if not 0. <= new_list[-1].current_position <= 1.:
+            if type(element) is float:
+                new_list.append(
+                    VariableLocation(
+                        current_position=element,
+                        save_location=values["save_location"],
+                    )
+                )
+            elif type(element) is VariableLocation:
+                new_list.append(element)
+            else:
                 raise ParserException(
-                    "SplineDefinition", "control_point_variables",
-                    "The control_point_variables need to be inside an unit "
-                    "hypercube. Found a values outside this unit hypercube.")
+                    "SplineDefinition",
+                    "control_points",
+                    "The control_points need to be either a float or a "
+                    f"VariableLocation. Is of type {type(element)}.",
+                )
         return new_list
 
     def get_control_points(self) -> List[List[float]]:
@@ -258,7 +301,8 @@ class ShapeDefinition(BaseModel):
         """
         return [
             [control_point.current_position for control_point in sub_list]
-            for sub_list in self.control_points]
+            for sub_list in self.control_points
+        ]
 
     def get_actions(self) -> List[VariableLocation]:
         """Returns the action defined.
@@ -270,10 +314,14 @@ class ShapeDefinition(BaseModel):
             List[VariableLocation]: See above
         """
         self.get_logger().debug(
-            "Collecting all actions form shape parameterization.")
+            "Collecting all actions from shape parameterization."
+        )
         return [
-            variable for sub_dim in self.control_points
-            for variable in sub_dim if variable.is_action()]
+            variable
+            for sub_dim in self.control_points
+            for variable in sub_dim
+            if variable.is_action()
+        ]
 
     def get_shape(self) -> Any:
         """Generates the current shape.
@@ -293,8 +341,12 @@ class ShapeDefinition(BaseModel):
                 variable.reset()
 
     def draw_action_space(
-            self, save_location: Optional[str] = None, no_axis: bool = False,
-            fig_size: List[float] = [6, 6], dpi: int = 400):
+        self,
+        save_location: Optional[str] = None,
+        no_axis: bool = False,
+        fig_size: List[float] = [6, 6],
+        dpi: int = 400,
+    ):  # pragma: no cover
         """Draw the action space of the defined shape as a matplotlib figure.
 
         Needs to be reimplemented in subclasses where non control point
@@ -318,25 +370,31 @@ class ShapeDefinition(BaseModel):
         """
         import matplotlib.pyplot as plt
         from matplotlib.patches import Polygon
+
         control_points = self.control_points
         if len(self.control_points[0]) > 2:
             raise RuntimeError(
                 "Could not draw the splines action space. Only a 2D parametric"
-                " space is currently available.")
+                " space is currently available."
+            )
         elif len(self.control_points[0]) == 1:
             for idx, cp in enumerate(control_points):
                 cp.insert(
                     0,
                     VariableLocation(
                         current_location=float(idx),
-                        save_location=self.save_location
-                    )
+                        save_location=self.save_location,
+                    ),
                 )
-        phi = np.linspace(0, 2*np.pi, len(control_points))
-        rgb_cycle = np.vstack((            # Three sinusoids
-            .5*(1.+np.cos(phi)),  # scaled to [0,1]
-            .5*(1.+np.cos(phi+2*np.pi/3)),  # 120° phase shifted.
-            .5*(1.+np.cos(phi-2*np.pi/3)))).T  # Shape = (60,3)
+        phi = np.linspace(0, 2 * np.pi, len(control_points))
+        rgb_cycle = np.vstack(
+            (  # Three sinusoids
+                0.5 * (1.0 + np.cos(phi)),  # scaled to [0,1]
+                0.5
+                * (1.0 + np.cos(phi + 2 * np.pi / 3)),  # 120° phase shifted.
+                0.5 * (1.0 + np.cos(phi - 2 * np.pi / 3)),
+            )
+        ).T  # Shape = (60,3)
         fig, ax = plt.subplots(figsize=fig_size, dpi=dpi)
 
         dots = [[], []]
@@ -354,15 +412,23 @@ class ShapeDefinition(BaseModel):
             boundary = []
             for i, j in zip([0, 1, 1, 0], [0, 0, 1, 1]):
                 end_pos = np.array(
-                    [spanning_elements[0][i], spanning_elements[1][j]])
+                    [spanning_elements[0][i], spanning_elements[1][j]]
+                )
                 if not np.isclose(cur_pos, end_pos).all():  # draw arrow
-                    difference = end_pos-cur_pos
-                    ax.arrow(cur_pos[0], cur_pos[1], difference[0] *
-                             0.9, difference[1]*0.9, width=0.005, color=color)
+                    difference = end_pos - cur_pos
+                    ax.arrow(
+                        cur_pos[0],
+                        cur_pos[1],
+                        difference[0] * 0.9,
+                        difference[1] * 0.9,
+                        width=0.005,
+                        color=color,
+                    )
                 boundary.append(end_pos)
             if not no_boundary:
-                pol = Polygon(boundary, facecolor=color,
-                              linewidth=1, alpha=0.2)
+                pol = Polygon(
+                    boundary, facecolor=color, linewidth=1, alpha=0.2
+                )
                 ax.add_patch(pol)
         ax.scatter(dots[0], dots[1], c=rgb_cycle, marker="o", s=50, zorder=3)
         if no_axis:
