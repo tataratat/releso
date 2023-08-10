@@ -5,10 +5,6 @@ import pytest
 from releso.shape_parameterization import ShapeDefinition, VariableLocation
 from releso.util.logger import VerbosityLevel, get_parser_logger
 
-base_dict = {
-    "save_location": "test",
-}
-
 
 @pytest.mark.parametrize(
     "current_position, error",
@@ -22,20 +18,20 @@ base_dict = {
     ],
 )
 def test_variable_location_instantiates_only_current_position(
-    current_position, error
+    current_position, error, dir_save_location
 ):
     """Test that VariableLocation instantiates"""
     # First check the error state.
+    cal_dict = {
+        "current_position": current_position,
+        "save_location": dir_save_location,
+    }
     if error:
         with pytest.raises(pydantic.ValidationError):
-            variable_location = VariableLocation(
-                **{"current_position": current_position, **base_dict}
-            )
+            variable_location = VariableLocation(**cal_dict)
         return
     # check default initiation
-    variable_location = VariableLocation(
-        **{"current_position": current_position, **base_dict}
-    )
+    variable_location = VariableLocation(**cal_dict)
     assert variable_location is not None
     assert variable_location.current_position == current_position
     assert variable_location.is_action() is False
@@ -57,30 +53,22 @@ def test_variable_location_instantiates_only_current_position(
     ],
 )
 def test_variable_location_min_max_location(
-    current_position, min_value, max_value, error
+    current_position, min_value, max_value, error, dir_save_location
 ):
     """Test for correct setting of the min and max values."""
     # check if error is emitted
+    cal_dict = {
+        "current_position": current_position,
+        "min_value": min_value,
+        "max_value": max_value,
+        "save_location": dir_save_location,
+    }
     if error:
         with pytest.raises(pydantic.ValidationError) as exc_info:
-            variable_location = VariableLocation(
-                **{
-                    "current_position": current_position,
-                    "min_value": min_value,
-                    "max_value": max_value,
-                    **base_dict,
-                }
-            )
+            variable_location = VariableLocation(**cal_dict)
         assert "or equal to the" in str(exc_info.value)
         return
-    variable_location = VariableLocation(
-        **{
-            "current_position": current_position,
-            "min_value": min_value,
-            "max_value": max_value,
-            **base_dict,
-        }
-    )
+    variable_location = VariableLocation(**cal_dict)
     if min_value is None:
         assert current_position == variable_location.min_value
     else:
@@ -101,14 +89,14 @@ def test_variable_location_min_max_location(
     ],
 )
 def test_variable_location_is_action(
-    current_position, min_value, max_value, is_action
+    current_position, min_value, max_value, is_action, dir_save_location
 ):
     variable_location = VariableLocation(
         **{
             "current_position": current_position,
             "min_value": min_value,
             "max_value": max_value,
-            **base_dict,
+            "save_location": dir_save_location,
         }
     )
     assert variable_location.is_action() is is_action
@@ -125,34 +113,31 @@ def test_variable_location_is_action(
     ],
 )
 def test_variable_location_step_length(
-    current_position, min_value, max_value, n_steps, step, expected_step, error
+    current_position,
+    min_value,
+    max_value,
+    n_steps,
+    step,
+    expected_step,
+    error,
+    dir_save_location,
 ):
     """Test for correct setting of the n_steps and step values."""
     # check if error is emitted
+    cal_dict = {
+        "current_position": current_position,
+        "min_value": min_value,
+        "max_value": max_value,
+        "n_steps": n_steps,
+        "step": step,
+        "save_location": dir_save_location,
+    }
     if error:
         with pytest.raises(pydantic.ValidationError) as exc_info:
-            variable_location = VariableLocation(
-                **{
-                    "current_position": current_position,
-                    "min_value": min_value,
-                    "max_value": max_value,
-                    "n_steps": n_steps,
-                    "step": step,
-                    **base_dict,
-                }
-            )
+            variable_location = VariableLocation(**cal_dict)
         assert "or equal to the" in str(exc_info.value)
         return
-    variable_location = VariableLocation(
-        **{
-            "current_position": current_position,
-            "min_value": min_value,
-            "max_value": max_value,
-            "n_steps": n_steps,
-            "step": step,
-            **base_dict,
-        }
-    )
+    variable_location = VariableLocation(**cal_dict)
     assert np.isclose(expected_step, variable_location.step)
     if n_steps is None and step is None:
         assert n_steps == variable_location.n_steps
@@ -168,30 +153,27 @@ def test_variable_location_step_length(
     ],
 )
 def test_variable_location_step_length_warning(
-    current_position, min_value, max_value, step, warning, caplog
+    current_position,
+    min_value,
+    max_value,
+    step,
+    warning,
+    caplog,
+    dir_save_location,
 ):
+    cal_dict = {
+        "current_position": current_position,
+        "min_value": min_value,
+        "max_value": max_value,
+        "step": step,
+        "save_location": dir_save_location,
+    }
     if warning:
         with caplog.at_level(VerbosityLevel.WARNING, logger="ReLeSO_parser"):
-            variable_location = VariableLocation(
-                **{
-                    "current_position": current_position,
-                    "min_value": min_value,
-                    "max_value": max_value,
-                    "step": step,
-                    **base_dict,
-                }
-            )
+            variable_location = VariableLocation(**cal_dict)
             assert "is greater than the interval for" in caplog.text
     else:
-        variable_location = VariableLocation(
-            **{
-                "current_position": current_position,
-                "min_value": min_value,
-                "max_value": max_value,
-                "step": step,
-                **base_dict,
-            }
-        )
+        variable_location = VariableLocation(**cal_dict)
 
 
 @pytest.mark.parametrize(
@@ -290,6 +272,7 @@ def test_variable_location_discrete_action(
     step,
     iterations,
     expect_position,
+    dir_save_location,
 ):
     variable_location = VariableLocation(
         **{
@@ -298,7 +281,7 @@ def test_variable_location_discrete_action(
             "max_value": max_value,
             "n_steps": n_steps,
             "step": step,
-            **base_dict,
+            "save_location": dir_save_location,
         }
     )
     last_current_position = current_position
@@ -360,6 +343,7 @@ def test_variable_location_continuous_action(
     step,
     iterations,
     expect_position,
+    dir_save_location,
 ):
     variable_location = VariableLocation(
         **{
@@ -368,7 +352,7 @@ def test_variable_location_continuous_action(
             "max_value": max_value,
             "n_steps": n_steps,
             "step": step,
-            **base_dict,
+            "save_location": dir_save_location,
         }
     )
     last_current_position = current_position
@@ -403,29 +387,32 @@ def test_variable_location_continuous_action(
         ([[1.0]], 1, False),
         ([[(1.0, 2.0)]], 1, True),
         (
-            [[VariableLocation(current_position=1, save_location="test")]],
+            [[{"current_position": 1, "save_location": "test"}]],
             1,
             False,
         ),
     ],
 )
-def test_shapeDefinition_initiation(control_points, n_elements, error):
+def test_shapeDefinition_initiation(
+    control_points, n_elements, error, dir_save_location
+):
+    for idx in range(len(control_points)):
+        for idy in range(len(control_points[idx])):
+            if isinstance(control_points[idx][idy], dict):
+                control_points[idx][idy]["save_location"] = dir_save_location
+                control_points[idx][idy] = VariableLocation(
+                    **control_points[idx][idy]
+                )
+    cal_dict = {
+        "control_points": control_points,
+        "save_location": dir_save_location,
+    }
     if error:
         with pytest.raises(pydantic.ValidationError) as err:
-            shape = ShapeDefinition(
-                **{
-                    "control_points": control_points,
-                    "save_location": base_dict["save_location"],
-                }
-            )
+            shape = ShapeDefinition(**cal_dict)
             assert "either a float or a VariableLocation" in str(err.value)
         return
-    shape = ShapeDefinition(
-        **{
-            "control_points": control_points,
-            "save_location": base_dict["save_location"],
-        }
-    )
+    shape = ShapeDefinition(**cal_dict)
     all_variables_variableLocation = True
     for element in shape.control_points:
         for item in element:
@@ -464,23 +451,31 @@ def test_shapeDefinition_initiation(control_points, n_elements, error):
         (
             [
                 [
-                    VariableLocation(
-                        current_position=0.1, min_value=0, save_location="test"
-                    ),
-                    VariableLocation(
-                        current_position=0.2, min_value=0, save_location="test"
-                    ),
-                    VariableLocation(
-                        current_position=0.3, min_value=0, save_location="test"
-                    ),
-                    VariableLocation(
-                        current_position=0.4, min_value=0, save_location="test"
-                    ),
-                    VariableLocation(
-                        current_position=0.5,
-                        min_value=-1,
-                        save_location="test",
-                    ),
+                    {
+                        "current_position": 0.1,
+                        "min_value": 0,
+                        "save_location": "test",
+                    },
+                    {
+                        "current_position": 0.2,
+                        "min_value": 0,
+                        "save_location": "test",
+                    },
+                    {
+                        "current_position": 0.3,
+                        "min_value": 0,
+                        "save_location": "test",
+                    },
+                    {
+                        "current_position": 0.4,
+                        "min_value": 0,
+                        "save_location": "test",
+                    },
+                    {
+                        "current_position": 0.5,
+                        "min_value": -1,
+                        "save_location": "test",
+                    },
                 ]
             ],
             5,
@@ -488,34 +483,43 @@ def test_shapeDefinition_initiation(control_points, n_elements, error):
         (
             [
                 [
-                    VariableLocation(
-                        current_position=0.1, save_location="test"
-                    ),
-                    VariableLocation(
-                        current_position=0.2, save_location="test"
-                    ),
-                    VariableLocation(
-                        current_position=0.3, min_value=0, save_location="test"
-                    ),
-                    VariableLocation(
-                        current_position=0.4, min_value=0, save_location="test"
-                    ),
-                    VariableLocation(
-                        current_position=0.5,
-                        min_value=-1,
-                        save_location="test",
-                    ),
+                    {"current_position": 0.1, "save_location": "test"},
+                    {"current_position": 0.2, "save_location": "test"},
+                    {
+                        "current_position": 0.3,
+                        "min_value": 0,
+                        "save_location": "test",
+                    },
+                    {
+                        "current_position": 0.4,
+                        "min_value": 0,
+                        "save_location": "test",
+                    },
+                    {
+                        "current_position": 0.5,
+                        "min_value": -1,
+                        "save_location": "test",
+                    },
                 ]
             ],
             3,
         ),
     ],
 )
-def test_shapeDefinition_get_actions(control_points, n_actions):
+def test_shapeDefinition_get_actions(
+    control_points, n_actions, dir_save_location
+):
+    new_control_points = []
+    for points in control_points:
+        new_cps = []
+        for point in points:
+            point["save_location"] = dir_save_location
+            new_cps.append(VariableLocation(**point))
+        new_control_points.append(new_cps)
     shape = ShapeDefinition(
         **{
-            "control_points": control_points,
-            "save_location": base_dict["save_location"],
+            "control_points": new_control_points,
+            "save_location": dir_save_location,
         }
     )
     actions = shape.get_actions()

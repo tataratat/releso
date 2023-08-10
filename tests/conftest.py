@@ -28,12 +28,15 @@ def hide_available_import(monkeypatch):
 
 
 @pytest.fixture
-def dir_save_location():
-    dir_save_location = str(
-        (
-            pathlib.Path(__file__).parent / "test_save_location_please_delete"
-        ).resolve()
-    )
-    yield dir_save_location
-    if os.path.isdir(dir_save_location):
-        os.rmdir(dir_save_location)
+def dir_save_location_path():
+    dir_save_location = (
+        pathlib.Path(__file__).parent / "test_save_location_please_delete"
+    ).resolve()
+    return dir_save_location
+
+
+@pytest.fixture
+def dir_save_location(dir_save_location_path):
+    yield dir_save_location_path
+    if os.path.isdir(dir_save_location_path):
+        os.rmdir(dir_save_location_path)
