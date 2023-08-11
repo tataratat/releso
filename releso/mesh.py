@@ -15,23 +15,25 @@ from releso.util.types import GustafMeshTypes
 
 try:
     from gustaf.io import meshio, mixd
-except ImportError as err:
+except ImportError as err:  # pragma: no cover
     from releso.util.module_import_raiser import ModuleImportRaiser
+
     mixd = ModuleImportRaiser("gustaf", err)
 
 
 class MeshExporter(BaseModel):
     """Class which defines in which format and where the mesh is exported."""
+
     #: format to which the mesh should be exported to
     format: Literal["mixd"] = "mixd"
     #: path to where the mesh should be exported to
-    export_path: str
+    export_path: Union[str, pathlib.Path]
 
     #: internal variable if the export path was changed from a different value.
     #: This is the value is returned when the export path is queried.
     _export_path_changed: Optional[str] = PrivateAttr(default=None)
 
-    @root_validator
+    @root_validator(pre=True)
     @classmethod
     def validate_path_has_correct_ending(cls, values) -> pathlib.Path:
         """Validator export_path.
@@ -49,20 +51,22 @@ class MeshExporter(BaseModel):
             pathlib.Path:
                 Path to where the mesh should per default be exported to.
         """
-        path = pathlib.Path(values.get('export_path')).expanduser().resolve()
+        path = pathlib.Path(values.get("export_path")).expanduser().resolve()
         format = values.get("format")
-
         if format == "mixd":
-            if path.suffix == '':
+            if path.suffix == "":
                 path = path.with_name("_.xns")
             elif not path.suffix == ".xns":
                 raise ParserException(
-                    "MeshExporter", "export_path",
-                    "The format and the path suffix do not math. The format"
-                    f" is defined as {format} but the suffix is {path.suffix}")
+                    "MeshExporter",
+                    "export_path",
+                    "The format and the path suffix do not match. The format"
+                    f" is defined as {format} but the suffix is {path.suffix}",
+                )
         else:
             raise ParserException(
-                "MeshExporter", "format", f"{format=} is not supported.")
+                "MeshExporter", "format", f"{format=} is not supported."
+            )
         values["export_path"] = path
         return values
 
@@ -85,11 +89,13 @@ class MeshExporter(BaseModel):
             environment_id (str): Environment ID
         """
         self._export_path_changed = pathlib.Path(
-            str(self.export_path).format(environment_id))
+            str(self.export_path).format(environment_id)
+        )
         self._export_path_changed.parent.mkdir(parents=True, exist_ok=True)
         self.get_logger().debug(
             f"Adapted mesh export path to the following value "
-            f"{self._export_path_changed}.")
+            f"{self._export_path_changed}."
+        )
 
     def export_mesh(self, mesh: GustafMeshTypes, space_time: bool = False):
         """Exports the mesh.
@@ -109,8 +115,9 @@ class MeshExporter(BaseModel):
 
 class Mesh(BaseModel):
     """Abstract class used to read in the mesh file and load it."""
+
     #: path to the mesh file (might be not used in case of mixd )
-    path: Optional[str] = None
+    path: Optional[Union[str, pathlib.Path]] = None
     #: Path to the default export location of the mesh during environment
     #: operations. (So that the solver can use it.)
     export: Optional[MeshExporter]
@@ -137,9 +144,10 @@ class Mesh(BaseModel):
         Args:
             environment_id (str): Environment ID
         """
-        self.export.adapt_export_path(environment_id=environment_id)
+        if self.export:
+            self.export.adapt_export_path(environment_id=environment_id)
 
-    def get_export_path(self) -> pathlib.Path:
+    def get_export_path(self) -> Optional[pathlib.Path]:
         """Direct return of object variable.
 
         Returns:
@@ -147,26 +155,42 @@ class Mesh(BaseModel):
                 Path to the default export location of the mesh during
                 environment operations. (So that the solver can use it.)
         """
-        return self.export.get_export_path()
+        if self.export:
+            return self.export.get_export_path()
+
+        self.get_logger().warning(
+            (
+                "No mesh exporter definition. Please define one if you want "
+                "export functionality."
+            ),
+        )
+        return None
 
 
 class MixdMesh(Mesh):
     """Class used to read in the correct mixd mesh file and load it."""
+
     #: Please use either the path variable xor the mxyz variable, since if
     #: used both the used mxyz path might not be the one you think.
     mxyz_path: Optional[FilePath] = Field(
-        default=None, description="Please use either the path variable xor the"
+        default=None,
+        description="Please use either the path variable xor the"
         " mxyz variable, since if used both the used mxyz path might not be "
-        "the one you think.")
+        "the one you think.",
+    )
     #: Please use either the path variable xor the mien variable, since if
     #: used both the used mien path might not be the one you think.
     mien_path: Optional[FilePath] = Field(
-        default=None, description="Please use either the path variable xor the"
+        default=None,
+        description="Please use either the path variable xor the"
         " mien variable, since if used both the used mien path might not be "
-        "the one you think.")
+        "the one you think.",
+    )
     hypercube: bool = Field(
         description="If True Mesh is made of hypercubes. If False Mesh is made"
-        " of simplexes (triangles).", default=True)
+        " of simplexes (triangles).",
+        default=True,
+    )
     #: Number of dimensions of the mesh.
     dimensions: conint(ge=1)
 
@@ -183,12 +207,13 @@ class MixdMesh(Mesh):
         """
         self.get_logger().debug(
             f"Loading volume mesh with mxyz file ({self.mxyz_path}) and "
-            f"mien file ({self.mien_path}) ...")
+            f"mien file ({self.mien_path}) ..."
+        )
         mesh = mixd.load(
             simplex=not self.hypercube,
             volume=True if self.dimensions == 3 else False,
             mxyz=self.mxyz_path,
-            mien=self.mien_path
+            mien=self.mien_path,
         )
         self.get_logger().info("Done loading mesh.")
         return mesh
@@ -218,14 +243,20 @@ class MixdMesh(Mesh):
                 mxyz paths
         """
         get_parser_logger().debug("Validating mesh file:")
-        if "mxyz_path" in values and values["mxyz_path"] and \
-                "mien_path" in values and values["mien_path"]:
+        if (
+            "mxyz_path" in values
+            and values["mxyz_path"]
+            and "mien_path" in values
+            and values["mien_path"]
+        ):
             get_parser_logger().info(
-                "Mesh files are defined by mxyz_path and mien_path.")
+                "Mesh files are defined by mxyz_path and mien_path."
+            )
             return values
         elif "path" in values.keys() and values["path"]:
             get_parser_logger().debug(
-                "Trying to find mxyz_path and mien_path from path variable.")
+                "Trying to find mxyz_path and mien_path from path variable."
+            )
             path = pathlib.Path(values["path"]).expanduser().resolve()
             mxyz_path = None
             mien_path = None
@@ -233,91 +264,114 @@ class MixdMesh(Mesh):
                 if path.is_dir():
                     get_parser_logger().debug(
                         f"Given path is a directory, trying to find mxyz and "
-                        f"mien files as files {path}/mxyz and {path}/mien.")
-                    mxyz_path = (path / "mxyz.space")
-                    mien_path = (path / "mien")
-                    if mxyz_path.exists() and mxyz_path.is_file() and \
-                            mien_path.exists() and mien_path.is_file():
+                        f"mien files as files {path}/mxyz and {path}/mien."
+                    )
+                    mxyz_path = path / "mxyz.space"
+                    mien_path = path / "mien"
+                    if (
+                        mxyz_path.exists()
+                        and mxyz_path.is_file()
+                        and mien_path.exists()
+                        and mien_path.is_file()
+                    ):
                         get_parser_logger().debug(
                             "Mesh files located with filepath given as the "
-                            "root folder.")
+                            "root folder."
+                        )
                 else:  # path point to a files
                     get_parser_logger().debug(
                         "Given path is a file, trying to find mxyz and mien "
-                        "files.")
+                        "files."
+                    )
                     if path.suffix == ".mxyz":
                         mien_path = path.with_suffix(".mien")
                         mxyz_path = path
                         if mien_path.exists() and mien_path.is_file():
                             get_parser_logger().debug(
                                 "Mesh files located with filepath given as "
-                                ".mxyz file.")
+                                ".mxyz file."
+                            )
                         else:
                             mien_path = None
                             get_parser_logger().warning(
                                 "Could not locate corresponding mien file with"
-                                " path given as .mxyz file.")
+                                " path given as .mxyz file."
+                            )
                     elif path.suffix == ".mien":
                         mxyz_path = path.with_suffix(".mxyz")
                         mien_path = path
                         if mxyz_path.exists() and mxyz_path.is_file():
                             get_parser_logger().debug(
                                 "Mesh files located with filepath given as"
-                                " .mien file.")
+                                " .mien file."
+                            )
                         else:
                             mxyz_path = None
                             get_parser_logger().warning(
                                 "Could not locate corresponding mxyz file with"
-                                " path given as .mien file.")
+                                " path given as .mien file."
+                            )
                     elif path.name == "mxyz":
                         mxyz_path = path
                         mien_path = path.with_name("mien")
                         if mien_path.exists() and mien_path.is_file():
                             get_parser_logger().debug(
                                 "Mesh files located with filepath given as "
-                                "mxyz file.")
+                                "mxyz file."
+                            )
                         else:
                             mien_path = None
                             get_parser_logger().warning(
                                 "Could not locate corresponding mien file with"
-                                " path given as mxyz file.")
+                                " path given as mxyz file."
+                            )
                     elif path.name == "mien":
                         mxyz_path = path.with_name("mxyz")
                         mien_path = path
                         if mxyz_path.exists() and mxyz_path.is_file():
                             get_parser_logger().debug(
                                 "Mesh files located with filepath given as "
-                                "mien file.")
+                                "mien file."
+                            )
                         else:
                             mxyz_path = None
                             get_parser_logger().warning(
                                 "Could not locate corresponding mxyz file with"
-                                " path given as mien file.")
+                                " path given as mien file."
+                            )
                     else:
                         get_parser_logger().warning(
                             f"Mesh file given as existing file {path} but "
-                            "could not find mxyz nor mien file.")
+                            "could not find mxyz nor mien file."
+                        )
                         raise ParserException(
-                            "Mesh", "path", "Could not locate mien nor mxyz"
-                            " file path.")
+                            "Mesh",
+                            "path",
+                            "Could not locate mien nor mxyz" " file path.",
+                        )
                 # If mien or mxyz file path are not complete throw error.
                 if mxyz_path is None:
                     raise ParserException(
-                        "Mesh", "path", "Could not locate mxyz file path.")
+                        "Mesh", "path", "Could not locate mxyz file path."
+                    )
                 if mien_path is None:
                     raise ParserException(
-                        "Mesh", "path", "Could not locate mien file path.")
+                        "Mesh", "path", "Could not locate mien file path."
+                    )
             if mien_path:
                 values["mien_path"] = mien_path
                 values["mxyz_path"] = mxyz_path
                 values["path"] = mxyz_path.parent
             else:
                 ParserException(
-                    "MixdMesh", "path", "Could not locate mien and mxyz path")
+                    "MixdMesh", "path", "Could not locate mien and mxyz path"
+                )
             return values
         raise ParserException(
-            "Mesh", "[mien_|mxyz_|]path", "Could not locate the correct "
-            "mien/mxyz paths.")
+            "Mesh",
+            "[mien_|mxyz_|]path",
+            f"Could not locate the correct mien/mxyz paths.",
+        )
 
 
 class MeshIOMesh(Mesh):
@@ -328,6 +382,7 @@ class MeshIOMesh(Mesh):
     for additional files types already supported by meshio. This will be
     updated.
     """
+
     @validator("path")
     def check_if_extension_is_supported_by_gustaf(cls, value) -> pathlib.Path:
         """Checks if the path given exists and the mesh type is supported.
@@ -341,19 +396,20 @@ class MeshIOMesh(Mesh):
         if value:
             path = pathlib.Path(value).resolve().expanduser()
             if path.exists():
-                if path.suffix in [".msh", ".msh2"]:
-                    path.with_suffix(".msh")
-                else:
+                if path.suffix not in [".msh"]:
                     raise ParserException(
-                        "MeshIOMesh", "path", "Mesh type not supported.")
+                        "MeshIOMesh", "path", "Mesh type not supported."
+                    )
             else:
                 raise ParserException(
-                    "MeshIOMesh", "path", "Could not locate the mesh file.")
+                    "MeshIOMesh", "path", "Could not locate the mesh file."
+                )
 
         else:
             raise ParserException(
-                "MeshIOMesh", "path",
-                "For MeshIO base mesh import a path must be provided."
+                "MeshIOMesh",
+                "path",
+                "For MeshIO base mesh import a path must be provided.",
             )
         return path
 
@@ -368,8 +424,7 @@ class MeshIOMesh(Mesh):
         Returns:
             gustaf.Mesh: Mesh in gustaf library format.
         """
-        self.get_logger().debug(
-            f"Loading mesh from path ({self.path}).")
+        self.get_logger().debug(f"Loading mesh from path ({self.path}).")
         mesh = meshio.load(fname=self.path)
         self.get_logger().info("Done loading mesh.")
         return self.delete_dimension_if_possible(mesh)
@@ -386,7 +441,8 @@ class MeshIOMesh(Mesh):
             for idx, (lower, upper) in enumerate(zip(*bounds)):
                 if lower == upper:
                     self.get_logger().info(
-                        f"Found empty dimension {idx}. Will remove it now.")
+                        f"Found empty dimension {idx}. Will remove it now."
+                    )
                     keep_dims.pop(idx)
                     mesh.vertices = mesh.vertices[:, keep_dims]
         return mesh
