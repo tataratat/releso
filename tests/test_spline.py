@@ -15,7 +15,15 @@ from releso.util.logger import VerbosityLevel
 
 
 @pytest.mark.parametrize(
-    "n_points, degree, knot_vector, expected_knot_vector, error, msg, verbosity_level",
+    (
+        "n_points",
+        "degree",
+        "knot_vector",
+        "expected_knot_vector",
+        "error",
+        "msg",
+        "verbosity_level",
+    ),
     [
         (
             2,
@@ -308,7 +316,14 @@ def test_bspline_definition_initiate(
 
 
 @pytest.mark.parametrize(
-    "space_dimensions, control_points, weights, wanted_weights, error, convert",
+    (
+        "space_dimensions",
+        "control_points",
+        "weights",
+        "wanted_weights",
+        "error",
+        "convert",
+    ),
     [
         (
             [

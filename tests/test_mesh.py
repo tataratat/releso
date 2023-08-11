@@ -58,7 +58,17 @@ def test_mesh_exporter_export_path_format(
     indirect=True,
 )
 @pytest.mark.parametrize(
-    "path, mxyz_path, mien_path, hyper_cube, export, dimensions, w_level, warning, error",
+    (
+        "path",
+        "mxyz_path",
+        "mien_path",
+        "hyper_cube",
+        "export",
+        "dimensions",
+        "w_level",
+        "warning",
+        "error",
+    ),
     [
         (
             ".xns",
@@ -246,7 +256,8 @@ def test_mixd_mesh_class(
     "load_sample_file, dimension, change_path, cp_rm, error",
     [
         ("volumes/tet/3DBrickTet.msh", 3, False, False, False),
-        # ("volumes/tet/3DBrickTet.msh", ".msh2", True, False), # currently not supported
+        # currently not supported
+        # ("volumes/tet/3DBrickTet.msh", ".msh2", True, False),
         (
             "volumes/tet/3DBrickTet.msh",
             3,
