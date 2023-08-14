@@ -3,6 +3,8 @@
 This file contains some plotting functions these are very limited and should
 were created for the seminar and master thesis of clemens fricke. Other
 plotting function exist but are not part of the library.
+
+This file is not tested due to it being very specific to the mixd/xns use case.
 """
 from typing import List
 
@@ -11,9 +13,16 @@ from matplotlib import pyplot as plt
 
 
 def get_tricontour_solution(
-        width: int, height: int, dpi: int, coordinates: np.ndarray,
-        connectivity: np.ndarray, solution: np.ndarray, sol_len: int,
-        limits_min: List[float], limits_max: List[float], ) -> np.ndarray:
+    width: int,
+    height: int,
+    dpi: int,
+    coordinates: np.ndarray,
+    connectivity: np.ndarray,
+    solution: np.ndarray,
+    sol_len: int,
+    limits_min: List[float],
+    limits_max: List[float],
+) -> np.ndarray:  # pragma: no cover
     """_summary_.
 
     Args:
@@ -35,20 +44,29 @@ def get_tricontour_solution(
         fig = plt.figure(figsize=(width, height), dpi=dpi)
         if i == 2:  # pressure is special
             mappable = plt.gca().tricontourf(
-                coordinates[:, 0], coordinates[:, 1],
-                np.clip(solution[:, i], limits_min[i], limits_max[i])-1,
-                triangles=connectivity, cmap="Greys", vmin=limits_min[i],
-                vmax=limits_max[i])
+                coordinates[:, 0],
+                coordinates[:, 1],
+                np.clip(solution[:, i], limits_min[i], limits_max[i]) - 1,
+                triangles=connectivity,
+                cmap="Greys",
+                vmin=limits_min[i],
+                vmax=limits_max[i],
+            )
         else:
             mappable = plt.gca().tricontourf(
-                coordinates[:, 0], coordinates[:, 1], solution[:, i],
-                triangles=connectivity, cmap="Greys", vmin=limits_min[i],
-                vmax=limits_max[i])
+                coordinates[:, 0],
+                coordinates[:, 1],
+                solution[:, i],
+                triangles=connectivity,
+                cmap="Greys",
+                vmin=limits_min[i],
+                vmax=limits_max[i],
+            )
         ax = plt.gca()
         ax.set_xlim((0, 1))
         ax.set_ylim((0, 1))
         ax.margins(tight=True)
-        plt.axis('off')
+        plt.axis("off")
         plt.tight_layout(pad=0, w_pad=0, h_pad=0)
         fig.canvas.draw()
         # Now we can save it to a numpy array.
@@ -57,8 +75,8 @@ def get_tricontour_solution(
         arrays.append(data)
         plt.close()
     arr = np.array(arrays[0])
-    for i in range(sol_len-1):
-        arr[:, :, i+1] = arrays[i+1][:, :, 0]
+    for i in range(sol_len - 1):
+        arr[:, :, i + 1] = arrays[i + 1][:, :, 0]
     return arr
 
 
@@ -329,7 +347,3 @@ def get_tricontour_solution(
 #         plt.savefig(export_path)
 #     if close:
 #         plt.close()
-
-
-if __name__ == "__main__":
-    pass

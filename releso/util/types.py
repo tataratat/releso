@@ -19,8 +19,8 @@ from releso.util.module_import_raiser import ModuleImportRaiser
 try:
     from gustaf import Faces, Volumes
 except ModuleNotFoundError as err:
-    Volumes = ModuleImportRaiser("gustaf", err)
-    Faces = ModuleImportRaiser("gustaf", err)
+    Volumes = ModuleImportRaiser("gustaf", str(err))
+    Faces = ModuleImportRaiser("gustaf", str(err))
 
 
 #: Type definition for Observations.
