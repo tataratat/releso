@@ -13,7 +13,10 @@ def clean_up_provider():
 
         Author: GitHubCopilot (14.08.2023)
         """
-        if not path.is_dir():
+        if not path.exists():
+            return
+        if path.is_file():
+            path.unlink()
             return
         for child in path.iterdir():
             if child.is_file():

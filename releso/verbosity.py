@@ -25,10 +25,10 @@ class Verbosity(BaseModel):
     Please note, the parser logger only ever can have the following name
     ``ReLeSO_parser``
     """
+
     #: VerbosityLevel of the parser logger. This logger should only generate
     #: messages during the setup of the experiment.
-    parser: Literal["ERROR", "WARNING", "DEBUG",
-                    "INFO"] = "INFO"
+    parser: Literal["ERROR", "WARNING", "DEBUG", "INFO"] = "INFO"
     #: VerbosityLevel of the environment parsers. These loggers will generate
     #: messages during the execution of the experiments.
     #: (Training and Validation)
@@ -85,18 +85,27 @@ class Verbosity(BaseModel):
             values ([type]): [description]
 
         Returns:
-            pathlib.Path: pathlib representation of the path with if applicable the current timestamp
+            pathlib.Path:
+                pathlib representation of the path with if applicable the
+                current timestamp
         """
         path: pathlib.Path = None
         if "save_location" in values:
             # the path where the logger should write to is the
             # save_location/logfile_location
-            path = values["save_location"]/v
+            path = values["save_location"] / v
         else:
             # the path where the logger should write to is the
             # calling_folder/logfile_location
-            path = pathlib.Path(v.format(datetime.datetime.now().strftime(
-                "%Y-%m-%d_%H-%M-%S"))).expanduser().resolve()
+            path = (
+                pathlib.Path(
+                    v.format(
+                        datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    )
+                )
+                .expanduser()
+                .resolve()
+            )
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -105,29 +114,43 @@ class Verbosity(BaseModel):
         super().__init__(**data)
         # create parser logger
         parser_name = "releso_parser"
-        if not logging.getLogger(parser_name).hasHandlers():
-            parser_logger = set_up_logger(
-                parser_name, self.logfile_location,
-                self.parser, self.console_logging)
+
+        parser_logger = set_up_logger(
+            parser_name,
+            self.logfile_location,
+            self.parser,
+            self.console_logging,
+        )
 
         # create base rl logger
         self._environment_logger = "_".join(
             filter(
                 ("").__ne__,
-                [self.base_logger_name, self.environment_extension]))
+                [self.base_logger_name, self.environment_extension],
+            )
+        )
         self.add_environment_logger_with_name_extension("")
         # create base rl logger for validation environment
-        self._environment_validation_logger = "_".join(filter(
-            ("").__ne__,
-            [self.base_logger_name, self.environment_extension, "validation"]))
+        self._environment_validation_logger = "_".join(
+            filter(
+                ("").__ne__,
+                [
+                    self.base_logger_name,
+                    self.environment_extension,
+                    "validation",
+                ],
+            )
+        )
         self.add_environment_logger_with_name_extension("validation")
 
         parser_logger.debug(
             f"Setup logger. Parser logger has logging level: {self.parser}; "
-            f"Environment logger has logging level: {self.environment}")
+            f"Environment logger has logging level: {self.environment}"
+        )
 
     def add_environment_logger_with_name_extension(
-            self, extension: str) -> logging.Logger:
+        self, extension: str
+    ) -> logging.Logger:
         """Initializes a logger with the settings for the environment logger.
 
         The name of the base environment logger is extended by the
@@ -147,14 +170,21 @@ class Verbosity(BaseModel):
                 Logger of the name defined name. The name definition is
                 explained in the main documentation of the function.
         """
-        logger_name = "_".join(filter(
-            ("").__ne__,
-            [self.base_logger_name, self.environment_extension, extension]))
-        if not logging.getLogger(logger_name).hasHandlers() or \
-                not (len(logging.getLogger(logger_name).handlers) > 0):
+        logger_name = "_".join(
+            filter(
+                ("").__ne__,
+                [self.base_logger_name, self.environment_extension, extension],
+            )
+        )
+        if not logging.getLogger(logger_name).hasHandlers() or not (
+            len(logging.getLogger(logger_name).handlers) > 0
+        ):
             logger = set_up_logger(
-                logger_name, self.logfile_location, self.environment,
-                self.console_logging)
+                logger_name,
+                self.logfile_location,
+                self.environment,
+                self.console_logging,
+            )
         else:
             logger = logging.getLogger(logger_name)
         return logger
