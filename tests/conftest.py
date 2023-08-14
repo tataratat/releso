@@ -7,6 +7,25 @@ import requests
 
 
 @pytest.fixture
+def clean_up_provider():
+    def recursive_file_remove(path):
+        """Remove a file or directory and its contents.
+
+        Author: GitHubCopilot (14.08.2023)
+        """
+        if not path.is_dir():
+            return
+        for child in path.iterdir():
+            if child.is_file():
+                child.unlink()
+            else:
+                recursive_file_remove(child)
+        path.rmdir()
+
+    return recursive_file_remove
+
+
+@pytest.fixture
 def hide_available_import(monkeypatch):
     """Hide the available import from the user.
 
