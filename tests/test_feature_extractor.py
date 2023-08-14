@@ -109,7 +109,7 @@ def test_combined_feature_extractor(
         "observation_space": observation_space,
     }
     if feature_dim is not None:
-        calling_dict["feature_dim"] = feature_dim
+        calling_dict["cnn_output_dim"] = feature_dim
     else:
         feature_dim = 128
     if without_linear is not None:

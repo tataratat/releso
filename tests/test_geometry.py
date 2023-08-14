@@ -324,33 +324,3 @@ def test_ffd_geometry_init(
         assert act_def.shape == (len(geometry._actions),)
         geometry.apply_action(np.random.rand(len(geometry._actions)))
     assert geometry.is_geometry_changed() == True
-
-    # # observation
-    # if geometry.action_based_observation:
-    #     assert geometry.get_observation_definition()[1].shape == (
-    #         len(geometry._actions),
-    #     )
-    #     assert len(geometry.get_observation()) == len(geometry._actions)
-    # else:
-    #     with caplog.at_level(VerbosityLevel.WARNING):
-    #         geometry.get_observation_definition()
-    #         assert (
-    #             "Observation space is accessed which should not happen."
-    #             in caplog.text
-    #         )
-    #         assert geometry.get_observation() is None
-
-    # # reset
-    # current_cps = geometry.get_control_points()
-    # assert current_cps != original_cps
-    # if geometry.reset_with_random_action_values:
-    #     reset_cps = geometry.reset()
-    #     assert reset_cps != current_cps
-    #     assert reset_cps != original_cps
-    # else:
-    #     assert geometry.reset() == original_cps
-
-    # # random action with seed produces same result
-    # set_1 = geometry.apply_random_action("asd")
-    # set_2 = geometry.apply_random_action("asd")
-    # assert np.allclose(set_1, set_2)
