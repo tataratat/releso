@@ -81,3 +81,12 @@ def load_sample_file(request):
         with open(local_file, "wb") as file:
             file.write(response.content)
     return local_file
+
+
+@pytest.fixture
+def dummy_file():
+    file_name = pathlib.Path("dummy_file_please_delete.txt")
+    file_name.touch()
+    yield file_name
+    if file_name.is_file():
+        file_name.unlink()

@@ -28,6 +28,7 @@ Author:
 
 """
 import datetime
+import pathlib
 from ast import Import
 from typing import Any, Dict, Literal, Optional, Union
 
@@ -71,6 +72,7 @@ class BaseAgent(BaseModel):
     The class BaseAgent should be used as the base class for all classes
     defining agents for the ReLeSO framework.
     """
+
     #: base directory of the tensorboard logs if given an experiment name
     #: with a current timestamp is also added.
     tensorboard_log: Optional[str]
@@ -85,7 +87,12 @@ class BaseAgent(BaseModel):
             str: Experiment name consisting of a time and date stamp.
         """
         if self.tensorboard_log is not None:
-            return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            return "_".join(
+                [
+                    self.tensorboard_log,
+                    datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+                ]
+            )
         return None
 
 
@@ -95,30 +102,20 @@ class BaseTrainingAgent(BaseAgent):
     The class BaseAgent should be used as the base class for all classes
     defining agents for the ReLeSO framework.
     """
+
     #: policy defines the network structure which the agent uses
     policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]
     #: If given the str identifies the Custom Feature Extractor to be added.
     use_custom_feature_extractor: Optional[
         Literal[
-            "resnet18", "mobilenetv2", "mobilenetv3_small", "mobilenetv3_large"
-        ]] = None
+            "resnet18",
+            "mobilenet_v2",  # , "mobilenetv3_small", "mobilenetv3_large"
+        ]
+    ] = None
     #: use the custom feature extractor with out a final linear layer
     cfe_without_linear: bool = False
     #: additional arguments to be passed to the policy on creation
     policy_kwargs: Optional[Dict[str, Any]] = None
-
-    def get_next_tensorboard_experiment_name(self) -> str:
-        """Return tensorboard experiment name.
-
-        Adds a date and time marker to the tensorboard experiment name so that
-        it can be distinguished from other experiments.
-
-        Returns:
-            str: Experiment name consisting of a time and date stamp.
-        """
-        if self.tensorboard_log is not None:
-            return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        return None
 
     def get_additional_kwargs(self, **kwargs) -> Dict[str, Any]:
         """Add additional keyword arguments for agent instantiation.
@@ -133,33 +130,49 @@ class BaseTrainingAgent(BaseAgent):
             self.policy_kwargs = {}
         if self.use_custom_feature_extractor:
             self.policy_kwargs["features_extractor_kwargs"] = dict()
-            if self.use_custom_feature_extractor:
-                if self.policy == "CnnPolicy":
-                    self.policy_kwargs["features_extractor_class"] = \
-                        FeatureExtractor
-                elif self.policy == "MultiInputPolicy":
-                    self.policy_kwargs["features_extractor_class"] = \
-                        CombinedExtractor
-                else:
-                    self.get_logger().warning(
-                        "Please use the CnnPolicy or the MultiInputPolicy with"
-                        " the FeatureExtractors everything else might "
-                        "not work. But I also have no idea what works and what"
-                        " not. Will try to use the "
-                        "CustomFeatureExtractor, but as said might not"
-                        " work with the current policy.")
-                    self.policy_kwargs["features_extractor_class"] = \
-                        FeatureExtractor
-                if self.cfe_without_linear:
-                    self.policy_kwargs["features_extractor_kwargs"][
-                        "without_linear"] = True
+            if self.policy == "CnnPolicy":
+                self.policy_kwargs[
+                    "features_extractor_class"
+                ] = FeatureExtractor
+            elif self.policy == "MultiInputPolicy":
+                self.policy_kwargs[
+                    "features_extractor_class"
+                ] = CombinedExtractor
+            else:
+                self.get_logger().warning(
+                    "Please use the CnnPolicy or the MultiInputPolicy with "
+                    "the FeatureExtractors. The MlpPolicy - if it works - will"
+                    " use fully connected layers which might produce large "
+                    "networks with image data as input."
+                )
+                self.policy_kwargs[
+                    "features_extractor_class"
+                ] = FeatureExtractor
+            if self.cfe_without_linear:
                 self.policy_kwargs["features_extractor_kwargs"][
-                    "network_type"] = self.use_custom_feature_extractor
-                self.policy_kwargs["features_extractor_kwargs"]["logger"] = \
-                    self.get_logger()
-        return_dict = {k: v for k, v in self.__dict__.items() if k not in [
-            'type', 'logger_name', 'save_location',
-            'use_custom_feature_extractor', "cfe_without_linear"]}
+                    "without_linear"
+                ] = True
+            self.policy_kwargs["features_extractor_kwargs"][
+                "network_type"
+            ] = self.use_custom_feature_extractor
+            self.policy_kwargs["features_extractor_kwargs"][
+                "logger"
+            ] = self.get_logger()
+        # add all object variables to the kwargs, which are not in the
+        # blacklist
+        return_dict = {
+            k: v
+            for k, v in self.__dict__.items()
+            if k
+            not in [
+                "type",
+                "logger_name",
+                "save_location",
+                "use_custom_feature_extractor",
+                "cfe_without_linear",
+                "save_location",
+            ]
+        }
         return return_dict
 
 
@@ -170,20 +183,21 @@ class PretrainedAgent(BaseAgent):
     untrained agents. Can also be used to only validate this agent without
     training it further. Please see validation section for this use-case.
     """
+
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
-    type: Literal["PPO", "SAC", "DDPG", "A2C",
-                  "DQN"]
+    type: Literal["PPO", "SAC", "DDPG", "A2C", "DQN"]
     #: Path to the save files of the pretrained agent.
-    path: FilePath
+    path: Union[FilePath, pathlib.Path]
     #: If the agent is to be trained further the results can be added to the
     # existing tensorboard experiment. This is the path to the existing
     # tensorboard experiment
-    tesorboard_run_directory: Union[str, None] = None
+    tesorboard_run_directory: Union[str, pathlib.Path, None] = None
 
+    # TODO add testing of agent loading. Need trained agents?
     def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
-    ) -> BaseAlgorithm:
+        self, environment: GymEnvironment, normalizer_divisor: int = 1
+    ) -> BaseAlgorithm:  # pragma: no cover
         """Tries to locate the agent defined and to load it correctly.
 
         Args:
@@ -200,7 +214,8 @@ class PretrainedAgent(BaseAgent):
         """
         self.get_logger().info(
             f"Using pretrained agent of type {self.type} from location "
-            f"{self.path}.")
+            f"{self.path}."
+        )
         if self.type == "PPO":
             return PPO.load(self.path, environment)
         elif self.type == "DDPG":
@@ -223,11 +238,10 @@ class PretrainedAgent(BaseAgent):
         Returns:
             str: tensorboard experiment name
         """
+        if self.tesorboard_run_directory:
+            return self.tesorboard_run_directory
         if self.tensorboard_log is not None:
-            if self.tesorboard_run_directory:
-                return self.tesorboard_run_directory
-            else:
-                return super().get_next_tensorboard_experiment_name()
+            return super().get_next_tensorboard_experiment_name()
         return None
 
 
@@ -237,6 +251,7 @@ class A2CAgent(BaseTrainingAgent):
     A2C definition for the stable_baselines3 implementation for this algorithm.
     Variable comments are taken from the stable_baselines3 documentation.
     """
+
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
     type: Literal["A2C"]
@@ -270,7 +285,7 @@ class A2CAgent(BaseTrainingAgent):
     use_sde = False
     #: Sample a new noise matrix every n steps when using gSDE Default: -1
     #: (sample only at beginning of roll)
-    sde_sample_freq = - 1
+    sde_sample_freq = -1
     #: Whether to normalize or not the advantage
     normalize_advantage = False
     #: Seed for the pseudo random generators
@@ -280,8 +295,8 @@ class A2CAgent(BaseTrainingAgent):
     device: str = "auto"
 
     def get_agent(
-            self, environment: GymEnvironment,
-            normalizer_divisor: int = 1) -> A2C:
+        self, environment: GymEnvironment, normalizer_divisor: int = 1
+    ) -> A2C:
         """Creates the stable_baselines version of the wanted Agent.
 
         Uses all Variables given in the object (except type) as the input
@@ -305,7 +320,7 @@ class A2CAgent(BaseTrainingAgent):
             A2C: Initialized A2C agent.
         """
         self.get_logger().info(f"Using agent of type {self.type}.")
-        self.n_steps = int(self.n_steps/normalizer_divisor)
+        self.n_steps = int(self.n_steps / normalizer_divisor)
         return A2C(env=environment, **self.get_additional_kwargs())
 
 
@@ -315,6 +330,7 @@ class PPOAgent(BaseTrainingAgent):
     PPO definition for the stable_baselines3 implementation for this algorithm.
     Variable comments are taken from the stable_baselines3 documentation.
     """
+
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
     type: Literal["PPO"]
@@ -350,7 +366,7 @@ class PPOAgent(BaseTrainingAgent):
     device: str = "auto"
 
     def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
+        self, environment: GymEnvironment, normalizer_divisor: int = 1
     ) -> PPO:
         """Creates the stable_baselines version of the wanted Agent.
 
@@ -375,7 +391,7 @@ class PPOAgent(BaseTrainingAgent):
             PPO: Initialized PPO agent.
         """
         self.get_logger().info(f"Using agent of type {self.type}.")
-        self.n_steps = int(self.n_steps/normalizer_divisor)
+        self.n_steps = int(self.n_steps / normalizer_divisor)
         return PPO(env=environment, **self.get_additional_kwargs())
 
 
@@ -386,6 +402,7 @@ class DDPGAgent(BaseTrainingAgent):
     algorithm. Variable comments are taken from the stable_baselines3
     documentation.
     """
+
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
     type: Literal["DDPG"]
@@ -415,7 +432,7 @@ class DDPGAgent(BaseTrainingAgent):
     device: str = "auto"
 
     def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
+        self, environment: GymEnvironment, normalizer_divisor: int = 1
     ) -> DDPG:
         """Creates the stable_baselines version of the wanted Agent.
 
@@ -440,6 +457,7 @@ class SACAgent(BaseTrainingAgent):
     SAC definition for the stable_baselines3 implementation for this algorithm.
     Variable comments are taken from the stable_baselines3 documentation.
     """
+
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
     type: Literal["SAC"]
@@ -459,7 +477,7 @@ class SACAgent(BaseTrainingAgent):
     gamma: float = 0.99
     #: Enable a memory efficient variant of the replay buffer at a cost of more
     #: complexity. See https://github.com/DLR-RM/stable-baselines3/issues/37#:
-    # issuecomment-637501195
+    # issue comment-637501195
     optimize_memory_usage: bool = False
     #: Entropy regularization coefficient. (Equivalent to inverse of reward
     #: scale in the original SAC paper.)  Controlling exploration/exploitation
@@ -487,7 +505,7 @@ class SACAgent(BaseTrainingAgent):
     device: str = "auto"
 
     def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
+        self, environment: GymEnvironment, normalizer_divisor: int = 1
     ) -> SAC:
         """Creates the stable_baselines version of the wanted Agent.
 
@@ -512,6 +530,7 @@ class DQNAgent(BaseTrainingAgent):
     DQN definition for the stable_baselines3 implementation for this algorithm.
     Variable comments are taken from the stable_baselines3 documentation.
     """
+
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
     type: Literal["DQN"]
@@ -538,7 +557,7 @@ class DQNAgent(BaseTrainingAgent):
     gradient_steps: int = 1
     #: Enable a memory efficient variant of the replay buffer at a cost of more
     #: complexity. See https://github.com/DLR-RM/stable-baselines3/issues/37#:
-    # issuecomment-637501195
+    # issue comment-637501195
     optimize_memory_usage: bool = False
     #: update the target network every ``target_update_interval``
     target_update_interval: int = 256
@@ -558,7 +577,7 @@ class DQNAgent(BaseTrainingAgent):
     device: str = "auto"
 
     def get_agent(
-            self, environment: GymEnvironment, normalizer_divisor: int = 1
+        self, environment: GymEnvironment, normalizer_divisor: int = 1
     ) -> DQN:
         """Creates the stable_baselines version of the wanted Agent.
 
@@ -577,5 +596,6 @@ class DQNAgent(BaseTrainingAgent):
         return DQN(env=environment, **self.get_additional_kwargs())
 
 
-AgentTypeDefinition = Union[PPOAgent, DDPGAgent,
-                            SACAgent, PretrainedAgent, DQNAgent, A2CAgent]
+AgentTypeDefinition = Union[
+    PPOAgent, DDPGAgent, SACAgent, PretrainedAgent, DQNAgent, A2CAgent
+]
