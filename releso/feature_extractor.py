@@ -61,7 +61,9 @@ class FeatureExtractor(BaseFeaturesExtractor):
         self.without_linear = without_linear
         # Define the network
         if network_type == "resnet18":
-            pre_network = models.resnet18(pretrained=True)
+            pre_network = models.resnet18(
+                weights=models.ResNet18_Weights.IMAGENET1K_V1
+            )
             self.model = th.nn.Sequential(
                 *[
                     transforms.Normalize(
@@ -79,7 +81,9 @@ class FeatureExtractor(BaseFeaturesExtractor):
                 ]
             )
         elif network_type == "mobilenet_v2":
-            pre_network = models.mobilenet_v2(pretrained=True)
+            pre_network = models.mobilenet_v2(
+                weights=models.MobileNet_V2_Weights.IMAGENET1K_V1
+            )
             self.model = th.nn.Sequential(
                 *[
                     transforms.Normalize(
