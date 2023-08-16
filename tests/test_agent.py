@@ -141,6 +141,7 @@ class Dummy(BaseModel):
     agent: AgentTypeDefinition
 
 
+@pytest.mark.parametrize("normalizer_divisor", [(1), (100), (0)])
 @pytest.mark.parametrize(
     "agent, wanted_agent, resulting_agent",
     [
@@ -151,7 +152,14 @@ class Dummy(BaseModel):
         ("SAC", SACAgent, SAC),
     ],
 )
-def test_agents(agent, wanted_agent, resulting_agent, dir_save_location):
+def test_agents(
+    agent,
+    normalizer_divisor,
+    wanted_agent,
+    resulting_agent,
+    dir_save_location,
+    caplog,
+):
     calling_dict = {
         "save_location": dir_save_location,
         "type": agent,
@@ -159,16 +167,21 @@ def test_agents(agent, wanted_agent, resulting_agent, dir_save_location):
     }
     ag = Dummy(agent=calling_dict)
     assert isinstance(ag.agent, wanted_agent)
-    if agent == "DQN":  # must use discrete actions
-        assert isinstance(
-            ag.agent.get_agent(gym.make("MountainCar-v0")),
-            resulting_agent,
-        )
-    else:
-        assert isinstance(
-            ag.agent.get_agent(gym.make("Pendulum-v1", g=9.81)),
-            resulting_agent,
-        )
+
+    with caplog.at_level(VerbosityLevel.WARNING):
+        if agent == "DQN":  # must use discrete actions
+            agent = ag.agent.get_agent(
+                gym.make("MountainCar-v0"), normalizer_divisor
+            )
+        else:
+            agent = ag.agent.get_agent(
+                gym.make("Pendulum-v1"), normalizer_divisor
+            )
+        if agent in ["PPO", "A2C"] and normalizer_divisor == 0:
+            assert "Normalizer divisor is 0, will use 1." in caplog.text
+            normalizer_divisor = 1
+
+    assert isinstance(agent, resulting_agent)
 
 
 @pytest.mark.parametrize(

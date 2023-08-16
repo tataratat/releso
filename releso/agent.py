@@ -320,7 +320,10 @@ class A2CAgent(BaseTrainingAgent):
             A2C: Initialized A2C agent.
         """
         self.get_logger().info(f"Using agent of type {self.type}.")
-        self.n_steps = int(self.n_steps / normalizer_divisor)
+        if normalizer_divisor == 0:
+            self.get_logger().warning("Normalizer divisor is 0, will use 1.")
+            normalizer_divisor = 1.0
+        self.n_steps = max(int(self.n_steps / normalizer_divisor), 1)
         return A2C(env=environment, **self.get_additional_kwargs())
 
 
@@ -391,7 +394,10 @@ class PPOAgent(BaseTrainingAgent):
             PPO: Initialized PPO agent.
         """
         self.get_logger().info(f"Using agent of type {self.type}.")
-        self.n_steps = int(self.n_steps / normalizer_divisor)
+        if normalizer_divisor == 0:
+            self.get_logger().warning("Normalizer divisor is 0, will use 1.")
+            normalizer_divisor = 1.0
+        self.n_steps = max(int(self.n_steps / normalizer_divisor), 1)
         return PPO(env=environment, **self.get_additional_kwargs())
 
 
