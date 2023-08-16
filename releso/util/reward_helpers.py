@@ -13,7 +13,8 @@ from pydantic.types import UUID4
 
 
 def spor_com_parse_arguments(
-        own_arguments: Optional[List[str]] = None) -> argparse.Namespace:
+    own_arguments: Optional[List[str]] = None,
+) -> argparse.Namespace:
     """Parses the spor com arguments.
 
     The result is returned in a namespace object for easy access.
@@ -24,39 +25,74 @@ def spor_com_parse_arguments(
     parser = argparse.ArgumentParser(
         description="Spline base Shape Optimization via Reinforcement Learning"
         " Toolbox. This is the basic script that can load a json file and run"
-        " the resulting optimization problem.")
+        " the resulting optimization problem."
+    )
     parser.add_argument(
-        "-i", "--initialize", "--reset", dest="reset", action="store_true",
-        help="Should the script perform the step necessary for a reset.")
+        "-i",
+        "--initialize",
+        "--reset",
+        dest="reset",
+        action="store_true",
+        help="Should the script perform the step necessary for a reset.",
+    )
     parser.add_argument(
-        "-r", "--run", "--run_id", dest="run_id", action="store", type=UUID4,
-        required=True, help="Id of the SPOR_Communication interface for this "
-        "specific spor object.")
+        "-r",
+        "--run",
+        "--run_id",
+        dest="run_id",
+        action="store",
+        type=UUID4,
+        required=True,
+        help="Id of the SPOR_Communication interface for this "
+        "specific spor object.",
+    )
     parser.add_argument(
-        "-v", "--validation_value", dest="validation_value", action="store",
-        type=float, required=False,
+        "-v",
+        "--validation_value",
+        dest="validation_value",
+        action="store",
+        type=float,
+        required=False,
         help="If during validation the current validation value is passed to "
         "the script by the variable. If not present not currently in "
-        "validation.")
+        "validation.",
+    )
     parser.add_argument(
-        "-j", "--additional_values", "--json_object", dest="json_object",
-        action="store", type=str, required=False,
+        "-j",
+        "--additional_values",
+        "--json_object",
+        dest="json_object",
+        action="store",
+        type=str,
+        required=False,
         help="Currently available step information including observations, "
         "done, reward, info. Will automatically be parsed into a dict. Only "
-        "present if spor step is configured to sent it.")
+        "present if spor step is configured to sent it.",
+    )
     parser.add_argument(
-        "-l", "--base_save_location", dest="base_save_location",
-        action="store", type=str, required=True,
+        "-l",
+        "--base_save_location",
+        dest="base_save_location",
+        action="store",
+        type=str,
+        required=True,
         help="Path pointing to the save location of all permanent records of "
-        "this trainings run. Please save the logs here.")
+        "this trainings run. Please save the logs here.",
+    )
     parser.add_argument(
-        "-e", "--environment_id", dest="environment_id", action="store",
-        type=str, required=True, help="ID of the environment this call is "
-        "coming from. NOT unique to this spor object.")
+        "-e",
+        "--environment_id",
+        dest="environment_id",
+        action="store",
+        type=str,
+        required=True,
+        help="ID of the environment this call is "
+        "coming from. NOT unique to this spor object.",
+    )
     if own_arguments is not None:
         args = parser.parse_args(own_arguments)
     else:
-        args = parser.parse_args()
+        args = parser.parse_args()  # pragma: no cover
     if args.json_object:
         args.json_object = spor_com_additional_information(args.json_object)
     return args
@@ -92,7 +128,7 @@ def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
     """
     path = Path(f_n)
     if not (path.exists() and path.is_file()):
-        empty_dict = {}
+        empty_dict: Dict[str, Any] = {}
         with open(path, "w") as wf:
             json.dump(empty_dict, wf)
     with open(f_n, "r") as rf:

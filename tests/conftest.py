@@ -50,10 +50,12 @@ def hide_available_import(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", mock_import_available)
 
 
-def dir_save_location_path():
+def dir_save_location_path(make_dir=False):
     dir_save_location = (
         pathlib.Path(__file__).parent / "test_save_location_please_delete"
     ).resolve()
+    if make_dir:
+        dir_save_location.mkdir(parents=True, exist_ok=True)
     return dir_save_location
 
 
