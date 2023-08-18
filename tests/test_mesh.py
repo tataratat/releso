@@ -243,7 +243,7 @@ def test_mixd_mesh_class(
         assert error in str(err.value)
         return
     mesh = MixdMesh(**calling_dict)
-    if w_level is "export":
+    if w_level == "export":
         assert mesh.get_export_path() is None
         with caplog.at_level("WARNING"):
             assert mesh.adapt_export_path("123") is None
@@ -312,3 +312,39 @@ def test_meshio_mesh(
     if change_path and cp_rm:
         os.remove(load_sample_file)
     g_mesh = mesh.get_mesh()
+
+
+@pytest.mark.parametrize(
+    "load_sample_file", ["faces/quad/2DChannelQuad.msh"], indirect=True
+)
+def test_mixd_mesh_export_and_get(
+    load_sample_file, dir_save_location, clean_up_provider, caplog
+):
+    mesh_exporter = MeshExporter(
+        format="mixd",
+        export_path=f"{str(dir_save_location)}/export/" + "{}/test.xns",
+        save_location=dir_save_location,
+    )
+    mesh = MeshIOMesh(
+        path=load_sample_file,
+        dimensions=2,
+        save_location=dir_save_location,
+        export=mesh_exporter,
+    )
+    mesh.adapt_export_path("123")
+    mesh.export.export_mesh(mesh.get_mesh())
+    exported_file = pathlib.Path(f"{str(dir_save_location)}/export")
+    mesh_exporter.format = "other"
+    with pytest.raises(RuntimeError) as err:
+        mesh_exporter.export_mesh(None)
+    assert "The requested format other is not supported." in str(err.value)
+
+    mixd_mesh = MixdMesh(
+        path="export/123/test.xns",
+        save_location=dir_save_location,
+        dimensions=2,
+    )
+    with caplog.at_level("INFO"):
+        mixd_mesh.get_mesh()
+
+    clean_up_provider(exported_file)

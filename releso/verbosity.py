@@ -90,6 +90,7 @@ class Verbosity(BaseModel):
                 current timestamp
         """
         path: pathlib.Path = None
+        v = v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         if "save_location" in values:
             # the path where the logger should write to is the
             # save_location/logfile_location
@@ -97,15 +98,7 @@ class Verbosity(BaseModel):
         else:
             # the path where the logger should write to is the
             # calling_folder/logfile_location
-            path = (
-                pathlib.Path(
-                    v.format(
-                        datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                    )
-                )
-                .expanduser()
-                .resolve()
-            )
+            path = pathlib.Path(v).expanduser().resolve()
         path.mkdir(parents=True, exist_ok=True)
         return path
 

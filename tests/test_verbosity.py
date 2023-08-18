@@ -1,7 +1,14 @@
+import datetime
+import pathlib
+
 import pytest
 
 from releso.util.logger import logging
 from releso.verbosity import Verbosity, VerbosityLevel
+
+
+def test_clean_dir(dir_save_location, clean_up_provider):
+    clean_up_provider(dir_save_location)
 
 
 @pytest.mark.parametrize(
@@ -113,3 +120,35 @@ def test_verbosity_default(
     # # except AssertionError:
     # #     raise RuntimeError(f"{objects_in_folder}")
     clean_up_provider(dir_save_location)
+
+
+@pytest.mark.parametrize(
+    "add_save_path, log_path",
+    [(True, "test"), (False, "test"), (False, "test_{}"), (True, "test_{}")],
+)
+def test_verbosity_make_logfile_location_absolute(
+    add_save_path, log_path, clean_up_provider, dir_save_location
+):
+    v = log_path
+
+    values = {}
+    if add_save_path:
+        values["save_location"] = dir_save_location
+    ret_path = Verbosity.make_logfile_location_absolute(v, values)
+    if add_save_path:
+        assert ret_path == dir_save_location / v.format(
+            datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        )
+    else:
+        if "{}" in v:
+            assert (
+                ret_path
+                == pathlib.Path(
+                    v.format(
+                        datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    )
+                ).resolve()
+            )
+        else:
+            assert ret_path == pathlib.Path(v).resolve()
+    clean_up_provider(ret_path)
