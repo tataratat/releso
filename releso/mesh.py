@@ -110,7 +110,9 @@ class MeshExporter(BaseModel):
         if self.format == "mixd":
             mixd.export(mesh, self._export_path_changed, space_time=space_time)
         else:
-            raise RuntimeError(f"The requested {format=} is no supported.")
+            raise RuntimeError(
+                f"The requested format {self.format} is not supported."
+            )
 
 
 class Mesh(BaseModel):
@@ -358,6 +360,14 @@ class MixdMesh(Mesh):
                     raise ParserException(
                         "Mesh", "path", "Could not locate mien file path."
                     )
+            elif path.suffix == ".xns":
+                if (
+                    path.with_suffix(".mxyz").exists()
+                    and path.with_suffix(".mien").exists()
+                ):
+                    mien_path = path.with_suffix(".mxyz")
+                    mxyz_path = path.with_suffix(".mien")
+
             if mien_path:
                 values["mien_path"] = mien_path
                 values["mxyz_path"] = mxyz_path
