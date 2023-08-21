@@ -2,6 +2,10 @@
 
 This files holds functions which can be used in custom command line spor object
 scripts.
+Tried to keep this as package independent as possible, to make it easier to
+copy these functions into your own scripts. If you need to have other python
+versions/special environment to run your scripts in. The pydantic dependency
+can be exchanged for a string.
 """
 import argparse
 import json
@@ -41,7 +45,7 @@ def spor_com_parse_arguments(
         "--run_id",
         dest="run_id",
         action="store",
-        type=UUID4,
+        type=UUID4,  # can also be a string. If pydantic is not available.
         required=True,
         help="Id of the SPOR_Communication interface for this "
         "specific spor object.",
@@ -129,8 +133,13 @@ def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
     path = Path(f_n)
     if not (path.exists() and path.is_file()):
         empty_dict: Dict[str, Any] = {}
-        with open(path, "w") as wf:
-            json.dump(empty_dict, wf)
+        try:
+            with open(path, "w") as wf:
+                json.dump(empty_dict, wf)
+        except FileNotFoundError as err:
+            raise RuntimeError(
+                f"You have to crate the folder for the json first. {err}"
+            ) from err
     with open(f_n, "r") as rf:
         return json.load(rf)
 
