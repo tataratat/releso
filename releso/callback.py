@@ -109,7 +109,7 @@ class EpisodeLogCallback(BaseCallback):
                 )
                 self.episode_end.append(reset_reason)
                 self.environment_id.append(idx)
-                if reset_reason == "srunError-main_solver":
+                if reset_reason == "srunError-main_solver":  # pragma: no cover
                     continue_training = False
         if any(
             [
