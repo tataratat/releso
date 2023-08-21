@@ -28,6 +28,14 @@ def test_load_json(dir_save_location: Path, clean_up_provider):
     clean_up_provider(file_loc)
 
 
+def test_load_json_folder_does_not_exist(dir_save_location, clean_up_provider):
+    file_loc: Path = dir_save_location / "test" / "test.json"
+    with pytest.raises(RuntimeError) as err:
+        res = load_json(file_loc)
+    assert "No such file or directory:" in str(err.value)
+    clean_up_provider(file_loc)
+
+
 def test_write_json(dir_save_location: Path, clean_up_provider):
     dir_save_location.mkdir(parents=True, exist_ok=True)
     file_loc: Path = dir_save_location / "test.json"
