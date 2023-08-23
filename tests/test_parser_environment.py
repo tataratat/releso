@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from conftest import dir_save_location_path
 from pydantic import ValidationError
-from test_geometry import bspline_shape, default_shape
+from test_geometry import default_shape
 
 from releso.parser_environment import Environment, MultiProcessing
 from releso.verbosity import VerbosityLevel
@@ -116,7 +116,7 @@ def test_parser_environment_environment(dir_save_location):
             None,
             None,
             False,
-            "Please set a reward value for spline not changed",
+            "Please set a reward value for geometry not changed",
         ),
         (
             None,
@@ -524,7 +524,7 @@ def test_parser_environment_max_timesteps(
     clean_up_provider(dir_save_location)
 
 
-def test_parser_environment_spline_not_changed(
+def test_parser_environment_geometry_not_changed(
     dir_save_location, clean_up_provider
 ):
     dir_save_location_path(True)
