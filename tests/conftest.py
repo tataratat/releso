@@ -2,8 +2,36 @@ import builtins
 import os
 import pathlib
 
+import gymnasium as gym
 import pytest
 import requests
+
+
+class Dummy_Environment(gym.Env):
+    def __init__(self):
+        self.action_space = gym.spaces.Box(low=0, high=1, shape=(3,))
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(1,))
+        self.episode_length = 10
+        self.episode_counter = 0
+
+    def step(self, action):
+        self.episode_counter += 1
+        return (
+            [sum(action)],
+            self.episode_counter,
+            self.episode_counter >= self.episode_length,
+            False,
+            {},
+        )
+
+    def reset(self, **kwargs):
+        self.episode_counter = 0
+        return [0], {}
+
+
+@pytest.fixture
+def provide_dummy_environment():
+    return Dummy_Environment()
 
 
 @pytest.fixture
