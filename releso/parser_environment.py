@@ -45,7 +45,7 @@ class Environment(BaseModel):
     """Parser class of which the environment is based.
 
     Parser Environment object is created by pydantic during the parsing of the
-    json object defining the Spline base Shape optimization. Each object can
+    json object defining the RL based Shape optimization. Each object can
     create a gym environment that represents the given problem.
     """
 
@@ -57,12 +57,12 @@ class Environment(BaseModel):
     spor: SPORList
     #: maximal number of timesteps to run each episode for
     max_timesteps_in_episode: Optional[conint(ge=1)] = None
-    #: whether or not to reset the environment if the spline has not change
+    #: whether or not to reset the environment if the geometry has not change
     #: after a step
     end_episode_on_geometry_not_changed: bool = False
     #: reward if episode is ended due to reaching max step in episode
     reward_on_geometry_not_changed: Optional[float] = None
-    #: reward if episode is ended due to spline not changed
+    #: reward if episode is ended due to geometry not changed
     reward_on_episode_exceeds_max_timesteps: Optional[float] = None
     # #: periodically save the end result of the optimization T-junction use case
     # #: TODO the next few cases I see personally more in a separate SPOR Step
@@ -118,7 +118,7 @@ class Environment(BaseModel):
 
     @validator("reward_on_geometry_not_changed", always=True)
     @classmethod
-    def check_if_reward_given_if_spline_not_change_episode_killer_activated(
+    def check_if_reward_given_if_geometry_not_change_episode_killer_activated(
         cls, value, values
     ) -> float:
         """Validator reward_on_geometry_not_changed.
@@ -163,7 +163,7 @@ class Environment(BaseModel):
             )
         if values["end_episode_on_geometry_not_changed"] and value is None:
             get_parser_logger().warning(
-                "Please set a reward value for spline not changed if episode "
+                "Please set a reward value for geometry not changed if episode "
                 "should end on it. Will set 0 for you now, but this might "
                 "not be you intention."
             )
@@ -443,8 +443,9 @@ class Environment(BaseModel):
             environment_id=self._id,
         )
 
-        # check if spline has not changed. But only in validation phase to exit
-        # episodes that are always repeating the same action without breaking.
+        # check if geometry has not changed. But only in validation phase to
+        #  exit episodes that are always repeating the same action without
+        #  breaking.
         if not done:
             self._timesteps_in_episode += 1
             if (
@@ -458,7 +459,7 @@ class Environment(BaseModel):
             if self.end_episode_on_geometry_not_changed:
                 if not self.geometry.is_geometry_changed():
                     self.get_logger().info(
-                        "The Spline observation have"
+                        "The geometry observation have"
                         " not changed will exit episode."
                     )
                     reward += self.reward_on_geometry_not_changed
@@ -628,7 +629,7 @@ class Environment(BaseModel):
     def set_validation(
         self,
         validation_values: List[float],
-        end_episode_on_spline_not_change: bool = False,
+        end_episode_on_geometry_not_changed: bool = False,
         max_timesteps_in_episode: int = 0,
         reward_on_geometry_not_changed: Optional[float] = None,
         reward_on_episode_exceeds_max_timesteps: Optional[float] = None,
@@ -642,7 +643,7 @@ class Environment(BaseModel):
             validation_values (List[float]): List of predefined goal states.
             base_mesh_path (Optional[str], optional): Path to the initial mesh.
             Defaults to None.
-            end_episode_on_spline_not_change (bool, optional): _description_. Defaults to False.
+            end_episode_on_geometry_not_changed (bool, optional): _description_. Defaults to False.
             max_timesteps_in_episode (int, optional): _description_. Defaults to 0.
             reward_on_geometry_not_changed (Optional[float], optional): _description_. Defaults to None.
             reward_on_episode_exceeds_max_timesteps(Optional[float],optional):A
@@ -654,7 +655,7 @@ class Environment(BaseModel):
         # self._validation_base_mesh_path = base_mesh_path
         self.max_timesteps_in_episode = max_timesteps_in_episode
         self.end_episode_on_geometry_not_changed = (
-            end_episode_on_spline_not_change
+            end_episode_on_geometry_not_changed
         )
         self.reward_on_geometry_not_changed = reward_on_geometry_not_changed
         self.reward_on_episode_exceeds_max_timesteps = (
