@@ -1,8 +1,8 @@
 """SPOR definition Read Carefully.
 
 Solver Postprocessing Observation Reward (SPOR) is represents all steps which
-follow after completing the Free Form Deformation (FFD), where the base mesh is
-deformed with a spline.
+follow after completing Geometry adaption, where the geometry is
+deformed via the actions.
 
 This part of the ReLeSO environment definition is a list of steps the
 environment will run through in series. Each step can be configured to use the

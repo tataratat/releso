@@ -1,6 +1,6 @@
 """Definition of the geometry to be optimized, which informs the action space.
 
-File holds all classes which define the spline and with that also the action
+File holds all classes which define the geometry and with that also the action
 definition of the problem.
 """
 from typing import Any, List, Optional, Tuple, Union
@@ -185,7 +185,7 @@ class Geometry(BaseModel):
         )
 
     def reset(self, validation_id: Optional[int] = None) -> Any:
-        """Resets the spline to its initial values."""
+        """Resets the geometry to its initial values."""
         if self.reset_with_random_action_values:
             self.apply_random_action(validation_id)
         else:

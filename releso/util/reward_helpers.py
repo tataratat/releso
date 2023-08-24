@@ -27,7 +27,7 @@ def spor_com_parse_arguments(
         argparse.Namespace: [description]
     """
     parser = argparse.ArgumentParser(
-        description="Spline base Shape Optimization via Reinforcement Learning"
+        description="Reinforcement Learning based Shape Optimization"
         " Toolbox. This is the basic script that can load a json file and run"
         " the resulting optimization problem."
     )

@@ -25,7 +25,7 @@ class VariableLocation(BaseModel):
     """Variable location class.
 
     Object of this class defines the position and movement possibilities for a
-    single dimensions of a single control point of the spline.
+    single dimensions of a single control point of the geometry.
     """
 
     #: coordinate of the current position of the current control point in the
@@ -252,7 +252,7 @@ class ShapeDefinition(BaseModel):
         each cp.
 
         Returns:
-            int: number of points in the spline
+            int: number of points in the geometry
         """
         return int(len(self.control_points) * len(self.control_points[0]))
 
@@ -330,7 +330,7 @@ class ShapeDefinition(BaseModel):
         this shape.
 
         Returns:
-            Any: Spline that is generated.
+            Any: Shape that is generated.
         """
         return self.get_control_points()
 
@@ -374,7 +374,7 @@ class ShapeDefinition(BaseModel):
         control_points = self.control_points
         if len(self.control_points[0]) > 2:
             raise RuntimeError(
-                "Could not draw the splines action space. Only a 2D parametric"
+                "Could not draw the shapes action space. Only a 2D parametric"
                 " space is currently available."
             )
         elif len(self.control_points[0]) == 1:
