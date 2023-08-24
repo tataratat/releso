@@ -220,16 +220,9 @@ class SPORObject(BaseModel):
         """
         if not isinstance(v, (dict, list)):
             if not int(v) == 0:
-                get_parser_logger().warn(
-                    "Please do not use this method to register additional "
-                    "observations anymore. Please specify the exact type and "
-                    "number of observations and their limits via the "
-                    "ObservationDefinition, ObservationDefinitionMulti or as a"
-                    " List of ObservationDefinitions.",
-                    # PendingDeprecationWarning, # seems to bork the tests
-                )
-
-                # if only a number of
+                # We might want to deprecate the hidden option to instantiate
+                #  additional observations via an int. Building up a default
+                #  observation definition.
                 v = {
                     "name": f"unnamed_{str(uuid4())}",
                     "value_min": -1,

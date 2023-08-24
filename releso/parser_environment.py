@@ -550,11 +550,15 @@ class Environment(BaseModel):
                 new_observation = observations
         return new_observation
 
-    def reset(self) -> ObservationType:
+    def reset(self, seed: Optional[int] = None) -> ObservationType:
         """Resets the environment.
 
         This can either be the case if the episode is done due to #time_steps
         or the environment emits the done signal.
+
+        Args:
+            seed (Optional[int], optional): Seed for the environment. Defaults
+            to None.
 
         Returns:
             Tuple[Any]: Observation of the newly reset environment.

@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 from conftest import dir_save_location_path
 from pydantic import ValidationError
-from test_geometry import default_shape
 
 from releso.parser_environment import Environment, MultiProcessing
 from releso.verbosity import VerbosityLevel
@@ -34,13 +33,13 @@ def test_parser_environment_multiprocessing(
     assert multi.number_of_cores == w_cores
 
 
-def test_parser_environment_environment(dir_save_location):
+def test_parser_environment_environment(dir_save_location, default_shape):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
         },
         "spor": {
             "save_location": dir_save_location,
@@ -151,13 +150,14 @@ def test_parser_environment_test_parsing(
     warning,
     dir_save_location,
     caplog,
+    default_shape,
 ):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
         },
         "spor": {
             "save_location": dir_save_location,
@@ -205,13 +205,15 @@ def test_parser_environment_test_parsing(
     assert env.is_multiprocessing() == w_cores
 
 
-def test_parser_environment_observations_no_observation(dir_save_location):
+def test_parser_environment_observations_no_observation(
+    dir_save_location, default_shape
+):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": False,
         },
         "spor": {
@@ -238,13 +240,15 @@ def test_parser_environment_observations_no_observation(dir_save_location):
     assert "The observation space is empty." in str(err.value)
 
 
-def test_parser_environment_observations_single(dir_save_location):
+def test_parser_environment_observations_single(
+    dir_save_location, default_shape
+):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": True,
         },
         "spor": {
@@ -276,13 +280,15 @@ def test_parser_environment_observations_single(dir_save_location):
     assert new_obs.shape == (2,)
 
 
-def test_parser_environment_observations_compress(dir_save_location):
+def test_parser_environment_observations_compress(
+    dir_save_location, default_shape
+):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": True,
         },
         "spor": {
@@ -328,13 +334,13 @@ def test_parser_environment_observations_compress(dir_save_location):
     assert new_obs.shape == (13,)
 
 
-def test_parser_environment_observations_cnn(dir_save_location):
+def test_parser_environment_observations_cnn(dir_save_location, default_shape):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": True,
         },
         "spor": {
@@ -371,13 +377,15 @@ def test_parser_environment_observations_cnn(dir_save_location):
     assert type(new_obs) is dict
 
 
-def test_parser_environment_observations_non_compressible(dir_save_location):
+def test_parser_environment_observations_non_compressible(
+    dir_save_location, default_shape
+):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": True,
         },
         "spor": {
@@ -423,14 +431,14 @@ def test_parser_environment_observations_non_compressible(dir_save_location):
 
 
 def test_parser_environment_observations_step_reset_simple(
-    dir_save_location, clean_up_provider, caplog
+    dir_save_location, clean_up_provider, caplog, default_shape
 ):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": True,
         },
         "spor": {
@@ -478,14 +486,14 @@ def test_parser_environment_observations_step_reset_simple(
 
 
 def test_parser_environment_max_timesteps(
-    dir_save_location, clean_up_provider
+    dir_save_location, clean_up_provider, default_shape
 ):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": True,
         },
         "spor": {
@@ -525,14 +533,14 @@ def test_parser_environment_max_timesteps(
 
 
 def test_parser_environment_geometry_not_changed(
-    dir_save_location, clean_up_provider
+    dir_save_location, clean_up_provider, default_shape
 ):
     dir_save_location_path(True)
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": True,
         },
         "spor": {
@@ -574,7 +582,7 @@ def test_parser_environment_geometry_not_changed(
 
 
 def test_parser_environment_non_geometry_observations(
-    dir_save_location, clean_up_provider
+    dir_save_location, clean_up_provider, default_shape
 ):
     dir_save_location_path(True)
     file_path = pathlib.Path(__file__).parent
@@ -582,7 +590,7 @@ def test_parser_environment_non_geometry_observations(
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": False,
         },
         "spor": {
@@ -616,14 +624,16 @@ def test_parser_environment_non_geometry_observations(
     clean_up_provider(dir_save_location)
 
 
-def test_parser_environment_validation(dir_save_location, clean_up_provider):
+def test_parser_environment_validation(
+    dir_save_location, clean_up_provider, default_shape
+):
     dir_save_location_path(True)
     file_path = pathlib.Path(__file__).parent
     calling_dict = {
         "save_location": dir_save_location,
         "geometry": {
             "save_location": dir_save_location,
-            "shape_definition": default_shape(),
+            "shape_definition": default_shape,
             "action_based_observation": False,
         },
         "spor": {

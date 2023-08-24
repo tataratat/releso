@@ -218,11 +218,13 @@ def test_spor_object(
         calling_dict["additional_observations"] = additional_observations
     with caplog.at_level(VerbosityLevel.WARNING):
         spor_object = SPORObject(**calling_dict)
-    if isinstance(additional_observations, int):
-        assert (
-            f"Please do not use this method to register additional observation"
-            in caplog.text
-        )
+    # We might want to deprecate the hidden option to instantiate additional
+    # observations via an int. Building up a default observation definition.
+    # if isinstance(additional_observations, int):
+    #     assert (
+    #         f"Please do not use this method to register additional observation"
+    #         in caplog.text
+    #     )
     obs = spor_object.get_observations()
     # check if observations are of correct type
     if isinstance(obs_type, tuple):

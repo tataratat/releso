@@ -224,6 +224,6 @@ def test_pretrained_agent(
             assert ag.get_next_tensorboard_experiment_name() is None
 
 
-@pytest.mark.skip(reason="no wat of easily testing this")
+@pytest.mark.skip(reason="no way of easily testing this")
 def test_pretrained_load_correct_agent():
     pass

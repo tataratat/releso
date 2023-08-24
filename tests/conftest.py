@@ -6,6 +6,8 @@ import gymnasium as gym
 import pytest
 import requests
 
+from releso.shape_parameterization import VariableLocation
+
 
 class Dummy_Environment(gym.Env):
     def __init__(self):
@@ -30,6 +32,91 @@ class Dummy_Environment(gym.Env):
 
 
 @pytest.fixture
+def default_shape(dir_save_location):
+    return {
+        "control_points": [
+            [
+                1.0,
+                2.0,
+                3.0,
+                4.0,
+                VariableLocation(
+                    **{
+                        "current_position": 5.0,
+                        "min_value": 4.0,
+                        "save_location": dir_save_location,
+                    }
+                ),
+            ],
+            [
+                1.0,
+                2.0,
+                3.0,
+                4.0,
+                {
+                    "current_position": 5.0,
+                    "min_value": 4.0,
+                    "save_location": dir_save_location,
+                },
+            ],
+        ],
+        "save_location": dir_save_location,
+    }
+
+
+@pytest.fixture
+def bspline_shape(dir_save_location):
+    ret_dict = {
+        "save_location": dir_save_location,
+    }
+    ret_dict["space_dimensions"] = [
+        {
+            "name": "something",
+            "save_location": dir_save_location,
+            "number_of_points": 3,
+            "degree": 1,
+        },
+        {
+            "name": "something",
+            "save_location": dir_save_location,
+            "number_of_points": 3,
+            "degree": 1,
+        },
+    ]
+    return ret_dict
+
+
+@pytest.fixture
+def nurbs_shape(bspline_shape, dir_save_location):
+    bspline_shape["weights"] = [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        VariableLocation(
+            **{
+                "current_position": 0.7,
+                "max_value": 0.75,
+                "min_value": 0.65,
+                "save_location": dir_save_location,
+            }
+        ),
+        VariableLocation(
+            **{
+                "current_position": 0.8,
+                "max_value": 0.85,
+                "min_value": 0.75,
+                "save_location": dir_save_location,
+            }
+        ),
+        0.9,
+    ]
+    return bspline_shape
+
+
+@pytest.fixture
 def provide_dummy_environment():
     return Dummy_Environment()
 
@@ -38,6 +125,8 @@ def provide_dummy_environment():
 def clean_up_provider():
     def recursive_file_remove(path):
         """Remove a file or directory and its contents.
+
+        Very dangerous function. Use with the greatest of care.
 
         Author: GitHubCopilot (14.08.2023)
         """
@@ -88,11 +177,10 @@ def dir_save_location_path(make_dir=False):
 
 
 @pytest.fixture
-def dir_save_location():
+def dir_save_location(clean_up_provider):
     path = dir_save_location_path()
     yield path
-    if os.path.isdir(path):
-        os.rmdir(path)
+    clean_up_provider(path)
 
 
 @pytest.fixture
@@ -120,3 +208,77 @@ def dummy_file():
     yield file_name
     if file_name.is_file():
         file_name.unlink()
+
+
+@pytest.fixture
+def basic_agent_definition(request, dir_save_location):
+    return {
+        "save_location": dir_save_location,
+        "type": request.param,
+        "policy": "MlpPolicy",
+    }
+
+
+@pytest.fixture
+def basic_geometry_definition(dir_save_location, default_shape):
+    return {
+        "save_location": dir_save_location,
+        "shape_definition": default_shape,
+    }
+
+
+@pytest.fixture
+def basic_spor_definition(dir_save_location):
+    dir_save_location_path(make_dir=True)
+    return {
+        "save_location": dir_save_location,
+        "working_directory": str(dir_save_location),
+        "name": "test",
+        "reward_on_error": -1,
+    }
+
+
+@pytest.fixture
+def spor_python_external(basic_spor_definition):
+    file_path_prefix = str(pathlib.Path(__file__).parent)
+    basic_spor_definition.update(
+        {
+            "python_file_path": (
+                f"{file_path_prefix}/samples/spor_python_scripts_tests/"
+                "file_exists_has_main.py"
+            ),
+            "use_communication_interface": True,
+            "additional_observations": 3,
+        }
+    )
+    return basic_spor_definition
+
+
+@pytest.fixture
+def basic_spor_list_definition(dir_save_location, spor_python_external):
+    return {
+        "save_location": dir_save_location,
+        "steps": [spor_python_external],
+        "reward_aggregation": "sum",
+    }
+
+
+@pytest.fixture
+def basic_environment_definition(
+    basic_geometry_definition, basic_spor_list_definition, dir_save_location
+):
+    return {
+        "save_location": dir_save_location,
+        "multi_processing": {
+            "save_location": dir_save_location,
+        },
+        "geometry": basic_geometry_definition,
+        "spor": basic_spor_list_definition,
+    }
+
+
+@pytest.fixture
+def basic_verbosity_definition(dir_save_location):
+    return {
+        "save_location": dir_save_location,
+    }

@@ -5,86 +5,9 @@ from gymnasium import spaces
 from pydantic import ValidationError
 
 from releso.geometry import FFDGeometry, Geometry
-from releso.shape_parameterization import ShapeDefinition, VariableLocation
+from releso.shape_parameterization import ShapeDefinition
 from releso.spline import BSplineDefinition, NURBSDefinition
 from releso.util.logger import VerbosityLevel
-
-
-def default_shape():
-    return {
-        "control_points": [
-            [
-                1.0,
-                2.0,
-                3.0,
-                4.0,
-                VariableLocation(
-                    current_position=5.0,
-                    min_value=4.0,
-                    save_location=dir_save_location_path(),
-                ),
-            ],
-            [
-                1.0,
-                2.0,
-                3.0,
-                4.0,
-                VariableLocation(
-                    current_position=5.0,
-                    min_value=4.0,
-                    save_location=dir_save_location_path(),
-                ),
-            ],
-        ],
-        "save_location": dir_save_location_path(),
-    }
-
-
-def bspline_shape():
-    ret_dict = {
-        "save_location": dir_save_location_path(),
-    }
-    ret_dict["space_dimensions"] = [
-        {
-            "name": "something",
-            "save_location": dir_save_location_path(),
-            "number_of_points": 3,
-            "degree": 1,
-        },
-        {
-            "name": "something",
-            "save_location": dir_save_location_path(),
-            "number_of_points": 3,
-            "degree": 1,
-        },
-    ]
-    return ret_dict
-
-
-def nurbs_shape():
-    ret_dict = bspline_shape()
-    ret_dict["weights"] = [
-        0.1,
-        0.2,
-        0.3,
-        0.4,
-        0.5,
-        0.6,
-        VariableLocation(
-            current_position=0.7,
-            max_value=0.75,
-            min_value=0.65,
-            save_location=dir_save_location_path(),
-        ),
-        VariableLocation(
-            current_position=0.8,
-            max_value=0.85,
-            min_value=0.75,
-            save_location=dir_save_location_path(),
-        ),
-        0.9,
-    ]
-    return ret_dict
 
 
 @pytest.mark.parametrize(
@@ -98,17 +21,17 @@ def nurbs_shape():
     ),
     [
         (
-            default_shape(),
+            "default_shape",
             None,
             None,
             None,
             ShapeDefinition,
             2,
         ),  # test that default is correct
-        (default_shape(), True, True, True, ShapeDefinition, 2),
-        (default_shape(), False, False, False, ShapeDefinition, 2),
-        (bspline_shape(), None, False, None, BSplineDefinition, 18),
-        (nurbs_shape(), None, False, None, NURBSDefinition, 20),
+        ("default_shape", True, True, True, ShapeDefinition, 2),
+        ("default_shape", False, False, False, ShapeDefinition, 2),
+        ("bspline_shape", None, False, None, BSplineDefinition, 18),
+        ("nurbs_shape", None, False, None, NURBSDefinition, 20),
     ],
 )
 def test_geometry_init(
@@ -120,9 +43,10 @@ def test_geometry_init(
     n_action_variables,
     dir_save_location,
     caplog,
+    request,
 ):
     call_dict = {
-        "shape_definition": shape_definition,
+        "shape_definition": request.getfixturevalue(shape_definition),
         "save_location": dir_save_location,
     }
     if action_based is not None:
@@ -217,7 +141,7 @@ def test_geometry_init(
     ),
     [
         (
-            default_shape(),
+            "default_shape",
             False,
             False,
             False,
@@ -226,7 +150,7 @@ def test_geometry_init(
             "FFD can only be performed with a Gustaf Spline",
         ),
         (
-            bspline_shape(),
+            "bspline_shape",
             None,
             False,
             None,
@@ -235,7 +159,7 @@ def test_geometry_init(
             False,
         ),
         (
-            nurbs_shape(),
+            "nurbs_shape",
             None,
             False,
             None,
@@ -256,9 +180,10 @@ def test_ffd_geometry_init(
     error,
     dir_save_location,
     caplog,
+    request,
 ):
     call_dict = {
-        "shape_definition": shape_definition,
+        "shape_definition": request.getfixturevalue(shape_definition),
         "save_location": dir_save_location,
         "mesh": {
             "path": load_sample_file,

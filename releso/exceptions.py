@@ -11,6 +11,7 @@ from releso.util.logger import get_parser_logger
 
 class Stylings(enum.Enum):
     """Possible stylings supported by this Tool."""
+
     Bold = 1
     Faint = 2
     Italic = 3
@@ -30,7 +31,7 @@ class Stylings(enum.Enum):
         Returns:
             str: encoded enum value.
         """
-        return '%s' % self.value
+        return "%s" % self.value
 
 
 def check_if_color_is_supported_in_console() -> bool:
@@ -42,15 +43,18 @@ def check_if_color_is_supported_in_console() -> bool:
         bool: Terminal supports color.
     """
     for handle in [sys.stdout, sys.stderr]:
-        if (hasattr(handle, "isatty") and handle.isatty()) or \
-                ('TERM' in os.environ and os.environ['TERM'] == 'ANSI'):
-            if platform.system() == 'Windows' and not \
-                    ('TERM' in os.environ and os.environ['TERM'] == 'ANSI'):
+        if (hasattr(handle, "isatty") and handle.isatty()) or (
+            "TERM" in os.environ and os.environ["TERM"] == "ANSI"
+        ):
+            if platform.system() == "Windows" and not (
+                "TERM" in os.environ and os.environ["TERM"] == "ANSI"
+            ):
                 return False
             else:
                 return True
         else:
             return False
+    return False
 
 
 #: boolean value on whether or not coloring is supported
@@ -73,8 +77,11 @@ def output_styling(message: str, stylings: List[Stylings]) -> str:
     Returns:
         (str): ANSI encoded styled message.
     """
-    return f"\033[{';'.join(map(str, stylings[:3]))}m{message}\033[0m"\
-        if color_supported else message
+    return (
+        f"\033[{';'.join(map(str, stylings[:3]))}m{message}\033[0m"
+        if color_supported
+        else message
+    )
 
 
 def red(message: str) -> str:
@@ -92,7 +99,8 @@ def red(message: str) -> str:
         (str): ANSI encoded colored message.
     """
     return output_styling(
-        message=message, stylings=[Stylings.Red, Stylings.Bold])
+        message=message, stylings=[Stylings.Red, Stylings.Bold]
+    )
 
 
 def underline(message: str) -> str:
@@ -110,7 +118,8 @@ def underline(message: str) -> str:
         (str): ANSI encoded struck through message.
     """
     return output_styling(
-        message=message, stylings=[Stylings.Underline, Stylings.Bold])
+        message=message, stylings=[Stylings.Underline, Stylings.Bold]
+    )
 
 
 class ParserException(ValueError):
@@ -138,10 +147,12 @@ class ParserException(ValueError):
         """
         get_parser_logger().exception(
             f"In {parent} object while parsing {item} "
-            f"the following error has occurred: {message}")
+            f"the following error has occurred: {message}"
+        )
         super().__init__(
             f"In {underline(parent)} object while parsing {underline(item)} "
-            f"the following error has occurred: {red(message)}")
+            f"the following error has occurred: {red(message)}"
+        )
 
 
 class AgentUnknownException(Exception):
@@ -155,8 +166,7 @@ class AgentUnknownException(Exception):
         Defaults to "ReLeSO_environment".
     """
 
-    def __init__(
-            self, agent: str, logger: str = "ReLeSO_environment") -> None:
+    def __init__(self, agent: str, logger: str = "ReLeSO_environment") -> None:
         """Constructor AgentUnknownException.
 
         Args:
@@ -194,5 +204,6 @@ class ValidationNotSet(Exception):
         "unavailability of validation parameters. Please add the validation "
         "parameters to the json file."
         logging.getLogger(logger).exception(
-            type(self).__name__ + ": " + mes_str)
+            type(self).__name__ + ": " + mes_str
+        )
         super().__init__(mes_str)

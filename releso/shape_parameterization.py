@@ -9,6 +9,7 @@ Note:
     in a separate module, please see the file `spline.py` for these shape
     definitions.
 """
+from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -45,7 +46,7 @@ class VariableLocation(BaseModel):
     # non json variables
     #: Is true if min_value and max_value are not the same value
     _is_action: Optional[bool] = PrivateAttr(default=None)
-    #: Original position needs to be saved so that the spline can be easily
+    #: Original position needs to be saved so that the shape can be easily
     #: reset to its original state.
     _original_position: Optional[float] = PrivateAttr(default=None)
 
@@ -275,22 +276,26 @@ class ShapeDefinition(BaseModel):
         """
         new_list = []
         for element in v:
-            if type(element) is float:
-                new_list.append(
-                    VariableLocation(
-                        current_position=element,
-                        save_location=values["save_location"],
-                    )
-                )
-            elif type(element) is VariableLocation:
+            if type(element) is VariableLocation:
                 new_list.append(element)
+            elif type(element) in [dict, OrderedDict]:
+                new_list.append(VariableLocation(**element))
             else:
-                raise ParserException(
-                    "SplineDefinition",
-                    "control_points",
-                    "The control_points need to be either a float or a "
-                    f"VariableLocation. Is of type {type(element)}.",
-                )
+                try:
+                    element = float(element)
+                    new_list.append(
+                        VariableLocation(
+                            current_position=element,
+                            save_location=values["save_location"],
+                        )
+                    )
+                except (ValueError, TypeError):
+                    raise ParserException(
+                        "ShapeDefinition",
+                        "control_points",
+                        "The control_points need to be either a float castable"
+                        f" or a VariableLocation. Is of type {type(element)}.",
+                    )
         return new_list
 
     def get_control_points(self) -> List[List[float]]:

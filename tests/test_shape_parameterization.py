@@ -1,9 +1,12 @@
+from collections import OrderedDict
+
 import numpy as np
 import pydantic
 import pytest
+from conftest import dir_save_location_path
 
 from releso.shape_parameterization import ShapeDefinition, VariableLocation
-from releso.util.logger import VerbosityLevel, get_parser_logger
+from releso.util.logger import VerbosityLevel
 
 
 @pytest.mark.parametrize(
@@ -387,7 +390,53 @@ def test_variable_location_continuous_action(
         ([[1.0]], 1, False),
         ([[(1.0, 2.0)]], 1, True),
         (
-            [[{"current_position": 1, "save_location": "test"}]],
+            [
+                [
+                    VariableLocation(
+                        current_position=1,
+                        save_location=dir_save_location_path(),
+                    )
+                ]
+            ],
+            1,
+            False,
+        ),
+        (
+            [
+                [
+                    VariableLocation(
+                        current_position=1,
+                        save_location=dir_save_location_path(),
+                    ),
+                    1.0,
+                ]
+            ],
+            2,
+            False,
+        ),
+        (
+            [
+                [
+                    {
+                        "current_position": 1,
+                        "save_location": dir_save_location_path(),
+                    }
+                ]
+            ],
+            1,
+            False,
+        ),
+        (
+            [
+                [
+                    OrderedDict(
+                        {
+                            "current_position": 1,
+                            "save_location": dir_save_location_path(),
+                        }
+                    )
+                ]
+            ],
             1,
             False,
         ),
@@ -396,13 +445,13 @@ def test_variable_location_continuous_action(
 def test_shapeDefinition_initiation(
     control_points, n_elements, error, dir_save_location
 ):
-    for idx in range(len(control_points)):
-        for idy in range(len(control_points[idx])):
-            if isinstance(control_points[idx][idy], dict):
-                control_points[idx][idy]["save_location"] = dir_save_location
-                control_points[idx][idy] = VariableLocation(
-                    **control_points[idx][idy]
-                )
+    # for idx in range(len(control_points)):
+    #     for idy in range(len(control_points[idx])):
+    #         if isinstance(control_points[idx][idy], dict):
+    #             control_points[idx][idy]["save_location"] = dir_save_location
+    #             control_points[idx][idy] = VariableLocation(
+    #                 **control_points[idx][idy]
+    #             )
     cal_dict = {
         "control_points": control_points,
         "save_location": dir_save_location,
@@ -433,6 +482,10 @@ def test_shapeDefinition_initiation(
                 (
                     isinstance(point_o, VariableLocation)
                     and point_o.current_position == point
+                )
+                or (
+                    isinstance(point_o, (dict, OrderedDict))
+                    and point_o["current_position"] == point
                 )
                 or point_o == point
             ):
