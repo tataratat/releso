@@ -1,0 +1,51 @@
+{
+    "save_location": "this_is_a_test_directory",
+    "verbosity": {},
+    "agent": {
+        "type": "DQN",
+        "policy": "MlpPolicy"
+    },
+    "environment": {
+        "multi_processing":{},
+        "geometry": {
+            "shape_definition":{
+                "control_points": [
+                    [
+                        1.0,
+                        2.0,
+                        3.0,
+                        4.0,
+                        {
+                            "current_position": 5.0,
+                            "min_value": 4.0,
+                        }
+                    ],
+                    [
+                        1.0,
+                        2.0,
+                        3.0,
+                        4.0,
+                        {
+                            "current_position": 5.0,
+                            "min_value": 4.0,
+                        }
+                    ],
+                ],
+            }
+        },
+        "spor":{
+            "steps": [
+                {
+                    "python_file_path": "../tests/samples/spor_python_scripts_tests/file_exists_has_main.py",
+                    "use_communication_interface": true,
+                    "additional_observations": 3,
+                    "working_directory": "this_is_a_test_directory",
+                    "name": "test",
+                    "reward_on_error": -1,
+                }
+            ],
+            reward_aggregation: "sum"
+        }
+    },
+    "number_of_timesteps": 100,
+}

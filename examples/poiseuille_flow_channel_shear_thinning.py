@@ -48,7 +48,7 @@ def setup_namespace(
     degree: int = 2,
     A: float = 6589,
     B: float = 0.138,
-    C: float = 0.725
+    C: float = 0.725,
 ):
     """Set up the namespace for this problem.
 
@@ -79,24 +79,22 @@ def setup_namespace(
     ns.B = B
     ns.C = C
     ns.x = geom
-    ns.define_for('x', gradient='grad', normal='n', jacobians=('dV', 'dS'))
-    ns.ubasis = domain.basis('std', degree=degree).vector(domain.ndims)
-    ns.pbasis = domain.basis('std', degree=degree-1)
-    ns.u = function.dotarg('u', ns.ubasis)
-    ns.p = function.dotarg('p', ns.pbasis)
-    ns.epsilon_ij = '0.5 (grad_j(u_i) + grad_i(u_j))'
-    ns.gammaDot = 'sqrt(2 epsilon_ij epsilon_ij)'
-    ns.eta = 'A / ((1 + B gammaDot)^(C))'
-    ns.stressNewton_ij = '2 A epsilon_ij - p delta_ij'
-    ns.stressYasuda_ij = '2 eta epsilon_ij - p delta_ij'
+    ns.define_for("x", gradient="grad", normal="n", jacobians=("dV", "dS"))
+    ns.ubasis = domain.basis("std", degree=degree).vector(domain.ndims)
+    ns.pbasis = domain.basis("std", degree=degree - 1)
+    ns.u = function.dotarg("u", ns.ubasis)
+    ns.p = function.dotarg("p", ns.pbasis)
+    ns.epsilon_ij = "0.5 (grad_j(u_i) + grad_i(u_j))"
+    ns.gammaDot = "sqrt(2 epsilon_ij epsilon_ij)"
+    ns.eta = "A / ((1 + B gammaDot)^(C))"
+    ns.stressNewton_ij = "2 A epsilon_ij - p delta_ij"
+    ns.stressYasuda_ij = "2 eta epsilon_ij - p delta_ij"
 
     return ns
 
 
 def run_simulation(
-    geometry_tpl: Tuple,
-    namespace: Namespace,
-    intrpl_dgr: int = 4
+    geometry_tpl: Tuple, namespace: Namespace, intrpl_dgr: int = 4
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Simulate shear-thinning Stokes flow in a converging channel geometry.
 
@@ -126,27 +124,34 @@ def run_simulation(
     #######################
 
     # inflow boundary condition (const. x-velocity of 0.5)
-    usqr = domain.boundary['Inflow'].integral(
-        '(u_0 - 0.5)^2 dS' @ ns, degree=intrpl_dgr)
-    usqr += domain.boundary['Inflow'].integral(
-        '(u_1)^2 dS' @ ns, degree=intrpl_dgr)
+    usqr = domain.boundary["Inflow"].integral(
+        "(u_0 - 0.5)^2 dS" @ ns, degree=intrpl_dgr
+    )
+    usqr += domain.boundary["Inflow"].integral(
+        "(u_1)^2 dS" @ ns, degree=intrpl_dgr
+    )
 
     # no-slip condition on bottom and top wall
-    usqr += domain.boundary['LowerWall'].integral(
-        'u_k u_k dS' @ ns, degree=intrpl_dgr)
-    usqr += domain.boundary['UpperWall'].integral(
-        'u_k u_k dS' @ ns, degree=intrpl_dgr)
+    usqr += domain.boundary["LowerWall"].integral(
+        "u_k u_k dS" @ ns, degree=intrpl_dgr
+    )
+    usqr += domain.boundary["UpperWall"].integral(
+        "u_k u_k dS" @ ns, degree=intrpl_dgr
+    )
 
     # zero vertical velocity at outflow
-    usqr += domain.boundary['Outflow1'].integral(
-        '(u_1)^2 dS' @ ns, degree=intrpl_dgr)
-    usqr += domain.boundary['Outflow2'].integral(
-        '(u_1)^2 dS' @ ns, degree=intrpl_dgr)
-    usqr += domain.boundary['Outflow3'].integral(
-        '(u_1)^2 dS' @ ns, degree=intrpl_dgr)
+    usqr += domain.boundary["Outflow1"].integral(
+        "(u_1)^2 dS" @ ns, degree=intrpl_dgr
+    )
+    usqr += domain.boundary["Outflow2"].integral(
+        "(u_1)^2 dS" @ ns, degree=intrpl_dgr
+    )
+    usqr += domain.boundary["Outflow3"].integral(
+        "(u_1)^2 dS" @ ns, degree=intrpl_dgr
+    )
 
     # compose contraints (boundary conditions) for the solver
-    ucons = solver.optimize('u', usqr, droptol=1e-15)
+    ucons = solver.optimize("u", usqr, droptol=1e-15)
     cons = dict(u=ucons)
 
     ####################
@@ -155,10 +160,12 @@ def run_simulation(
 
     # domain integrals for Stokes problem
     uresNewton = domain.integral(
-        'grad_j(ubasis_ni) stressNewton_ij dV' @ ns, degree=intrpl_dgr)
+        "grad_j(ubasis_ni) stressNewton_ij dV" @ ns, degree=intrpl_dgr
+    )
     uresYasuda = domain.integral(
-        'grad_j(ubasis_ni) stressYasuda_ij dV' @ ns, degree=intrpl_dgr)
-    pres = domain.integral('pbasis_n grad_k(u_k) dV' @ ns, degree=intrpl_dgr)
+        "grad_j(ubasis_ni) stressYasuda_ij dV" @ ns, degree=intrpl_dgr
+    )
+    pres = domain.integral("pbasis_n grad_k(u_k) dV" @ ns, degree=intrpl_dgr)
 
     #########
     # SOLVE #
@@ -166,45 +173,53 @@ def run_simulation(
 
     # Solve the linear system as initial guess for nonlinear system
     state0 = solver.solve_linear(
-        ('u', 'p'), (uresNewton, pres), constrain=cons)
+        ("u", "p"), (uresNewton, pres), constrain=cons
+    )
     # Solve the nonlinear system
-    state1 = solver.newton(('u', 'p'), (uresYasuda, pres),
-                           arguments=state0, constrain=cons).solve(tol=1e-10)
+    state1 = solver.newton(
+        ("u", "p"), (uresYasuda, pres), arguments=state0, constrain=cons
+    ).solve(tol=1e-10)
 
     ##############
     # EVALUATION #
     ##############
 
     # area patch 1
-    area_patch_1 = domain.boundary['Outflow1'].integral(
-        '1 dS' @ ns, degree=intrpl_dgr)
+    area_patch_1 = domain.boundary["Outflow1"].integral(
+        "1 dS" @ ns, degree=intrpl_dgr
+    )
     area_1 = area_patch_1.eval()
     # mass flow patch 1
-    outflow_patch_1 = domain.boundary['Outflow1'].integral(
-        'u_k n_k dS' @ ns, degree=intrpl_dgr)
+    outflow_patch_1 = domain.boundary["Outflow1"].integral(
+        "u_k n_k dS" @ ns, degree=intrpl_dgr
+    )
     mass_flow_1 = outflow_patch_1.eval(**state1)
 
     # area patch 2
-    area_patch_2 = domain.boundary['Outflow2'].integral(
-        '1 dS' @ ns, degree=intrpl_dgr)
+    area_patch_2 = domain.boundary["Outflow2"].integral(
+        "1 dS" @ ns, degree=intrpl_dgr
+    )
     area_2 = area_patch_2.eval()
     # mass flow patch 2
-    outflow_patch_2 = domain.boundary['Outflow2'].integral(
-        'u_k n_k dS' @ ns, degree=intrpl_dgr)
+    outflow_patch_2 = domain.boundary["Outflow2"].integral(
+        "u_k n_k dS" @ ns, degree=intrpl_dgr
+    )
     mass_flow_2 = outflow_patch_2.eval(**state1)
 
     # area patch 3
-    area_patch_3 = domain.boundary['Outflow3'].integral(
-        '1 dS' @ ns, degree=intrpl_dgr)
+    area_patch_3 = domain.boundary["Outflow3"].integral(
+        "1 dS" @ ns, degree=intrpl_dgr
+    )
     area_3 = area_patch_3.eval()
     # mass flow patch 1
-    outflow_patch_3 = domain.boundary['Outflow3'].integral(
-        'u_k n_k dS' @ ns, degree=intrpl_dgr)
+    outflow_patch_3 = domain.boundary["Outflow3"].integral(
+        "u_k n_k dS" @ ns, degree=intrpl_dgr
+    )
     mass_flow_3 = outflow_patch_3.eval(**state1)
 
-    col1 = 'RNG'
-    col2 = 'area'
-    col3 = 'mass flow'
+    col1 = "RNG"
+    col2 = "area"
+    col3 = "mass flow"
     # print()
     # print(f'{col1:>9} {col2:>15} {col3:>15}')
     # print(f'Outflow 1 {area_1:>15.7f} {mass_flow_1:>15.7f}')
@@ -214,7 +229,8 @@ def run_simulation(
 
     return (
         np.array([area_1, area_2, area_3]),
-        np.array([mass_flow_1, mass_flow_2, mass_flow_3]))
+        np.array([mass_flow_1, mass_flow_2, mass_flow_3]),
+    )
 
 
 def post_process(geometry_tpl: Tuple, ns: Namespace, states_tpl: Tuple):
@@ -233,19 +249,21 @@ def post_process(geometry_tpl: Tuple, ns: Namespace, states_tpl: Tuple):
     domain, geom = geometry_tpl
     state0, state1 = states_tpl
 
-    bezier = domain.sample('bezier', 9)
+    bezier = domain.sample("bezier", 9)
     x, u, p, eta = bezier.eval([ns.x, ns.u, ns.p, ns.eta], **state1)
-    export.triplot('stokes_u0.png', x,
-                   u[:, 0], tri=bezier.tri, hull=bezier.hull)
-    export.triplot('stokes_u1.png', x,
-                   u[:, 1], tri=bezier.tri, hull=bezier.hull)
-    export.triplot('stokes_p.png', x, p, tri=bezier.tri, hull=bezier.hull)
-    export.triplot('stokes_eta.png', x, eta, tri=bezier.tri, hull=bezier.hull)
+    export.triplot(
+        "stokes_u0.png", x, u[:, 0], tri=bezier.tri, hull=bezier.hull
+    )
+    export.triplot(
+        "stokes_u1.png", x, u[:, 1], tri=bezier.tri, hull=bezier.hull
+    )
+    export.triplot("stokes_p.png", x, p, tri=bezier.tri, hull=bezier.hull)
+    export.triplot("stokes_eta.png", x, eta, tri=bezier.tri, hull=bezier.hull)
 
 
 def compute_quality_criterion(
-        area: np.ndarray,
-        mass_flow: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    area: np.ndarray, mass_flow: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
     """Compute the quality criterion of the given pathes and ratio if needed.
 
     Args:
@@ -263,13 +281,15 @@ def compute_quality_criterion(
 
     localVelocity = mass_flow / area
     ratio = localVelocity / averageVelocity
-    qualityCriterion = (ratio-1) / np.maximum(ratio, np.ones_like(ratio))
+    qualityCriterion = (ratio - 1) / np.maximum(ratio, np.ones_like(ratio))
     return ratio, qualityCriterion
 
 
 def calculate_reward(
-        quality_criterions: np.ndarray,
-        last_quality_criterions: np.ndarray, **kwargs) -> float:
+    quality_criterions: np.ndarray,
+    last_quality_criterions: np.ndarray,
+    **kwargs
+) -> float:
     """Function that actually calculates the reward.
 
     Note: Currently the reward is calculated the same way Michael calculated it.
@@ -288,11 +308,11 @@ def calculate_reward(
     last_quality_reward_sum = (last_quality_criterions**2).sum()
     done = False
 
-    if quality_reward_sum < acceptance_value:   # achieved goal quality
+    if quality_reward_sum < acceptance_value:  # achieved goal quality
         reward = 5
         done = True
         info["reset_reason"] = "goal_achieved"
-    else:   # last_quality_reward_sum >= quality_reward_sum result got worse relative to last step
+    else:  # last_quality_reward_sum >= quality_reward_sum result got worse relative to last step
         reward = quality_reward_sum * -1.0
     return reward, info, done
 
@@ -311,7 +331,7 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
     Returns:
         Set[Dict[str, Any], Any]: _description_
     """
-    mesh_path = './examples/2DChannelTria.msh'
+    mesh_path = "./examples/2DChannelTria.msh"
 
     # first time initialization
     if func_data is None:
@@ -319,7 +339,8 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
     logger.warning("Func data setup.")
     if "domain" not in func_data.keys():
         func_data["domain"], func_data["geom"] = setup_mesh(
-            mesh_path=mesh_path, logger=logger)
+            mesh_path=mesh_path, logger=logger
+        )
         func_data["basis"] = func_data["domain"].basis("std", degree=1)
         # .vector(
         # func_data["domain"].ndims)
@@ -329,22 +350,25 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
     # adapt geometry
     # TODO  args.json_object['info']['mesh_coords']
     # print(np.array(args.json_object["info"]))
-    coords = np.array(args.json_object["info"]
-                      ["geometry_information"])*[1., 0.4]
+    coords = np.array(args.json_object["info"]["geometry_information"]) * [
+        1.0,
+        0.4,
+    ]
     func_data["geom"] = (func_data["basis"][:, np.newaxis] * coords).sum(0)
 
     namespace = setup_namespace((func_data["domain"], func_data["geom"]))
 
-    ratio, quality_criterion = compute_quality_criterion(*run_simulation(
-        (func_data["domain"], func_data["geom"]), namespace
-    ))
+    ratio, quality_criterion = compute_quality_criterion(
+        *run_simulation((func_data["domain"], func_data["geom"]), namespace)
+    )
 
     # first time or on reset
     if "last_quality_criterion" not in func_data.keys() or args.reset:
         func_data["last_quality_criterion"] = quality_criterion
 
     reward, info, done = calculate_reward(
-        quality_criterion, func_data["last_quality_criterion"])
+        quality_criterion, func_data["last_quality_criterion"]
+    )
 
     # overwrite old quality_criterion
     func_data["last_quality_criterion"] = quality_criterion
@@ -355,15 +379,14 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
         "reward": reward,
         "done": done,
         "info": info,
-        "observations": quality_criterion.tolist()
+        "observations": quality_criterion.tolist(),
     }
 
     return return_dict, func_data
 
 
-if __name__ == '__main__':
-
-    geometry_tpl = setup_mesh('./examples/2DChannelTria.msh')
+if __name__ == "__main__":
+    geometry_tpl = setup_mesh("./examples/2DChannelTria.msh")
     namespace = setup_namespace(geometry_tpl)
     states_tpl = run_simulation(geometry_tpl, namespace)
     post_process(geometry_tpl, namespace, states_tpl)
