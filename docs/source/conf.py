@@ -19,7 +19,7 @@ import sys
 try:
     import releso
 except ModuleNotFoundError:
-    sys.path.insert(0, os.path.abspath('../../'))
+    sys.path.insert(0, os.path.abspath("../../"))
     import releso
 
 
@@ -28,9 +28,9 @@ with open("../../releso/_version.py") as f:
 
 # -- Project information -----------------------------------------------------
 
-project = 'ReLeSO'
-copyright = '2022, Clemens Fricke'
-author = 'Clemens Fricke'
+project = "ReLeSO"
+copyright = "2023, Clemens Fricke"
+author = "Clemens Fricke"
 
 # The full version, including alpha/beta/rc tags
 release = version
@@ -42,15 +42,15 @@ release = version
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.duration',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon',
+    "sphinx.ext.duration",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
     # 'sphinxcontrib.autodoc_pydantic'
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 autodoc_mock_imports = [
     "pydantic",
     "tensorboard",
@@ -82,11 +82,11 @@ autodoc_pydantic_settings_show_json = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
-html_logo = '_static/logo.png'
-html_favicon = '_static/thumb.png'
+html_theme = "sphinx_rtd_theme"
+html_logo = "_static/logo.png"
+html_favicon = "_static/thumb.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
