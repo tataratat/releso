@@ -480,7 +480,7 @@ def test_spor_object_executor_interface_add(
         "reward": 0.0,
     }
     if reset_reason is not None:
-        new_step_info["info"][spor_object.name]["reset_reason"] = reset_reason
+        new_step_info["info"]["reset_reason"] = reset_reason
     # raise RuntimeError(f"{new_step_info}")
     step_info = {
         "observation": {},
@@ -555,7 +555,7 @@ def test_spor_object_executor_interface_read(
         "reward": 0.0,
     }
     if reset_reason is not None:
-        new_step_info["info"][spor_object.name]["reset_reason"] = reset_reason
+        new_step_info["info"]["reset_reason"] = reset_reason
     # raise RuntimeError(f"{new_step_info}")
     step_info = {
         "observation": {},
@@ -735,6 +735,37 @@ def test_spor_external_python_function(
         observations[spor_obj.additional_observations.name], [1, 2, 3]
     )
     clean_up_provider(dir_save_location)
+
+
+def test_spor_external_python_function_reset_reason(dir_save_location):
+    dir_save_location_path(True)
+    file_prefix = str(pathlib.Path(__file__).parent.resolve())
+    calling_dict = {
+        "name": "dummy_spor",
+        "python_file_path": (
+            file_prefix
+            + "/samples/spor_python_scripts_tests/file_exists_has_main.py"
+        ),
+        "save_location": dir_save_location,
+        "working_directory": str(dir_save_location),
+        "reward_on_error": 0.0,
+        "use_communication_interface": True,
+        "additional_observations": 3,
+    }
+    spor_obj = SPORObjectExternalPythonFunction(**calling_dict)
+
+    env_id = uuid.uuid4()
+    observations = {}
+    done = False
+    reward = 0.0
+    info = dict()
+    while not done:
+        observations, reward, done, info = spor_obj.run(
+            (observations, reward, done, info), environment_id=env_id
+        )
+    assert done
+    assert info[spor_obj.name]["reset_reason"] == "func_data > 10"
+    assert info["reset_reason"] == "func_data > 10"
 
 
 @pytest.mark.parametrize(
@@ -1150,7 +1181,7 @@ def test_spor_list_run_done(dir_save_location, clean_up_provider):
         (observations, reward, done, info),
         environment_id=env_id,
     )
-    assert info.get("reset_reason", None) == "unspecified"
+    assert info.get("reset_reason") == "unspecified"
     clean_up_provider(dir_save_location)
 
 

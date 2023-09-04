@@ -16,4 +16,5 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
         func_data += 1
     if func_data > 10:
         ret_dict["done"] = True
+        ret_dict["info"]["reset_reason"] = "func_data > 10"
     return ret_dict, func_data

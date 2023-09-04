@@ -595,7 +595,7 @@ class SPORObjectExecutor(SPORObject):
             returned_step_dict["info"],
             self.logger_name,
         )
-        if value := returned_step_dict["info"].get(self.name):
+        if value := step_dict["info"].get(self.name):
             if value := value.get("reset_reason"):
                 step_dict["info"]["reset_reason"] = value
         step_dict["done"] = step_dict["done"] or returned_step_dict["done"]
@@ -760,8 +760,13 @@ class SPORObjectPythonFunction(SPORObjectExecutor):
                 if self.use_communication_interface:
                     if isinstance(output, dict):
                         self.spor_com_interface_add(output, step_return)
-                    # else: # this should never be accessed with python funcs
-                    #     self.spor_com_interface_read(output, step_return)
+                    else:  # this should never be accessed with python funcs
+                        raise RuntimeError(
+                            "The output of the internalized python function "
+                            "is not a dictionary. Please check the function "
+                            "and the documentation."
+                        )  # pragma: no cover
+                        # self.spor_com_interface_read(output, step_return)
                 if self.reward_on_completion:
                     if step_return["reward"]:
                         env_logger.warning(
