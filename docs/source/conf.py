@@ -23,7 +23,7 @@ except ModuleNotFoundError:
     import releso
 
 
-with open("../../releso/_version.py") as f:
+with open("../../releso/__version__.py") as f:
     version = eval(f.read().strip().split("=")[-1])
 
 # -- Project information -----------------------------------------------------
