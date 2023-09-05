@@ -883,11 +883,12 @@ class SPORObjectExternalPythonFunction(SPORObjectPythonFunction):
 
     This class is meant to load a python function from an external file and
     execute it. The function will be imported in to the package and run in the
-     same python environment as the rest of the package is. If you want to call
-     the function you can use the SPORCommandLineObject.
+    same python environment as the rest of the package is. If you want to call
+    the function you can use the SPORCommandLineObject.
 
     The function needs to be called main and needs to have the
     following signature:
+
         args, logger, func_data
 
     Where args are the SPOR COMM arguments, logger is a logger provided by

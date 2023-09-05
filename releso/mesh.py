@@ -42,7 +42,7 @@ class MeshExporter(BaseModel):
         exists.
 
         Args:
-            v ([type]): value to validate
+            v (Any): value to validate
 
         Raises:
             ParserException: If validation fails throws this error.

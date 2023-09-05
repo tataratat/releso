@@ -6,7 +6,7 @@ This page covers the installation process of the framework and its prerequisites
 Prerequisites
 -------------
 To use ReLeSO the following packages have to be installed:
- - pydantic
+ - pydantic<2.0
  - stable-baselines3
  - tensorboard
  - torchvision
@@ -19,13 +19,13 @@ The first two/three packages can be installed via pip and/or conda with the foll
 
 .. code-block:: console
 
-   (.venv) $ pip install pydantic stable-baselines3 tensorboard hjson
+   (.venv) $ pip install "pydantic<2.0" stable-baselines3 tensorboard hjson
 
 **conda**
 
 .. code-block:: console
 
-   (base) $ conda create -n releso python=3.9 pydantic tensorboard
+   (base) $ conda create -n releso python=3.9 pydantic<2.0 tensorboard
    (base) $ conda activate releso
    (releso) $ conda install -c pytorch torchvision
    (releso) $ pip install stable-baselines3 hjson

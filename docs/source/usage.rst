@@ -22,6 +22,8 @@ The arguments have to following meaning:
                         Path to the json file storing the optimization definition.
   -v, --validate_only   If this is set only validation on this configuration is run. Please configure the validation
                         object in the json file so that this option can be correctly executed.
+  -j, --json_only       If this is set only the json validation is performed, nothing else.
+  --version             Show program's version number and exit
 
 The INPUT_FILE should be the path to a json file defining the problem. The corresponding json-schema is shown in :doc:`json_schema`.
 
