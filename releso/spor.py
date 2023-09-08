@@ -25,8 +25,8 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import uuid4
 
 import numpy as np
-from gym import Space
-from gym.spaces import Box
+from gymnasium import Space
+from gymnasium.spaces import Box
 from pydantic import UUID4, NoneBytes, conint, validator
 from pydantic.fields import PrivateAttr
 
