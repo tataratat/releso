@@ -397,11 +397,12 @@ class Environment(BaseModel):
 
         There was a change of what the step function returns. It now returns
         the following values:
-            observation
-            reward
-            terminated
-            truncated
-            info
+
+        1. observation
+        2. reward
+        3. terminated
+        4. truncated
+        5. info
 
         The change was that done was split into terminated and truncated.
         Terminated is now True if the episode is done. Truncated is True if
