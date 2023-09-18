@@ -10,10 +10,18 @@ import pathlib
 import pprint
 import shutil
 
+import gymnasium
 import hjson
+import stable_baselines3
+import torch
 
 from releso.__version__ import version
 from releso.base_parser import BaseParser
+
+try:
+    import splinepy
+except ImportError:
+    splinepy = None
 
 
 def main(args) -> None:
@@ -50,7 +58,15 @@ def main(args) -> None:
     ###########################
 
     shutil.copy(file_path, optimization_object.save_location / file_path.name)
-
+    versions = [
+        f"releso version: {version}; ",
+        f"stable-baselines3 version: {stable_baselines3.__version__}; ",
+        f"torch version: {torch.__version__}; ",
+        f"gymnasium version: {gymnasium.__version__} ",
+    ]
+    if splinepy:
+        versions.append(f"splinepy version: {splinepy.__version__}")
+    optimization_object.get_logger().info("".join(versions))
     ###########################
     #                         #
     #   Validate json file    #
