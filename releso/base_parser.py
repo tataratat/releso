@@ -56,6 +56,10 @@ class BaseParser(BaseModel):
     #: Should the multi environment be run sequentially (True) or with multi
     #: processing (False). Defaults to False.
     multi_env_sequential: bool = False
+    #: Number of episodes after which the episode_log is updated. It will be
+    #: updated at the end of the training in any case. But making this number
+    #: higher will lower the computational overhead. Defaults to 100.
+    episode_log_update: conint(ge=1) = 100
 
     # internal objects
     #: Holds the trainable agent for the RL use case. The
@@ -109,6 +113,7 @@ class BaseParser(BaseModel):
             EpisodeLogCallback(
                 episode_log_location=self.save_location / "episode_log.csv",
                 verbose=1,
+                update_n_episodes=self.episode_log_update,
             ),
         ]
         if self.number_of_episodes is not None:

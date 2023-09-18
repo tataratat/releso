@@ -8,6 +8,7 @@ from itertools import count
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+import numpy as np
 import pandas as pd
 from stable_baselines3.common.callbacks import BaseCallback
 
@@ -34,12 +35,15 @@ class EpisodeLogCallback(BaseCallback):
         self.episode_log_location.parent.mkdir(parents=True, exist_ok=True)
         self.update_n_episodes: int = update_n_episodes
 
-        self.episodes: int = 0
+        self.episodes: int = -1
         self.last_checked_episode: int = 0
 
         self.inter_episode_dicts: Optional[
             List[Dict[int, Union[List[float], int]]]
         ] = None
+
+        # concatenating the dataframe should be faster than appending to it
+        self.last_exported_episode: int = -1
 
         # pandas dataframe do not seem to actually have a method to append new
         #  data to the dataframe without knowing the index. (append exists but
@@ -64,7 +68,24 @@ class EpisodeLogCallback(BaseCallback):
                 "wall_time": self.episode_wall_time,
             }
         )
-        df.to_csv(self.episode_log_location)
+        # df.to_csv(self.episode_log_location)
+        # df.reset_index(drop=True, inplace=True)
+        df.index = np.arange(
+            self.last_exported_episode + 1,
+            self.last_exported_episode + 1 + len(df),
+        )
+        if self.last_exported_episode == -1:
+            df.to_csv(self.episode_log_location)
+        else:
+            df.to_csv(self.episode_log_location, mode="a", header=False)
+        self.last_exported_episode = self.episodes
+        # empty lists
+        self.episode_n_steps = []
+        self.episode_rewards = []
+        self.episode_end = []
+        self.episode_steps_total = []
+        self.environment_id = []
+        self.episode_wall_time = []
 
     def _on_step(self) -> bool:
         """Function is called after a step was performed.

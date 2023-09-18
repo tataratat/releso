@@ -13,7 +13,7 @@ def test_callback_episode_log_callback(
         episode_log_location=dir_save_location / "test.csv"
     )
     assert call_back.episode_log_location == dir_save_location / "test.csv"
-    assert call_back.episodes == 0
+    assert call_back.episodes == -1
     assert call_back.update_n_episodes == 1
     env = provide_dummy_environment
     agent = PPO("MlpPolicy", env, verbose=0, n_steps=100)
