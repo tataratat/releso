@@ -147,7 +147,7 @@ def test_geometry_init(
             False,
             "volumes/tet/3DBrickTet.msh",
             None,
-            "FFD can only be performed with a Gustaf Spline",
+            "FFD can only be performed with a splinepy Spline",
         ),
         (
             "bspline_shape",

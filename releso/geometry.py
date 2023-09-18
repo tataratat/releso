@@ -22,7 +22,7 @@ try:
 except ImportError as err:  # pragma: no cover
     from releso.util.module_import_raiser import ModuleImportRaiser
 
-    FFD = ModuleImportRaiser("gustaf - FFD", err)
+    FFD = ModuleImportRaiser("splinepy - FFD", err)
 
 ShapeTypes = Union[ShapeDefinition, BSplineDefinition, NURBSDefinition]
 
@@ -248,7 +248,7 @@ class FFDGeometry(Geometry):
             raise ParserException(
                 "FFDGeometry",
                 "shape_definition",
-                "FFD can only be performed with a Gustaf Spline",
+                "FFD can only be performed with a splinepy Spline",
             )
         self._FFD = FFD()
 
