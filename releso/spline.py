@@ -298,7 +298,7 @@ class BSplineDefinition(SplineDefinition):
             BSpline: given by the #degrees and knot_vector in each
             space_dimension and the current control points.
         """
-        self.get_logger().debug("Creating Gustaf BSpline.")
+        self.get_logger().debug("Creating BSpline.")
         self.get_logger().debug(
             f"With control_points: {self.get_control_points()}"
         )
@@ -421,7 +421,7 @@ class NURBSDefinition(SplineDefinition):
         Returns:
             NURBS: NURBSSpline
         """
-        self.get_logger().debug("Creating Gustaf NURBS.")
+        self.get_logger().debug("Creating NURBS.")
 
         return NURBS(
             [space_dim.degree for space_dim in self.space_dimensions],

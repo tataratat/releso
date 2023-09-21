@@ -38,10 +38,10 @@ Installation
 ============
 
 This page covers the installation process of the framework and its
-prerequisites. The first thing to note is that with version 1.0 the strict
-dependency on `splinepy` and `gustaf` is not present anymore. But if the
+prerequisites. The first thing to note is that with version 0.1.0 the strict
+dependency on `splinepy` is not present anymore. But if the
 geometry is to be parameterized by a Spline and the method of Free Form
-Deformation is to be used to deform a mesh, `splinepy` and `gustaf` are
+Deformation is to be used to deform a mesh, `splinepy` is
 necessary.
 
 Prerequisites
