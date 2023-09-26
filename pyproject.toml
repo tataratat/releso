@@ -6,3 +6,20 @@ requires = [
 build-backend = "setuptools.build_meta"
 [tool.black]
 line-length = 79
+[tool.ruff]
+line-length = 79
+# Adding "ANN" would be really nice, but is to much work currently.
+# Adding "PT" would be nice, for pytest naming convention.
+# Adding "SIM" would be nice, but is to much work currently.
+select = [
+    "E", "F", "W", "I", "N", "D", "UP", "YTT", "S", "BLE", "B", "A", "C4",
+    "ISC", "ICN", "PIE", "T20", "PYI", "Q", "RSE", "TID", "TCH", "INT", "PD",
+    "PGH", "TRY", "FLY", "NPY", "PERF", "FURB", "LOG"]
+ignore = ["N818", "TRY003"]
+preview = true
+[tool.ruff.per-file-ignores]
+"tests/*.py" = ["D", "S", "E", "CPY", "PIE804", "NPY002"]
+"examples/*.py" = ["ALL"]
+"__main__.py" = ["T20"]
+[tool.ruff.pydocstyle]
+convention = "google"
