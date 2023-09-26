@@ -13,7 +13,7 @@ from releso.observation import (
     ObservationDefinition,
     ObservationDefinitionMulti,
 )
-from releso.spor import (
+from releso.spor import (  # SPORObjectPythonFunction,; SPORObjectTypes,
     MPIClusterMultiProcessor,
     MultiProcessor,
     SPORList,
@@ -22,10 +22,7 @@ from releso.spor import (
     SPORObjectExecutor,
     SPORObjectExternalPythonFunction,
     SPORObjectInternalPythonFunction,
-    SPORObjectPythonFunction,
-    SPORObjectTypes,
 )
-from releso.util.logger import get_parser_logger
 from releso.verbosity import VerbosityLevel
 
 
@@ -251,7 +248,14 @@ def test_spor_object(
 
 
 @pytest.mark.parametrize(
-    "multi_processor, wanted_mp, use_communication_interface, add_step_information, working_dir, error",
+    [
+        "multi_processor",
+        "wanted_mp",
+        "use_communication_interface",
+        "add_step_information",
+        "working_dir",
+        "error",
+    ],
     [
         (
             {"max_core_count": 12},
@@ -1232,4 +1236,5 @@ def test_spor_list_run_reset(dir_save_location, clean_up_provider, caplog):
         )
     assert done
 
+    clean_up_provider(dir_save_location)
     clean_up_provider(dir_save_location)

@@ -31,7 +31,7 @@ def test_load_json(dir_save_location: Path, clean_up_provider):
 def test_load_json_folder_does_not_exist(dir_save_location, clean_up_provider):
     file_loc: Path = dir_save_location / "test" / "test.json"
     with pytest.raises(RuntimeError) as err:
-        res = load_json(file_loc)
+        load_json(file_loc)
     assert "No such file or directory:" in str(err.value)
     clean_up_provider(file_loc)
 
@@ -115,7 +115,7 @@ def test_additional_information():
     ],
 )
 @pytest.mark.parametrize(
-    ["l", "base_save_location", "error_l"],
+    ["l_parameter", "base_save_location", "error_l"],
     [
         (
             False,
@@ -159,7 +159,7 @@ def test_parse_communication_interface(
     additional_values,
     json_object,
     error_j,
-    l,
+    l_parameter,
     base_save_location,
     error_l,
     e,
@@ -190,9 +190,9 @@ def test_parse_communication_interface(
     elif validation_value:
         args.append("--validation_value")
         args.append(validation_value)
-    if l:
+    if l_parameter:
         args.append("-l")
-        args.append(l)
+        args.append(l_parameter)
     elif base_save_location:
         args.append("--base_save_location")
         args.append(base_save_location)
@@ -233,8 +233,8 @@ def test_parse_communication_interface(
         assert argparse_ret.validation_value == float(v)
     if base_save_location:
         assert argparse_ret.base_save_location == base_save_location
-    elif l:
-        assert argparse_ret.base_save_location == l
+    elif l_parameter:
+        assert argparse_ret.base_save_location == l_parameter
     if environment_id:
         assert argparse_ret.environment_id == environment_id
     elif e:
@@ -302,4 +302,4 @@ def test_parse_communication_interface_json(
     elif j:
         assert argparse_ret.json_object == {"test": 12, "other": "test"}
     else:
-        assert argparse_ret.json_object == None
+        assert argparse_ret.json_object is None

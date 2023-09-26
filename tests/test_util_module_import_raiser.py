@@ -29,4 +29,4 @@ def test_module_import_raiser():
     with pytest.raises(ImportError):
         raiser["hallo"] = "hallo"
     with pytest.raises(ImportError):
-        a = raiser["hallo"]
+        raiser["hallo"]

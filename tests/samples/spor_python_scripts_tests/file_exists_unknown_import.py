@@ -1,7 +1,7 @@
 """This file does not have a main function."""
 from typing import Any, Dict, Tuple
 
-import ModuleDoesNotExist
+import ModuleDoesNotExist  # noqa: F401
 
 
 def not_main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:

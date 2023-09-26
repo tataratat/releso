@@ -374,7 +374,7 @@ def test_parser_environment_observations_cnn(dir_save_location, default_shape):
     for step in env.spor.steps:
         observations.update(step.get_default_observation(observations))
     new_obs = env.check_observations(observations)
-    assert type(new_obs) is dict
+    assert isinstance(new_obs, dict)
 
 
 def test_parser_environment_observations_non_compressible(
@@ -473,14 +473,14 @@ def test_parser_environment_observations_step_reset_simple(
 
     obs, info = gym_env.reset()
     assert type(obs) in [list, np.ndarray]
-    assert type(info) is dict
+    assert isinstance(info, dict)
     assert len(obs) == 2
 
     obs, reward, done, truncated, info = gym_env.step(1)
     assert pytest.approx(obs) == [4.9, 5.0]
 
     with caplog.at_level(VerbosityLevel.WARNING):
-        new_gym_env = env.get_gym_environment()
+        _ = env.get_gym_environment()
 
     clean_up_provider(dir_save_location)
 

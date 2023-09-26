@@ -65,7 +65,7 @@ class BaseModel(pydantic.BaseModel):
         """Constructor for the ReLeSO basemodel object."""
         if "save_location" in data:
             # This is so that the save location always gets the same
-            if type(data["save_location"]) is str:
+            if isinstance(data["save_location"], str):
                 data[
                     "save_location"
                 ] = BaseModel.convert_to_pathlib_add_datetime(

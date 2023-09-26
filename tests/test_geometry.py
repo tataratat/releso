@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from conftest import dir_save_location_path
 from gymnasium import spaces
 from pydantic import ValidationError
 
@@ -76,7 +75,7 @@ def test_geometry_init(
         == geometry.shape_definition.get_control_points()
     )
 
-    assert geometry.is_geometry_changed() == False
+    assert geometry.is_geometry_changed() is False
     assert geometry.apply() == geometry.get_control_points()
 
     original_cps = geometry.get_control_points()
@@ -96,7 +95,7 @@ def test_geometry_init(
         assert isinstance(act_def, spaces.Box)
         assert act_def.shape == (len(geometry._actions),)
         geometry.apply_action(np.random.rand(len(geometry._actions)))
-    assert geometry.is_geometry_changed() == True
+    assert geometry.is_geometry_changed() is True
 
     # observation
     if geometry.action_based_observation:
@@ -228,12 +227,12 @@ def test_ffd_geometry_init(
         == geometry.shape_definition.get_control_points()
     )
 
-    assert geometry.is_geometry_changed() == False
+    assert geometry.is_geometry_changed() is False
     geometry.apply()
 
     # assert geometry.apply() == geometry.get_control_points()
 
-    original_cps = geometry.get_control_points()
+    _ = geometry.get_control_points()
 
     # actions
     assert len(geometry._actions) == len(
@@ -248,4 +247,4 @@ def test_ffd_geometry_init(
         assert isinstance(act_def, spaces.Box)
         assert act_def.shape == (len(geometry._actions),)
         geometry.apply_action(np.random.rand(len(geometry._actions)))
-    assert geometry.is_geometry_changed() == True
+    assert geometry.is_geometry_changed() is True

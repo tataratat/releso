@@ -13,16 +13,6 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 
 """
 
-import os
-import sys
-
-try:
-    import releso
-except ModuleNotFoundError:
-    sys.path.insert(0, os.path.abspath("../../"))
-    import releso
-
-
 with open("../../releso/__version__.py") as f:
     version = eval(f.read().strip().split("=")[-1])
 
@@ -66,8 +56,10 @@ templates_path = ["_templates"]
 #     "torchvision",
 #     "torch",
 # ]
-# autodoc_typehints = 'description'  # show type hints in doc body instead of signature
-# autoclass_content = 'instance'  # get docstring from class level and init simultaneously
+# show type hints in doc body instead of signature
+# autodoc_typehints = 'description'
+# get docstring from class level and init simultaneously
+# autoclass_content = 'instance'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -77,7 +69,7 @@ exclude_patterns = []
 autodoc_pydantic_model_show_json = True
 autodoc_pydantic_settings_show_json = False
 
-# -- Options for HTML output -------------------------------------------------
+# -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.

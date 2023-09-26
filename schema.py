@@ -2,7 +2,6 @@
 
 Writes the result to 'schema.json.'
 """
-import json
 
 from releso.base_parser import BaseParser
 

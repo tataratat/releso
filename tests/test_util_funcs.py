@@ -61,11 +61,11 @@ def test_call_command_line(dir_save_location, clean_up_provider, caplog):
             ".",
             logging.getLogger("test"),
         )
-        assert f"Executing command ls in ." in caplog.text
+        assert "Executing command ls in ." in caplog.text
         exit_code2, output2 = call_commandline(
             "lsl", ".", logging.getLogger("test")
         )
-        assert f"Execution failed with return code" in caplog.text
+        assert "Execution failed with return code" in caplog.text
     assert exit_code == 0
     assert exit_code1 == 0
     assert exit_code2 == 127

@@ -1,4 +1,3 @@
-import pytest
 from gymnasium import spaces
 
 from releso.gym_environment import GymEnvironment

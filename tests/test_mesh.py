@@ -5,7 +5,7 @@ import shutil
 import pytest
 from pydantic import ValidationError
 
-from releso.mesh import Mesh, MeshExporter, MeshIOMesh, MixdMesh
+from releso.mesh import MeshExporter, MeshIOMesh, MixdMesh
 
 # will look into gustaf test meshes to test these classes
 
@@ -311,7 +311,7 @@ def test_meshio_mesh(
     mesh = MeshIOMesh(**call_dict)
     if change_path and cp_rm:
         os.remove(load_sample_file)
-    g_mesh = mesh.get_mesh()
+    mesh.get_mesh()
 
 
 @pytest.mark.parametrize(

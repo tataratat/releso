@@ -86,12 +86,12 @@ def test_multi_observation_definition(
     )
     assert observation.get_observation_definition()[1] == expected
 
-    if value_type is "float":
+    if value_type == "float":
         assert np.allclose(
             np.ones(observation_shape) * value_min,
             observation.get_default_observation(),
         )
-    elif value_type is "CNN":
+    elif value_type == "CNN":
         assert np.allclose(
             np.zeros(observation_shape, np.uint8),
             observation.get_default_observation(),

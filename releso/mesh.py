@@ -3,7 +3,6 @@ import pathlib
 from abc import abstractmethod
 from typing import Any, Dict, Literal, Optional, Union
 
-import numpy as np
 from pydantic import Field, PrivateAttr
 from pydantic.class_validators import root_validator, validator
 from pydantic.types import FilePath, conint
@@ -18,6 +17,7 @@ try:
 except ImportError as err:  # pragma: no cover
     from releso.util.module_import_raiser import ModuleImportRaiser
 
+    meshio = ModuleImportRaiser("gustaf", err)
     mixd = ModuleImportRaiser("gustaf", err)
 
 
@@ -380,7 +380,7 @@ class MixdMesh(Mesh):
         raise ParserException(
             "Mesh",
             "[mien_|mxyz_|]path",
-            f"Could not locate the correct mien/mxyz paths.",
+            "Could not locate the correct mien/mxyz paths.",
         )
 
 

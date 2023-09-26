@@ -1,9 +1,8 @@
 """File holds the definition class for the validation."""
 import pathlib
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pydantic.class_validators import validator
-from pydantic.fields import Field
 from pydantic.types import conint, conlist
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import EvalCallback
@@ -227,10 +226,11 @@ class Validation(BaseModel):
                 dict with all the necessary parameters. Should mirror the
                 parameters in parser_environment.Environment.set_validation
         """
-        return {
-            "validation_values": self.validation_values,
-            "end_episode_on_geometry_not_changed": self.end_episode_on_geometry_not_changed,
-            "max_timesteps_in_episode": self.max_timesteps_in_episode,
-            "reward_on_episode_exceeds_max_timesteps": self.reward_on_episode_exceeds_max_timesteps,
-            "reward_on_geometry_not_changed": self.reward_on_geometry_not_changed,
-        }
+        parameters_to_include = [
+            "validation_values",
+            "end_episode_on_geometry_not_changed",
+            "max_timesteps_in_episode",
+            "reward_on_episode_exceeds_max_timesteps",
+            "reward_on_geometry_not_changed",
+        ]
+        return {key: getattr(self, key) for key in parameters_to_include}

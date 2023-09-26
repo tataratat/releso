@@ -3,7 +3,6 @@
 File defines the base json object which is needed to define the problem setting
 for the command line based usage of the ReLeSO toolbox/framework.
 """
-import datetime
 import pathlib
 from copy import deepcopy
 from typing import Any, Optional, Union

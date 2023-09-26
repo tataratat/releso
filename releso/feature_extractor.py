@@ -3,9 +3,8 @@
 These are implemented in a more or less slapdash fashion. Use at own Risk.
 """
 import logging
-from typing import Any, Dict, Literal, Optional
+from typing import Literal, Optional
 
-import numpy as np
 import torch as th
 from gymnasium import Space, spaces
 from stable_baselines3.common.preprocessing import (

@@ -173,10 +173,10 @@ def test_variable_location_step_length_warning(
     }
     if warning:
         with caplog.at_level(VerbosityLevel.WARNING, logger="ReLeSO_parser"):
-            variable_location = VariableLocation(**cal_dict)
+            VariableLocation(**cal_dict)
             assert "is greater than the interval for" in caplog.text
     else:
-        variable_location = VariableLocation(**cal_dict)
+        VariableLocation(**cal_dict)
 
 
 @pytest.mark.parametrize(

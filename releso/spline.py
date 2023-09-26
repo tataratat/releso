@@ -74,7 +74,7 @@ class SplineSpaceDimension(BaseModel):
                 "prerequisite variables number_of_points and degree were not "
                 "present.",
             )
-        if type(v) is list:
+        if isinstance(v, list):
             get_parser_logger().debug(
                 f"The knot_vector for dimension {values['name']} is given."
             )
@@ -228,7 +228,7 @@ class SplineDefinition(ShapeDefinition):
                         for element in inner_dim:
                             elem = copy.deepcopy(
                                 current_list
-                                if type(current_list) is list
+                                if isinstance(current_list, list)
                                 else [current_list]
                             )
                             if element == 0.0:
@@ -353,7 +353,7 @@ class NURBSDefinition(SplineDefinition):
                 for space_dim in values["space_dimensions"]
             ]
         )
-        if type(v) is list:
+        if isinstance(v, list):
             if len(v) == n_cp:
                 get_parser_logger().debug(
                     "Found correct number of weights in SplineDefinition."
@@ -391,7 +391,7 @@ class NURBSDefinition(SplineDefinition):
         Returns:
             List[VariableLocation]: Filled weight vector.
         """
-        if type(v) is float:
+        if isinstance(v, float):
             save_location = str(values["save_location"])
             return VariableLocation(
                 current_position=v, save_location=save_location

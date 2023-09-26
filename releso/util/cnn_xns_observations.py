@@ -10,7 +10,6 @@ from typing import Any, Dict, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from gym import spaces
 
 from releso.observation import ObservationDefinitionMulti
 from releso.util.load_binary import read_mixd_double

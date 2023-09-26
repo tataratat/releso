@@ -4,9 +4,6 @@ import numpy as np
 import pytest
 import torch as th
 from gymnasium import spaces
-from torchvision.models.inception import Inception3
-from torchvision.models.mobilenetv2 import MobileNetV2
-from torchvision.models.resnet import ResNet
 
 from releso.feature_extractor import CombinedExtractor, FeatureExtractor
 

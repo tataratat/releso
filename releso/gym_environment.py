@@ -27,7 +27,6 @@ Note:
 from typing import Any, Dict, List, Tuple, Union
 
 import gymnasium
-from gymnasium import spaces
 
 
 class GymEnvironment(gymnasium.Env):

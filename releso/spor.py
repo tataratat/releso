@@ -18,16 +18,13 @@ import pathlib
 import shutil
 import sys
 import traceback
-import warnings
 from ast import literal_eval
 from timeit import default_timer as timer
 from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import uuid4
 
 import numpy as np
-from gymnasium import Space
-from gymnasium.spaces import Box
-from pydantic import UUID4, NoneBytes, conint, validator
+from pydantic import UUID4, conint, validator
 from pydantic.fields import PrivateAttr
 
 from releso.base_model import BaseModel
@@ -36,7 +33,7 @@ from releso.observation import (
     ObservationDefinition,
     ObservationDefinitionMulti,
 )
-from releso.util.logger import VerbosityLevel, get_parser_logger, set_up_logger
+from releso.util.logger import VerbosityLevel, set_up_logger
 from releso.util.reward_helpers import spor_com_parse_arguments
 from releso.util.types import ObservationType, RewardType, StepReturnType
 from releso.util.util_funcs import JSONEncoder, call_commandline, join_infos
@@ -88,6 +85,7 @@ class MPIClusterMultiProcessor(MultiProcessor):
     #: The location title needs to be set to ``cluster`` so that
     location: Literal["cluster"]
     # : command prefix which is needed to parallelize the give task
+
     command: str = "$MPIEXEC"
     #: additional flags for the mpi call.
     mpi_flags_variable: str = "$FLAGS_MPI_BATCH"
@@ -425,7 +423,7 @@ class SPORObjectExecutor(SPORObject):
                 raise ParserException(
                     "SPORObjectCommandline",
                     "add_step_information",
-                    f"Please only set the add_step_information variable to "
+                    "Please only set the add_step_information variable to "
                     "True if the variable use_communication_interface is also "
                     "True.",
                 )
@@ -455,7 +453,7 @@ class SPORObjectExecutor(SPORObject):
             # TODO this is a XNS specific case
             if self.name == "main_solver":  # pragma: no cover
                 shutil.copyfile(path.parent / "xns_multi.in", path / "xns.in")
-                self.get_logger().info(f"Copying file please.....")
+                self.get_logger().info("Copying file.....")
 
     def get_multiprocessing_prefix(self, core_count: int) -> str:
         """Add commandline prefix for mpi multiprocessor.
@@ -1002,7 +1000,7 @@ class SPORObjectExternalPythonFunction(SPORObjectPythonFunction):
             except ModuleNotFoundError as err:
                 raise RuntimeError(
                     f"Could not load the python file at "
-                    f"{str(self.python_file_path)}."
+                    f"{str(self.python_file_path)}. With error: {err}"
                 )
             else:
                 try:
@@ -1010,7 +1008,7 @@ class SPORObjectExternalPythonFunction(SPORObjectPythonFunction):
                 except AttributeError as err:
                     raise RuntimeError(
                         f"Could not get main function from python file"
-                        f" {str(self.python_file_path)}."
+                        f" {str(self.python_file_path)}. With error: {err}"
                     )
                 else:
                     self._run_logger = set_up_logger(

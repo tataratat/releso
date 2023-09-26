@@ -6,7 +6,6 @@ defined here.
 """
 import multiprocessing
 import pathlib
-from copy import copy
 from timeit import default_timer as timer
 from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
@@ -16,14 +15,14 @@ import numpy as np
 from gymnasium import spaces
 from pydantic import UUID4, conint
 from pydantic.class_validators import validator
-from pydantic.fields import Field, PrivateAttr
+from pydantic.fields import PrivateAttr
 from stable_baselines3.common.monitor import Monitor
 
 from releso.base_model import BaseModel
 from releso.exceptions import ParserException
 from releso.geometry import GeometryTypes
 from releso.gym_environment import GymEnvironment
-from releso.spor import MultiProcessor, SPORList
+from releso.spor import SPORList
 from releso.util.logger import VerbosityLevel, get_parser_logger, set_up_logger
 from releso.util.types import ObservationType
 
@@ -340,8 +339,8 @@ class Environment(BaseModel):
                 for key, observation_space in observation_spaces
             }
             self.get_logger().info(
-                f"Observation space is of type Dict and"
-                f" has the following description:"
+                "Observation space is of type Dict and"
+                " has the following description:"
             )
             for name, subspace in observation_spaces:
                 self.get_logger().info(f"{name} has shape {subspace.shape}")
@@ -646,14 +645,22 @@ class Environment(BaseModel):
 
         Args:
             validation_values (List[float]): List of predefined goal states.
-            base_mesh_path (Optional[str], optional): Path to the initial mesh.
-            Defaults to None.
-            end_episode_on_geometry_not_changed (bool, optional): _description_. Defaults to False.
-            max_timesteps_in_episode (int, optional): _description_. Defaults to 0.
-            reward_on_geometry_not_changed (Optional[float], optional): _description_. Defaults to None.
-            reward_on_episode_exceeds_max_timesteps(Optional[float],optional):A
-            _description_. Defaults to None.
-            save_image_in_validation (Optional[bool], optional): _description_. Defaults to False.
+                base_mesh_path (Optional[str], optional): Path to the initial mesh.
+                Defaults to None.
+            end_episode_on_geometry_not_changed (bool, optional): Should the
+                episode end if the geometry has no changes from one episode to
+                the next. Defaults to False.
+            max_timesteps_in_episode (int, optional): Maximal timesteps per
+                episode, if 0 no limit. Defaults to 0.
+            reward_on_geometry_not_changed (float, optional): Reward to give if
+                episode is terminated due to unchanged geometry.
+                Defaults to None.
+            reward_on_episode_exceeds_max_timesteps(float, optional): Reward
+                given of the episode is terminated due to exceeding the
+                max_timesteps_in_episode. Defaults to None.
+            save_image_in_validation (bool, optional): Should the validation
+                save periodically the geometry/visualization. Is broken.
+                Defaults to False.
         """
         self._validation_ids = validation_values
         self._current_validation_idx = 0

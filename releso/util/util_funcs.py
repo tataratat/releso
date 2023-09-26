@@ -38,7 +38,7 @@ class JSONEncoder(json.JSONEncoder):
             return o.decode("utf-8")
         try:
             return json.JSONEncoder.default(self, o)
-        except TypeError as err:
+        except TypeError:
             print(type(o), o)
             return json.JSONEncoder.default(self, "")
 

@@ -194,4 +194,4 @@ def test_validation_with_environment(
 
     agent = PPO("MlpPolicy", provide_dummy_environment, verbose=0, n_steps=100)
 
-    result = validation.end_validation(agent, provide_dummy_environment)
+    validation.end_validation(agent, provide_dummy_environment)
