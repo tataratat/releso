@@ -387,6 +387,7 @@ class NURBSDefinition(SplineDefinition):
 
         Args:
             v (List[Union[float, VariableLocation]]): Value to validate
+            values (Dict[str, Any]): Previously validated variables
 
         Returns:
             List[VariableLocation]: Filled weight vector.

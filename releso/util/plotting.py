@@ -236,7 +236,8 @@ def get_tricontour_solution(
 # def plot_spline(
 #         spline: gus.nurbs.Spline, axis: Optional[plt.Axes] = None,
 #         export_path: Optional[str] = None, close: bool = False,
-#         control_point_marker: str = "*", control_point_marker_size: int = 120,
+#         control_point_marker: str = "*",
+#         control_point_marker_size: int = 120,
 #         control_point_color: str = "r", spline_path_color: str = "g",
 #         spline_path_alpha: float = 0.2, num_points: int = 100,
 #         spline_grid_plot_step: int = 1,
@@ -246,7 +247,8 @@ def get_tricontour_solution(
 #     Args:
 #         spline (gus.nurbs.Spline): _description_
 #         axis (Optional[plt.Axes], optional): _description_. Defaults to None.
-#         export_path (Optional[str], optional): _description_. Defaults to None.
+#         export_path (Optional[str], optional): _description_.
+#           Defaults to None.
 #         close (bool, optional): _description_. Defaults to False.
 #         control_point_marker (str, optional): _description_. Defaults to "*".
 #         control_point_marker_size (int, optional):
@@ -335,7 +337,9 @@ def get_tricontour_solution(
 #         max_x_yline = [[b_max[0], y] for y in y_lin]
 #         max_y_xline = [[x, b_max[1]] for x in x_lin]
 
-#         boundary = min_x_yline+max_y_xline+max_x_yline[::-1]+min_y_xline[::-1]
+#         boundary = (
+#               min_x_yline+max_y_xline+max_x_yline[::-1]+min_y_xline[::-1]
+#         )
 #         boundary = spline.evaluate(boundary)
 #         pol = Polygon(boundary, alpha=0.4)
 #         ax.add_patch(pol)

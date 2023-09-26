@@ -92,8 +92,8 @@ class Validation(BaseModel):
         if values["end_episode_on_geometry_not_changed"] and value is None:
             get_parser_logger().warning(
                 "Please set a reward value for geometry not changed if episode"
-                " should end on it. Will set 0 for you now, but this might not "
-                "be you intention."
+                " should end on it. Will set 0 for you now, but this might not"
+                " be you intention."
             )
             value = 0.0
         return value
@@ -169,10 +169,12 @@ class Validation(BaseModel):
 
         Args:
             eval_environment (GymEnv): Evaluation environment. Should be the
-            same as the normal training environment only that here the goal
-            values should be set and not random.
+                same as the normal training environment only that here the goal
+                values should be set and not random.
             save_location (Optional[pathlib.Path]): Path to where the best
-            models should be save to.
+                models should be save to.
+            normalizer_divisor (int, optional): Divisor for the eval_freq.
+                Defaults to 1.
 
         Returns:
             EvalCallback: Validation callback parametrized by this object.

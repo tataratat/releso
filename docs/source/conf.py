@@ -12,14 +12,15 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 
 
 """
+import ast
 
 with open("../../releso/__version__.py") as f:
-    version = eval(f.read().strip().split("=")[-1])
+    version = ast.literal_eval(f.read().strip().split("=")[-1])
 
 # -- Project information -----------------------------------------------------
 
 project = "ReLeSO"
-copyright = "2023, Clemens Fricke"
+copyright = "2023, Clemens Fricke"  # noqa: A001
 author = "Clemens Fricke"
 
 # The full version, including alpha/beta/rc tags

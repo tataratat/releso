@@ -41,7 +41,7 @@ def get_visual_representation(
     height: int = 10,
     width: int = 10,
     dpi: int = 20,
-):
+) -> np.ndarray:
     """Return an array representing the calculated solution.
 
     This function is used to create the array which is used if the
@@ -54,6 +54,7 @@ def get_visual_representation(
     #TODO make it broader in its application e.g. other solvers?
 
     Args:
+        connectivity (np.ndarray): Connectivity array of the mesh.
         sol_len (int, optional): Number of variables to return per data
             point, input can be more but not less. Assumed is u,v,p.
             Defaults to 3.
@@ -81,9 +82,7 @@ def get_visual_representation(
     #         "was designed to work only with meshes of dimension two.")
     solution = read_mixd_double("ins.out", 3)
     coordinates = (
-        np.fromfile("mesh/mxyz", dtype=">d")
-        .astype(np.float64)
-        .reshape(-1, int(2))
+        np.fromfile("mesh/mxyz", dtype=">d").astype(np.float64).reshape(-1, 2)
     )
 
     # Plotting and creating resulting array
@@ -160,7 +159,7 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
     """
     # first time initialization
     if func_data is None:
-        func_data = dict()
+        func_data = {}
         func_data["connectivity"] = (
             (np.fromfile("mesh/mien", dtype=">i") - 1)
             .astype(np.int64)

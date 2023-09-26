@@ -74,7 +74,7 @@ class BaseModel(pydantic.BaseModel):
             # if a save_location is present in the current object definition
             #  add this save_location also to all object definition which are
             #  direct dependents
-            for name, value in data.items():
+            for value in data.values():
                 add_save_location_if_elem_is_o_dict(
                     value, data["save_location"]
                 )
@@ -136,7 +136,7 @@ class BaseModel(pydantic.BaseModel):
             logger_name (str): Name of the logger to set.
         """
         self.logger_name = logger_name
-        for _, value in self.__dict__.items():
+        for value in self.__dict__.values():
             if isinstance(value, list):
                 self._check_list(value, logger_name)
             else:

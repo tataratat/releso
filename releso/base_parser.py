@@ -90,13 +90,12 @@ class BaseParser(BaseModel):
             else self.n_environments
         )
         if self.n_environments and self.n_environments > 1:
-            env_create_list = []
-            for idx in range(self.n_environments):
-                env_create_list.append(
-                    self._create_new_environment(
-                        self.get_logger().name + f"_{idx}"
-                    )
+            env_create_list = [
+                self._create_new_environment(
+                    self.get_logger().name + f"_{idx}"
                 )
+                for idx in range(self.n_environments)
+            ]
             if self.multi_env_sequential:
                 train_env = DummyVecEnv(env_create_list)
             else:
@@ -173,7 +172,7 @@ class BaseParser(BaseModel):
     def evaluate_model(
         self,
         validation_env: Union[None, Environment] = None,
-        throw_error_if_None: bool = False,
+        throw_error_if_none: bool = False,
     ) -> None:
         """Validate the current agent.
 
@@ -185,7 +184,7 @@ class BaseParser(BaseModel):
             validation_env (Union[None, Environment], optional): If validation
             environment already exists it will be used else a new validation
             environment will be created. Defaults to None.
-            throw_error_if_None (bool, optional): If this is set and the
+            throw_error_if_none (bool, optional): If this is set and the
             validation variable is None an error is thrown. Defaults to False.
 
         Raises:
@@ -216,8 +215,8 @@ class BaseParser(BaseModel):
             self.get_logger().info(
                 f"The length per episode was: {episode_length}"
             )
-        elif throw_error_if_None:
-            raise ValidationNotSet()
+        elif throw_error_if_none:
+            raise ValidationNotSet
 
     def _create_new_environment(self, logger_name: str):
         """Function used for multi environment training.
@@ -241,12 +240,12 @@ class BaseParser(BaseModel):
         return _init
 
     def _create_validation_environment(
-        self, throw_error_if_None: bool = False
+        self, throw_error_if_none: bool = False
     ) -> Environment:
         """Creates a validation environment.
 
         Args:
-            throw_error_if_None (bool, optional):
+            throw_error_if_none (bool, optional):
                 If this is set and the validation variable is None an error is
                 thrown. Defaults to False.
 
@@ -265,8 +264,8 @@ class BaseParser(BaseModel):
         if self.validation is None:
             # ok i have no idea why i made this thingy here but i will keep it
             # for posterity
-            if throw_error_if_None:
-                raise ValidationNotSet()
+            if throw_error_if_none:
+                raise ValidationNotSet
             return None
         validation_environment = deepcopy(self.environment)
 

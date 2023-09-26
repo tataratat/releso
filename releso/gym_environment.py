@@ -58,16 +58,12 @@ class GymEnvironment(gymnasium.Env):
         self, action: Union[int, List[float]]
     ) -> Tuple[Any, float, bool, Dict[str, Any]]:
         """Dummy function definition for gym interface."""
-        pass
 
     def reset(self) -> Any:
         """Dummy function definition for gym interface."""
-        pass
 
     def render(self, mode: str = "mesh") -> None:
         """Dummy function definition for gym interface."""
-        pass
 
     def close(self) -> None:
         """Dummy function definition for gym interface."""
-        pass

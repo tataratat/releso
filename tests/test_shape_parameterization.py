@@ -442,7 +442,7 @@ def test_variable_location_continuous_action(
         ),
     ],
 )
-def test_shapeDefinition_initiation(
+def test_shape_definition_initiation(
     control_points, n_elements, error, dir_save_location
 ):
     # for idx in range(len(control_points)):
@@ -462,15 +462,15 @@ def test_shapeDefinition_initiation(
             assert "either a float or a VariableLocation" in str(err.value)
         return
     shape = ShapeDefinition(**cal_dict)
-    all_variables_variableLocation = True
+    all_variables_variable_location = True
     for element in shape.control_points:
         for item in element:
             if not isinstance(item, VariableLocation):
-                all_variables_variableLocation = False
+                all_variables_variable_location = False
                 break
-        if not all_variables_variableLocation:
+        if not all_variables_variable_location:
             break
-    assert all_variables_variableLocation
+    assert all_variables_variable_location
 
     assert shape.get_number_of_points() == n_elements
 
@@ -559,7 +559,7 @@ def test_shapeDefinition_initiation(
         ),
     ],
 )
-def test_shapeDefinition_get_actions(
+def test_shape_definition_get_actions(
     control_points, n_actions, dir_save_location
 ):
     new_control_points = []

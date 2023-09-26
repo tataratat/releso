@@ -32,7 +32,7 @@ def test_load_json_folder_does_not_exist(dir_save_location, clean_up_provider):
     file_loc: Path = dir_save_location / "test" / "test.json"
     with pytest.raises(RuntimeError) as err:
         load_json(file_loc)
-    assert "No such file or directory:" in str(err.value)
+    assert "You have to create the folder for the json first" in str(err.value)
     clean_up_provider(file_loc)
 
 
@@ -42,7 +42,7 @@ def test_write_json(dir_save_location: Path, clean_up_provider):
     test_dict = {"test": 12, "other": "test"}
     write_json(file_loc, test_dict)
 
-    with open(file_loc, "r") as f_open:
+    with open(file_loc) as f_open:
         res = json.load(f_open)
     clean_up_provider(file_loc)
     assert res == test_dict
@@ -176,32 +176,23 @@ def test_parse_communication_interface(
     elif reset:
         args.append("--reset")
     if r:
-        args.append("-r")
-        args.append(r)
+        args.extend(["-r", r])
     elif run:
-        args.append("--run")
-        args.append(run)
+        args.extend(["--run", run])
     elif run_id:
-        args.append("--run_id")
-        args.append(run_id)
+        args.extend(["--run_id", run_id])
     if v:
-        args.append("-v")
-        args.append(v)
+        args.extend(["-v", v])
     elif validation_value:
-        args.append("--validation_value")
-        args.append(validation_value)
+        args.extend(["--validation_value", validation_value])
     if l_parameter:
-        args.append("-l")
-        args.append(l_parameter)
+        args.extend(["-l", l_parameter])
     elif base_save_location:
-        args.append("--base_save_location")
-        args.append(base_save_location)
+        args.extend(["--base_save_location", base_save_location])
     if e:
-        args.append("-e")
-        args.append(e)
+        args.extend(["-e", e])
     elif environment_id:
-        args.append("--environment_id")
-        args.append(environment_id)
+        args.extend(["--environment_id", environment_id])
 
     if any([error_r, error_v, error_j, error_l, error_e]):
         try:
@@ -274,18 +265,19 @@ def test_parse_communication_interface_json(
     j, additional_values, json_object, error_j, dir_save_location, capsys
 ):
     args = []
-    args.append(f"-r{str(uuid.uuid4())}")
-    args.append(f"-e{str(uuid.uuid4())}")
-    args.append(f"-l{str(dir_save_location)}")
+    args.extend(
+        [
+            f"-r{str(uuid.uuid4())}",
+            f"-e{str(uuid.uuid4())}",
+            f"-l{str(dir_save_location)}",
+        ]
+    )
     if j:
-        args.append("-j")
-        args.append(j)
+        args.extend(["-j", j])
     elif additional_values:
-        args.append("--additional_values")
-        args.append(additional_values)
+        args.extend(["--additional_values", additional_values])
     elif json_object:
-        args.append("--json_object")
-        args.append(json_object)
+        args.extend(["--json_object", json_object])
     if error_j:
         try:
             spor_com_parse_arguments(args)

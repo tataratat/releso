@@ -25,7 +25,7 @@ class MeshExporter(BaseModel):
     """Class which defines in which format and where the mesh is exported."""
 
     #: format to which the mesh should be exported to
-    format: Literal["mixd"] = "mixd"
+    mesh_format: Literal["mixd"] = Field(default="mixd", alias="format")
     #: path to where the mesh should be exported to
     export_path: Union[str, pathlib.Path]
 
@@ -42,7 +42,7 @@ class MeshExporter(BaseModel):
         exists.
 
         Args:
-            v (Any): value to validate
+            values (Any): value to validate
 
         Raises:
             ParserException: If validation fails throws this error.
@@ -52,8 +52,8 @@ class MeshExporter(BaseModel):
                 Path to where the mesh should per default be exported to.
         """
         path = pathlib.Path(values.get("export_path")).expanduser().resolve()
-        format = values.get("format")
-        if format == "mixd":
+        mesh_format = values.get("format")
+        if mesh_format == "mixd":
             if path.suffix == "":
                 path = path.with_name("_.xns")
             elif not path.suffix == ".xns":
@@ -61,11 +61,12 @@ class MeshExporter(BaseModel):
                     "MeshExporter",
                     "export_path",
                     "The format and the path suffix do not match. The format"
-                    f" is defined as {format} but the suffix is {path.suffix}",
+                    f" is defined as {mesh_format} but the suffix is"
+                    f" {path.suffix}",
                 )
         else:
             raise ParserException(
-                "MeshExporter", "format", f"{format=} is not supported."
+                "MeshExporter", "format", f"{mesh_format=} is not supported."
             )
         values["export_path"] = path
         return values
@@ -107,11 +108,11 @@ class MeshExporter(BaseModel):
         Raises:
             RuntimeError: _description_
         """
-        if self.format == "mixd":
+        if self.mesh_format == "mixd":
             mixd.export(mesh, self._export_path_changed, space_time=space_time)
         else:
             raise RuntimeError(
-                f"The requested format {self.format} is not supported."
+                f"The requested format {self.mesh_format} is not supported."
             )
 
 
@@ -138,7 +139,6 @@ class Mesh(BaseModel):
         Returns:
             gustaf.Mesh: Mesh in gustaf library format.
         """
-        pass
 
     def adapt_export_path(self, environment_id: str):
         """If placeholder in export path insert environment_id into it.
@@ -349,7 +349,7 @@ class MixdMesh(Mesh):
                         raise ParserException(
                             "Mesh",
                             "path",
-                            "Could not locate mien nor mxyz" " file path.",
+                            "Could not locate mien nor mxyz file path.",
                         )
                 # If mien or mxyz file path are not complete throw error.
                 if mxyz_path is None:
@@ -394,6 +394,7 @@ class MeshIOMesh(Mesh):
     """
 
     @validator("path")
+    @classmethod
     def check_if_extension_is_supported_by_gustaf(cls, value) -> pathlib.Path:
         """Checks if the path given exists and the mesh type is supported.
 

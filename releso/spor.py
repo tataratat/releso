@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import uuid4
 
 import numpy as np
-from pydantic import UUID4, conint, validator
+from pydantic import UUID4, Field, conint, validator
 from pydantic.fields import PrivateAttr
 
 from releso.base_model import BaseModel
@@ -73,7 +73,7 @@ class MultiProcessor(BaseModel):
         """
         resulting_core_count = max(1, min(core_count, self.max_core_count))
         return (
-            f"{self.command} " f"{resulting_core_count}"
+            f"{self.command} {resulting_core_count}"
             if resulting_core_count > 1 or self.always_use
             else ""
         )
@@ -190,6 +190,7 @@ class SPORObject(BaseModel):
     _first_time_setup_not_done: bool = PrivateAttr(True)
 
     @validator("additional_observations", pre=True)
+    @classmethod
     def validate_additional_observations(
         cls, v: str, values: Dict[str, Any]
     ) -> Union[
@@ -361,6 +362,7 @@ class SPORObjectExecutor(SPORObject):
     _run_id: UUID4 = PrivateAttr(default=None)
 
     @validator("working_directory")
+    @classmethod
     def validate_working_directory_path(cls, v: str):
         """Validator working_directory.
 
@@ -395,6 +397,7 @@ class SPORObjectExecutor(SPORObject):
         return v
 
     @validator("add_step_information")
+    @classmethod
     def validate_add_step_information_only_true_if_also_spor_com_is_true(
         cls, v: str, values: Dict[str, Any]
     ):
@@ -405,7 +408,7 @@ class SPORObjectExecutor(SPORObject):
 
         Args:
             v (str): Object to validate
-            v (str): Already validated values
+            values (str): Already validated values
 
         Raises:
             ParserException: If path is not correct, this error is thrown.
@@ -559,7 +562,7 @@ class SPORObjectExecutor(SPORObject):
                 "printed during the execution of the external program.",
                 exc_info=True,
             )
-            raise err
+            raise SyntaxError from err
         self.spor_com_interface_add(returned_step_dict, step_dict)
 
     def spor_com_interface_add(
@@ -614,7 +617,8 @@ class SPORObjectExecutor(SPORObject):
         Args:
             step_information (StepReturnType): _description_
             environment_id (UUID4): _description_
-            validation_id (Optional[int], optional): _description_. Defaults to None.
+            validation_id (Optional[int], optional): _description_.
+                Defaults to None.
             core_count (int, optional): _description_. Defaults to 1.
             reset (bool, optional): _description_. Defaults to False.
 
@@ -721,7 +725,7 @@ class SPORObjectPythonFunction(SPORObjectExecutor):
                 output, self._func_data = self._run_func(
                     args, self._run_logger, self._func_data
                 )
-            except Exception as err:
+            except Exception as err:  # noqa: BLE001
                 self.get_logger().warning(
                     f"Could not run the internalized python spor function "
                     f"without error. The following error was thrown {err}."
@@ -905,6 +909,7 @@ class SPORObjectExternalPythonFunction(SPORObjectPythonFunction):
     _func_data: Optional[Any] = PrivateAttr(default=None)
 
     @validator("python_file_path")
+    @classmethod
     def validate_execution_command_path(cls, v: str):
         """Validator of the path to the python file.
 
@@ -1000,19 +1005,19 @@ class SPORObjectExternalPythonFunction(SPORObjectPythonFunction):
             except ModuleNotFoundError as err:
                 raise RuntimeError(
                     f"Could not load the python file at "
-                    f"{str(self.python_file_path)}. With error: {err}"
-                )
+                    f"{str(self.python_file_path)}"
+                ) from err
             else:
                 try:
                     self._run_func = func.main
                 except AttributeError as err:
                     raise RuntimeError(
                         f"Could not get main function from python file"
-                        f" {str(self.python_file_path)}. With error: {err}"
-                    )
+                        f" {str(self.python_file_path)}."
+                    ) from err
                 else:
                     self._run_logger = set_up_logger(
-                        f"spor_step_logger_" f"{self.name.replace(' ','_')}",
+                        f"spor_step_logger_{self.name.replace(' ','_')}",
                         pathlib.Path(self.save_location / "logging"),
                         VerbosityLevel.INFO,
                         console_logging=False,
@@ -1051,11 +1056,10 @@ class SPORObjectCommandLine(SPORObjectExecutor):
     #: Command line options to add to the execution command. These do not
     #: include those from the communication interface these will be, if
     #: applicable, added separately.
-    command_options: List[str] = []
+    command_options: List[str] = Field(default_factory=list)
 
-    @validator(
-        "execution_command",
-    )
+    @validator("execution_command")
+    @classmethod
     def validate_execution_command_path(cls, v: str):
         """Validator execution_command.
 
@@ -1388,7 +1392,7 @@ class SPORList(BaseModel):
                         self._rewards.append(reward)
                     # if info:
                     #     join_infos(info, info, self.logger_name)
-                except Exception as exp:  # pragma: no cover
+                except Exception as exp:  # pragma: no cover # noqa: BLE001
                     # This should only be reached if a SPORObject has an error
                     error_message = (
                         f"The current step with name {step.name} has thrown an"

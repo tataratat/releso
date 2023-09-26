@@ -8,7 +8,7 @@ import requests
 from releso.shape_parameterization import VariableLocation
 
 
-class Dummy_Environment(gym.Env):
+class DummyEnvironment(gym.Env):
     def __init__(self):
         self.action_space = gym.spaces.Box(low=0, high=1, shape=(3,))
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(1,))
@@ -40,11 +40,9 @@ def default_shape(dir_save_location):
                 3.0,
                 4.0,
                 VariableLocation(
-                    **{
-                        "current_position": 5.0,
-                        "min_value": 4.0,
-                        "save_location": dir_save_location,
-                    }
+                    current_position=5.0,
+                    min_value=4.0,
+                    save_location=dir_save_location,
                 ),
             ],
             [
@@ -95,20 +93,16 @@ def nurbs_shape(bspline_shape, dir_save_location):
         0.5,
         0.6,
         VariableLocation(
-            **{
-                "current_position": 0.7,
-                "max_value": 0.75,
-                "min_value": 0.65,
-                "save_location": dir_save_location,
-            }
+            current_position=0.7,
+            max_value=0.75,
+            min_value=0.65,
+            save_location=dir_save_location,
         ),
         VariableLocation(
-            **{
-                "current_position": 0.8,
-                "max_value": 0.85,
-                "min_value": 0.75,
-                "save_location": dir_save_location,
-            }
+            current_position=0.8,
+            max_value=0.85,
+            min_value=0.75,
+            save_location=dir_save_location,
         ),
         0.9,
     ]
@@ -117,7 +111,7 @@ def nurbs_shape(bspline_shape, dir_save_location):
 
 @pytest.fixture
 def provide_dummy_environment():
-    return Dummy_Environment()
+    return DummyEnvironment()
 
 
 @pytest.fixture
@@ -160,7 +154,7 @@ def hide_available_import(monkeypatch):
         with open("import.txt", "a") as file:
             file.write(f"{name}\n")
         if name == "splinepy.helpme.ffd":
-            raise ImportError()
+            raise ImportError
         return import_orig(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", mock_import_available)

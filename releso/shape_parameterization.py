@@ -50,12 +50,10 @@ class VariableLocation(BaseModel):
     #: reset to its original state.
     _original_position: Optional[float] = PrivateAttr(default=None)
 
-    def __init__(__pydantic_self__, **data: Any) -> None:
+    def __init__(self, **data: Any) -> None:
         """Constructor for VariableLocation."""
         super().__init__(**data)
-        __pydantic_self__._original_position = (
-            __pydantic_self__.current_position
-        )
+        self._original_position = self.current_position
 
     @validator("min_value", "max_value", always=True)
     @classmethod
@@ -109,8 +107,8 @@ class VariableLocation(BaseModel):
             raise ParserException(
                 "VariableLocation",
                 field,
-                f"The current_value {values['current_position']} must be smaller "
-                f"or equal to the max_value {v}.",
+                f"The current_value {values['current_position']} must be"
+                f" smaller or equal to the max_value {v}.",
             )
         return v
 
@@ -133,8 +131,8 @@ class VariableLocation(BaseModel):
             raise ParserException(
                 "VariableLocation",
                 field,
-                f"The current_value {values['current_position']} must be bigger "
-                f"or equal to the max_value {v}.",
+                f"The current_value {values['current_position']} must be "
+                f"bigger or equal to the max_value {v}.",
             )
         return v
 
@@ -270,6 +268,7 @@ class ShapeDefinition(BaseModel):
 
         Args:
             v ([type]): value to validate
+            values ([type]): already validated values
 
         Returns:
             [type]: validated value
@@ -295,7 +294,7 @@ class ShapeDefinition(BaseModel):
                         "control_points",
                         "The control_points need to be either a float castable"
                         f" or a VariableLocation. Is of type {type(element)}.",
-                    )
+                    ) from None
         return new_list
 
     def get_control_points(self) -> List[List[float]]:
@@ -349,7 +348,7 @@ class ShapeDefinition(BaseModel):
         self,
         save_location: Optional[str] = None,
         no_axis: bool = False,
-        fig_size: List[float] = [6, 6],
+        fig_size: List[float] = None,
         dpi: int = 400,
     ):  # pragma: no cover
         """Draw the action space of the defined shape as a matplotlib figure.
@@ -373,6 +372,8 @@ class ShapeDefinition(BaseModel):
                 Error is thrown if the control point's dimensionality is to
                 high.
         """
+        if fig_size is None:
+            fig_size = [6, 6]
         import matplotlib.pyplot as plt
         from matplotlib.patches import Polygon
 

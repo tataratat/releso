@@ -1,10 +1,12 @@
 """Definition of the package and installation of it."""
+import ast
+
 import setuptools
 
 with open("releso/__version__.py") as f:
-    version = eval(f.read().strip().split("=")[-1])
+    version = ast.literal_eval(f.read().strip().split("=")[-1])
 
-with open("README.md", "r", encoding="utf-8") as fh:
+with open("README.md", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(

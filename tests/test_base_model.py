@@ -115,13 +115,11 @@ def test_base_model_set_logger_name_recursively(
     )
 
     model.__dict__["test"] = deepcopy(model)
-    model.__dict__["test2"] = list(
-        [
-            deepcopy(model),
-            123,
-            [deepcopy(model), 123, 123.0, "test"],
-        ]
-    )
+    model.__dict__["test2"] = [
+        deepcopy(model),
+        123,
+        [deepcopy(model), 123, 123.0, "test"],
+    ]
 
     model.set_logger_name_recursively("new_logger_name")
 

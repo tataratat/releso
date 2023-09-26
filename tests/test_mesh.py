@@ -11,9 +11,9 @@ from releso.mesh import MeshExporter, MeshIOMesh, MixdMesh
 
 
 @pytest.mark.parametrize(
-    "path, format, expected, error",
+    "path, mesh_format, expected, error",
     [
-        ("test", "test", False, "format='test' is not supported"),
+        ("test", "test", False, "mesh_format='test' is not supported"),
         (
             "test.txt",
             "mixd",
@@ -26,11 +26,11 @@ from releso.mesh import MeshExporter, MeshIOMesh, MixdMesh
     ],
 )
 def test_mesh_exporter_export_path_format(
-    path, format, expected, error, dir_save_location
+    path, mesh_format, expected, error, dir_save_location
 ):
     calling_dict = {
         "export_path": path,
-        "format": format,
+        "format": mesh_format,
         "save_location": dir_save_location,
     }
     if error:
@@ -334,7 +334,7 @@ def test_mixd_mesh_export_and_get(
     mesh.adapt_export_path("123")
     mesh.export.export_mesh(mesh.get_mesh())
     exported_file = pathlib.Path(f"{str(dir_save_location)}/export")
-    mesh_exporter.format = "other"
+    mesh_exporter.mesh_format = "other"
     with pytest.raises(RuntimeError) as err:
         mesh_exporter.export_mesh(None)
     assert "The requested format other is not supported." in str(err.value)

@@ -39,7 +39,7 @@ class JSONEncoder(json.JSONEncoder):
         try:
             return json.JSONEncoder.default(self, o)
         except TypeError:
-            print(type(o), o)
+            print(type(o), o)  # noqa: T201
             return json.JSONEncoder.default(self, "")
 
 
@@ -85,13 +85,19 @@ def call_commandline(command, folder, logger=None):
         logger.debug(f"Executing command {command} in {folder}")
     try:
         # try to execute the provided command in the shell
-        output = subprocess.check_output(command, shell=True, cwd=folder)
+        # WARNING this is a security risk, but necessary to execute the
+        # command line arguments
+        output = subprocess.check_output(
+            command, shell=True, cwd=folder  # noqa: S602
+        )
         exitcode = 0
     except subprocess.CalledProcessError as exc:
         # if anything went wrong, catch the error, report to the user and abort
         output = exc.output
         if logger is not None:
-            logger.error(f"Execution failed with return code {exc.returncode}")
+            logger.exception(
+                f"Execution failed with return code {exc.returncode}"
+            )
         exitcode = exc.returncode
     return exitcode, output
 

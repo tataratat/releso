@@ -202,8 +202,8 @@ class ValidationNotSet(Exception):
         """
         mes_str: str = (
             "Could not create a validation environment due to"
-            "unavailability of validation parameters. Please add the validation "
-            "parameters to the json file."
+            "unavailability of validation parameters. Please add the "
+            "validation parameters to the json file."
         )
         logging.getLogger(logger).exception(
             type(self).__name__ + ": " + mes_str

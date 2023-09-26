@@ -281,9 +281,9 @@ class FFDGeometry(Geometry):
         Returns:
             Optional[Any]: Return the correct values.
         """
-        return self.apply_FFD()
+        return self.apply_ffd()
 
-    def apply_FFD(self, path: Optional[str] = None) -> Union[str, np.ndarray]:
+    def apply_ffd(self, path: Optional[str] = None) -> Union[str, np.ndarray]:
         """Apply FFD for the current shape.
 
         Might move in the future to a SPORStep. Can be deactivated with

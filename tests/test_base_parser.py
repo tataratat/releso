@@ -15,7 +15,7 @@ def recursive_remove_save_location(
     if isinstance(dict_to_clean, dict):
         if "save_location" in dict_to_clean:
             del dict_to_clean["save_location"]
-        for key, value in dict_to_clean.items():
+        for value in dict_to_clean.values():
             if isinstance(value, dict):
                 recursive_remove_save_location(value)
             elif isinstance(value, list):
@@ -104,7 +104,8 @@ def test_base_parser_validation(
 
     # recursive_remove_save_location(calling_dict)
     # assert "save_location" not in calling_dict["environment"]
-    # if this does not fail, the save_location is recursively added as it should be
+    # if this does not fail, the save_location is recursively added as it
+    # should be
     base_parser = BaseParser(**calling_dict)
 
     file_paths = []
@@ -113,19 +114,20 @@ def test_base_parser_validation(
     assert "Please train the agent first" in str(err.value)
     if validation is None:
         with pytest.raises(ValidationNotSet) as err:
-            base_parser.evaluate_model(throw_error_if_None=True)
+            base_parser.evaluate_model(throw_error_if_none=True)
 
         with pytest.raises(ValidationNotSet) as err:
             base_parser._create_validation_environment(
-                throw_error_if_None=True
+                throw_error_if_none=True
             )
 
         clean_up_provider(dir_save_location)
         return
     base_parser.evaluate_model()
 
-    file_paths.append(base_parser.save_model())
-    file_paths.append(base_parser.save_model("testing"))
+    file_paths.extend(
+        (base_parser.save_model(), base_parser.save_model("testing"))
+    )
 
     for file_path in file_paths:
         assert file_path.exists()
@@ -270,7 +272,8 @@ def test_base_parser_learn(
 
     # recursive_remove_save_location(calling_dict)
     # assert "save_location" not in calling_dict["environment"]
-    # if this does not fail, the save_location is recursively added as it should be
+    # if this does not fail, the save_location is recursively added as it
+    # should be
     base_parser = BaseParser(**calling_dict)
     base_parser.learn()
     clean_up_provider(dir_save_location)

@@ -7,7 +7,7 @@ from releso.util.logger import VerbosityLevel, get_parser_logger, set_up_logger
 
 def test_get_parser_logger():
     parser_log = get_parser_logger()
-    parser_log.name == "ReLeSO_parser"
+    assert parser_log.name == "ReLeSO_parser"
 
     # check factory method
     parser_log2 = get_parser_logger()

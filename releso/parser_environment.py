@@ -63,16 +63,16 @@ class Environment(BaseModel):
     reward_on_geometry_not_changed: Optional[float] = None
     #: reward if episode is ended due to geometry not changed
     reward_on_episode_exceeds_max_timesteps: Optional[float] = None
-    # #: periodically save the end result of the optimization T-junction use case
-    # #: TODO the next few cases I see personally more in a separate SPOR Step
-    # #: but I am not sure how this can be worked since it needs data from other
-    # #: sources
+    # #: periodically save the end result of the optimization T-junction use
+    # #: case TODO the next few cases I see personally more in a separate SPOR
+    # #: Step but I am not sure how this can be worked since it needs data from
+    # #: other sources
     # save_good_episode_results: bool = False
-    # #: periodically save the end result of the optimization converging channel
-    # #: use case
+    # #: periodically save the end result of the optimization converging
+    # #: channel use case
     # save_random_good_episode_results: bool = False
     # #: also saves the mesh when an episode is saved with
-    # #: save_random_good_episode_results, works only if the named option is True
+    # #: save_random_good_episode_results, works only if named option is True
     # save_random_good_episode_mesh: bool = False
 
     # object variables
@@ -157,13 +157,13 @@ class Environment(BaseModel):
             raise ParserException(
                 "Environment",
                 "reward_on_geometry_not_changed",
-                "Reward can only be set if end_episode_on_geometry_not_changed "
-                "is true.",
+                "Reward can only be set if end_episode_on_geometry_not_changed"
+                " is true.",
             )
         if values["end_episode_on_geometry_not_changed"] and value is None:
             get_parser_logger().warning(
-                "Please set a reward value for geometry not changed if episode "
-                "should end on it. Will set 0 for you now, but this might "
+                "Please set a reward value for geometry not changed if episode"
+                " should end on it. Will set 0 for you now, but this might "
                 "not be you intention."
             )
             value = 0.0
@@ -252,7 +252,7 @@ class Environment(BaseModel):
         # check if there is potential for compressing the observation space
         if len(observation_spaces) > 1 and not has_cnn_observations:
             self.get_logger().info(
-                "Found potential for compressed " "observation space."
+                "Found potential for compressed observation space."
             )
             new_space_min = []
             new_space_max = []
@@ -334,10 +334,7 @@ class Environment(BaseModel):
 
         if len(observation_spaces) > 1:
             # Observation space dict necessary
-            observation_dict = {
-                key: observation_space
-                for key, observation_space in observation_spaces
-            }
+            observation_dict = dict(observation_spaces)
             self.get_logger().info(
                 "Observation space is of type Dict and"
                 " has the following description:"
@@ -428,7 +425,7 @@ class Environment(BaseModel):
         observations = {}
         done = False
         reward = 0.0
-        info = dict()
+        info = {}
 
         # apply new action
         self.get_logger().info(f"Action {action}")
@@ -490,8 +487,9 @@ class Environment(BaseModel):
         #                         height=2, width=2, dpi=400)
         #                     if self.save_random_good_episode_mesh:
         #                         self.export_mesh(
-        #                             self.save_location/"episode_end_results" /
-        #                             "mesh"/f"{self._approximate_episode}.xns")
+        #                             self.save_location/"episode_end_results"/
+        #                             "mesh"/
+        #                             f"{self._approximate_episode}.xns")
         #                     self._number_exported += 1
 
         self.get_logger().info(
@@ -568,7 +566,7 @@ class Environment(BaseModel):
         observations = {}
         done = False
         reward = 0.0
-        info = dict()
+        info = {}
 
         # reset geometry
         info["geometry_information"] = self.geometry.reset(
@@ -597,14 +595,14 @@ class Environment(BaseModel):
             #         self._validation_base_mesh_path).parents[0]/str(
             #         self._validation_iteration)/str(
             #         self._current_validation_idx)
-            #     file_name = pathlib.Path(self._validation_base_mesh_path).name
-            #     if "_." in self._validation_base_mesh_path:
-            #         validation_mesh_path = base_path / str(file_name).replace(
-            #             "_.", f"{self.get_reset_reason_string()}.")
-            #     else:
-            #         validation_mesh_path = self._validation_base_mesh_path
-            #     self.export_mesh(validation_mesh_path)
-            #     self.export_spline(validation_mesh_path.with_suffix(".xml"))
+            #    file_name = pathlib.Path(self._validation_base_mesh_path).name
+            #    if "_." in self._validation_base_mesh_path:
+            #        validation_mesh_path = base_path / str(file_name).replace(
+            #            "_.", f"{self.get_reset_reason_string()}.")
+            #    else:
+            #        validation_mesh_path = self._validation_base_mesh_path
+            #    self.export_mesh(validation_mesh_path)
+            #    self.export_spline(validation_mesh_path.with_suffix(".xml"))
             if self._current_validation_idx >= len(self._validation_ids):
                 self.get_logger().info(
                     "The validation callback resets the environment one time "
@@ -645,8 +643,8 @@ class Environment(BaseModel):
 
         Args:
             validation_values (List[float]): List of predefined goal states.
-                base_mesh_path (Optional[str], optional): Path to the initial mesh.
-                Defaults to None.
+                base_mesh_path (Optional[str], optional): Path to the initial
+                mesh. Defaults to None.
             end_episode_on_geometry_not_changed (bool, optional): Should the
                 episode end if the geometry has no changes from one episode to
                 the next. Defaults to False.
@@ -744,4 +742,3 @@ class Environment(BaseModel):
 
     def close(self):
         """Function is called when training is stopped."""
-        pass

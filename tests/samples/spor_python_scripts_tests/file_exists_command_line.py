@@ -31,5 +31,5 @@ if __name__ == "__main__":
 
     write_json(save_path, func_data)
 
-    print(return_data)
+    print(return_data)  # noqa: T201
     exit(0)

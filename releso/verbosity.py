@@ -51,7 +51,7 @@ class Verbosity(BaseModel):
 
     @validator("parser", "environment", always=True)
     @classmethod
-    def convert_literal_str_to_verbosityLevel(cls, v):
+    def convert_literal_str_to_verbosity_level(cls, v):
         """Validator for parser and environment variable.
 
         Validation function converting the string representation of the enum

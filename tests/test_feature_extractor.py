@@ -14,7 +14,14 @@ def observation_space():
 
 @pytest.mark.torch_test
 @pytest.mark.parametrize(
-    "observation_space, feature_dim, without_linear, network_type, logger, error",
+    [
+        "observation_space",
+        "feature_dim",
+        "without_linear",
+        "network_type",
+        "logger",
+        "error",
+    ],
     [
         (
             observation_space(),
@@ -75,7 +82,14 @@ def test_feature_extractor(
 
 @pytest.mark.torch_test
 @pytest.mark.parametrize(
-    "observation_space, feature_dim, without_linear, network_type, logger, error",
+    [
+        "observation_space",
+        "feature_dim",
+        "without_linear",
+        "network_type",
+        "logger",
+        "error",
+    ],
     [
         (
             observation_space(),

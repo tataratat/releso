@@ -101,9 +101,9 @@ def test_verbosity_default(
                 in caplog.text
             )
             assert (
-                f"Environment logger has logging level: {str(wanted_environment.value)}"
-                in caplog.text
-            )
+                f"Environment logger has logging level: "
+                f"{str(wanted_environment.value)}"
+            ) in caplog.text
     else:
         verbosity = Verbosity(**calling_dict)
 

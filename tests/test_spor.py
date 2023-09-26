@@ -40,7 +40,13 @@ def get_obs_name(object_to_check) -> List[str]:
 
 
 @pytest.mark.parametrize(
-    "command, max_core_count, external_core_count, always_use, resulting_count",
+    [
+        "command",
+        "max_core_count",
+        "external_core_count",
+        "always_use",
+        "resulting_count",
+    ],
     [
         (None, 1, 1, None, 1),
         (None, 10, 1, None, 1),
@@ -219,7 +225,7 @@ def test_spor_object(
     # observations via an int. Building up a default observation definition.
     # if isinstance(additional_observations, int):
     #     assert (
-    #         f"Please do not use this method to register additional observation"
+    #         f"Please do not use this method to register additional observati"
     #         in caplog.text
     #     )
     obs = spor_object.get_observations()
@@ -228,12 +234,12 @@ def test_spor_object(
         # only for 2 element tuple like (list, ObservationDefinition)
         # only checks the first element of the obs if it is iterable
         element_to_check = obs
-        for type in obs_type:
-            if type is list:
-                assert isinstance(element_to_check, type)
+        for obs_type_item in obs_type:
+            if obs_type_item is list:
+                assert isinstance(element_to_check, obs_type_item)
                 element_to_check = element_to_check[0]
             else:
-                assert isinstance(element_to_check, type)
+                assert isinstance(element_to_check, obs_type_item)
     elif obs_type is None:
         assert obs is None
     else:
@@ -655,7 +661,7 @@ def test_spor_internal_python_function(
     observations = {}
     done = False
     reward = 0.0
-    info = dict()
+    info = {}
     with caplog.at_level(VerbosityLevel.INFO):
         observations, reward, done, info = spor_object.run(
             (observations, reward, done, info),
@@ -722,7 +728,7 @@ def test_spor_external_python_function(
     observations = {}
     done = False
     reward = 0.0
-    info = dict()
+    info = {}
     if error_run:
         with pytest.raises(RuntimeError) as err:
             spor_obj.run(
@@ -762,7 +768,7 @@ def test_spor_external_python_function_reset_reason(dir_save_location):
     observations = {}
     done = False
     reward = 0.0
-    info = dict()
+    info = {}
     while not done:
         observations, reward, done, info = spor_obj.run(
             (observations, reward, done, info), environment_id=env_id
@@ -866,7 +872,7 @@ def test_spor_command_line(
     observations = {}
     done = False
     reward = 0.0
-    info = dict()
+    info = {}
     # create folder for step
     file_path = dir_save_location / f"{env_id}/{spor_obj._run_id}.json"
     file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1070,7 +1076,7 @@ def test_spor_list_run_simple(dir_save_location, clean_up_provider):
     observations = {}
     done = False
     reward = 0.0
-    info = dict()
+    info = {}
     spor_list = SPORList(**calling_dict)
     observations, reward, done, info = spor_list.run(
         (observations, reward, done, info),
@@ -1140,7 +1146,7 @@ def test_spor_list_run_observations(dir_save_location, clean_up_provider):
     observations = {}
     done = False
     reward = 0.0
-    info = dict()
+    info = {}
     spor_list = SPORList(**calling_dict)
     observations, reward, done, info = spor_list.run(
         (observations, reward, done, info),
@@ -1179,7 +1185,7 @@ def test_spor_list_run_done(dir_save_location, clean_up_provider):
     observations = {}
     done = True
     reward = 0.0
-    info = dict()
+    info = {}
     spor_list = SPORList(**calling_dict)
     observations, reward, done, info = spor_list.run(
         (observations, reward, done, info),
@@ -1226,7 +1232,7 @@ def test_spor_list_run_reset(dir_save_location, clean_up_provider, caplog):
     observations = {}
     done = False
     reward = 0.0
-    info = dict()
+    info = {}
     spor_list = SPORList(**calling_dict)
     with caplog.at_level(VerbosityLevel.WARNING):
         observations, reward, done, info = spor_list.run(

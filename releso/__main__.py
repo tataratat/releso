@@ -83,7 +83,7 @@ def main(args) -> None:
     #                         #
     ###########################
     if args.validate_only:
-        optimization_object.evaluate_model(throw_error_if_None=True)
+        optimization_object.evaluate_model(throw_error_if_none=True)
         return
 
     ###########################

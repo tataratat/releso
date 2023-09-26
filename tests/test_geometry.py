@@ -247,4 +247,4 @@ def test_ffd_geometry_init(
         assert isinstance(act_def, spaces.Box)
         assert act_def.shape == (len(geometry._actions),)
         geometry.apply_action(np.random.rand(len(geometry._actions)))
-    assert geometry.is_geometry_changed() is True
+    assert geometry.is_geometry_changed() == True

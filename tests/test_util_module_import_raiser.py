@@ -21,7 +21,7 @@ def test_module_import_raiser():
         raiser("additional error message")
     # getattr
     with pytest.raises(ImportError):
-        raiser.test
+        raiser.test  # noqa: B018
     # setattr
     with pytest.raises(ImportError):
         raiser.test = "hallo"

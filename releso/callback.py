@@ -58,7 +58,7 @@ class EpisodeLogCallback(BaseCallback):
 
     def _export(self):
         """Function exports the current information into a csv file."""
-        df = pd.DataFrame(
+        export_data_frame = pd.DataFrame(
             {
                 "steps_in_episode": self.episode_n_steps,
                 "episode_reward": self.episode_rewards,
@@ -68,16 +68,18 @@ class EpisodeLogCallback(BaseCallback):
                 "wall_time": self.episode_wall_time,
             }
         )
-        # df.to_csv(self.episode_log_location)
-        # df.reset_index(drop=True, inplace=True)
-        df.index = np.arange(
+        # export_data_frame.to_csv(self.episode_log_location)
+        # export_data_frame.reset_index(drop=True, inplace=True)
+        export_data_frame.index = np.arange(
             self.last_exported_episode + 1,
-            self.last_exported_episode + 1 + len(df),
+            self.last_exported_episode + 1 + len(export_data_frame),
         )
         if self.last_exported_episode == -1:
-            df.to_csv(self.episode_log_location)
+            export_data_frame.to_csv(self.episode_log_location)
         else:
-            df.to_csv(self.episode_log_location, mode="a", header=False)
+            export_data_frame.to_csv(
+                self.episode_log_location, mode="a", header=False
+            )
         self.last_exported_episode = self.episodes
         # empty lists
         self.episode_n_steps = []
@@ -133,10 +135,8 @@ class EpisodeLogCallback(BaseCallback):
                 if reset_reason == "srunError-main_solver":  # pragma: no cover
                     continue_training = False
         if any(
-            [
-                episode % self.update_n_episodes == 0
-                for episode in range(self.last_checked_episode, self.episodes)
-            ]
+            episode % self.update_n_episodes == 0
+            for episode in range(self.last_checked_episode, self.episodes)
         ):
             self._export()
         self.last_checked_episode = self.episodes

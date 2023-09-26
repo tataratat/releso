@@ -138,9 +138,9 @@ def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
                 json.dump(empty_dict, wf)
         except FileNotFoundError as err:
             raise RuntimeError(
-                f"You have to crate the folder for the json first. {err}"
-            )
-    with open(f_n, "r") as rf:
+                "You have to create the folder for the json first."
+            ) from err
+    with open(f_n) as rf:
         return json.load(rf)
 
 

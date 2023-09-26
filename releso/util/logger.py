@@ -75,34 +75,34 @@ def set_up_logger(
     # log everything which is debug or above
     logger.setLevel(verbosity.value)
     # create formatter for file output and add it to the handlers
-    fileFormatter = logging.Formatter(
+    file_formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
     log_file_location.mkdir(parents=True, exist_ok=True)
 
     if verbosity <= VerbosityLevel.WARNING:
-        logFileName = log_file_location / "{}.log".format(logger_name)
+        log_file_name = log_file_location / f"{logger_name}.log"
         # create log handler which logs even debug messages
-        lh = logging.FileHandler(logFileName)
+        lh = logging.FileHandler(log_file_name)
         # create console handler with a higher log level
         lh.setLevel(verbosity.value)
-        lh.setFormatter(fileFormatter)
+        lh.setFormatter(file_formatter)
         logger.addHandler(lh)
 
     if console_logging:
         ch = logging.StreamHandler()
         ch.setLevel(logging.INFO)
         # create formatter for console output and add it to the handlers
-        consoleFormatter = logging.Formatter("%(levelname)s - %(message)s")
-        ch.setFormatter(consoleFormatter)
+        console_formatter = logging.Formatter("%(levelname)s - %(message)s")
+        ch.setFormatter(console_formatter)
         logger.addHandler(ch)
 
     # create error handler which logs only error messages
-    errFileName = log_file_location / "{}.err".format(logger_name)
-    eh = logging.FileHandler(errFileName)
+    err_file_name = log_file_location / f"{logger_name}.err"
+    eh = logging.FileHandler(err_file_name)
     eh.setLevel(logging.ERROR)
-    eh.setFormatter(fileFormatter)
+    eh.setFormatter(file_formatter)
     # add the handlers to logger
     logger.addHandler(eh)
 

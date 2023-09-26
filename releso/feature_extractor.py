@@ -120,8 +120,8 @@ class FeatureExtractor(BaseFeaturesExtractor):
         #     if self.without_linear:
         #         if logger:
         #             logger.error(
-        #                 "FeatureExtractor: Inception_v3 can only be used with "
-        #                 "linear layer."
+        #                 "FeatureExtractor: Inception_v3 can only be used "
+        #                 "with linear layer."
         #             )
         #         raise RuntimeError(
         #             "FeatureExtractor: Inception_v3 can only be used with "
@@ -153,7 +153,7 @@ class FeatureExtractor(BaseFeaturesExtractor):
             # if network_type == "inception_v3":
             #     # inception_v3 has the linear layer inside the model in a way
             #     # that it is not easy to separate it from the convolutional
-            #     # layers. Therefor need to overwrite the model's linear layer.
+            #     # layers. Therefor need to overwrite the model's linear layer
             #     self.model.fc = th.nn.Linear(
             #         self.model.fc.in_features, features_dim, th.nn.ReLU()
             #     )

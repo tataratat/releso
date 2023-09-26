@@ -31,6 +31,7 @@ import datetime
 import pathlib
 from typing import Any, Dict, Literal, Optional, Union
 
+from pydantic import Field
 from pydantic.types import FilePath
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC
 from stable_baselines3.common.base_class import BaseAlgorithm
@@ -48,8 +49,8 @@ except ImportError as err:
 
 # TODO dynamic agent detection via https://stackoverflow.com/a/3862957
 ####################################
-# >>> def get_subclasses(type):
-# ...     for sub in type.__subclasses__():
+# >>> def get_subclasses(agent_type):
+# ...     for sub in agent_type.__subclasses__():
 # ...             print(sub)
 # ...             get_subclasses(sub)
 # ...
@@ -128,7 +129,7 @@ class BaseTrainingAgent(BaseAgent):
         if self.policy_kwargs is None:
             self.policy_kwargs = {}
         if self.use_custom_feature_extractor:
-            self.policy_kwargs["features_extractor_kwargs"] = dict()
+            self.policy_kwargs["features_extractor_kwargs"] = {}
             if self.policy == "CnnPolicy":
                 self.policy_kwargs[
                     "features_extractor_class"
@@ -164,7 +165,7 @@ class BaseTrainingAgent(BaseAgent):
             for k, v in self.__dict__.items()
             if k
             not in [
-                "type",
+                "agent_type",
                 "logger_name",
                 "save_location",
                 "use_custom_feature_extractor",
@@ -185,7 +186,9 @@ class PretrainedAgent(BaseAgent):
 
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
-    type: Literal["PPO", "SAC", "DDPG", "A2C", "DQN"]
+    agent_type: Literal["PPO", "SAC", "DDPG", "A2C", "DQN"] = Field(
+        alias="type"
+    )
     #: Path to the save files of the pretrained agent.
     path: Union[FilePath, pathlib.Path]
     #: If the agent is to be trained further the results can be added to the
@@ -212,21 +215,21 @@ class PretrainedAgent(BaseAgent):
             BaseAlgorithm: Return the correctly loaded agent.
         """
         self.get_logger().info(
-            f"Using pretrained agent of type {self.type} from location "
+            f"Using pretrained agent of type {self.agent_type} from location "
             f"{self.path}."
         )
-        if self.type == "PPO":
+        if self.agent_type == "PPO":
             return PPO.load(self.path, environment)
-        elif self.type == "DDPG":
+        elif self.agent_type == "DDPG":
             return DDPG.load(self.path, environment)
-        elif self.type == "SAC":
+        elif self.agent_type == "SAC":
             return SAC.load(self.path, environment)
-        elif self.type == "DQN":
+        elif self.agent_type == "DQN":
             return DQN.load(self.path, environment)
-        elif self.type == "A2C":
+        elif self.agent_type == "A2C":
             return A2C.load(self.path, environment)
         else:
-            raise AgentUnknownException(self.type)
+            raise AgentUnknownException(self.agent_type)
 
     def get_next_tensorboard_experiment_name(self) -> str:
         """Return the name of the tensorboard experiment.
@@ -253,7 +256,7 @@ class A2CAgent(BaseTrainingAgent):
 
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
-    type: Literal["A2C"]
+    agent_type: Literal["A2C"] = Field(alias="type")
     #: The learning rate, it can be a function of the current progress
     #: remaining (from 1 to 0)
     learning_rate: float = 7e-4
@@ -298,7 +301,7 @@ class A2CAgent(BaseTrainingAgent):
     ) -> A2C:
         """Creates the stable_baselines version of the wanted Agent.
 
-        Uses all Variables given in the object (except type) as the input
+        Uses all Variables given in the object (except agent_type) as the input
         parameters of the agent object creation.
 
         Notes:
@@ -318,7 +321,7 @@ class A2CAgent(BaseTrainingAgent):
         Returns:
             A2C: Initialized A2C agent.
         """
-        self.get_logger().info(f"Using agent of type {self.type}.")
+        self.get_logger().info(f"Using agent of type {self.agent_type}.")
         if normalizer_divisor == 0:
             self.get_logger().warning("Normalizer divisor is 0, will use 1.")
             normalizer_divisor = 1.0
@@ -335,7 +338,7 @@ class PPOAgent(BaseTrainingAgent):
 
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
-    type: Literal["PPO"]
+    agent_type: Literal["PPO"] = Field(alias="type")
     #: The learning rate, it can be a function of the current progress
     #: remaining (from 1 to 0)
     learning_rate: float = 3e-4
@@ -372,7 +375,7 @@ class PPOAgent(BaseTrainingAgent):
     ) -> PPO:
         """Creates the stable_baselines version of the wanted Agent.
 
-        Uses all Variables given in the object (except type) as the input
+        Uses all Variables given in the object (except agent_type) as the input
         parameters of the agent object creation.
 
         Notes:
@@ -392,7 +395,7 @@ class PPOAgent(BaseTrainingAgent):
         Returns:
             PPO: Initialized PPO agent.
         """
-        self.get_logger().info(f"Using agent of type {self.type}.")
+        self.get_logger().info(f"Using agent of type {self.agent_type}.")
         if normalizer_divisor == 0:
             self.get_logger().warning("Normalizer divisor is 0, will use 1.")
             normalizer_divisor = 1.0
@@ -410,7 +413,7 @@ class DDPGAgent(BaseTrainingAgent):
 
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
-    type: Literal["DDPG"]
+    agent_type: Literal["DDPG"] = Field(alias="type")
     #: The learning rate, it can be a function of the current progress
     #: remaining (from 1 to 0)
     learning_rate: float = 1e-3
@@ -441,7 +444,7 @@ class DDPGAgent(BaseTrainingAgent):
     ) -> DDPG:
         """Creates the stable_baselines version of the wanted Agent.
 
-        Uses all Variables given in the object (except type) as the input
+        Uses all Variables given in the object (except agent_type) as the input
         parameters of the agent object creation.
 
         Args:
@@ -452,7 +455,7 @@ class DDPGAgent(BaseTrainingAgent):
         Returns:
             DDPG: Initialized DDPG agent.
         """
-        self.get_logger().info(f"Using agent of type {self.type}.")
+        self.get_logger().info(f"Using agent of type {self.agent_type}.")
         return DDPG(env=environment, **self.get_additional_kwargs())
 
 
@@ -465,7 +468,7 @@ class SACAgent(BaseTrainingAgent):
 
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
-    type: Literal["SAC"]
+    agent_type: Literal["SAC"] = Field(alias="type")
     #: The learning rate, it can be a function of the current progress
     #: remaining (from 1 to 0)
     learning_rate: float = 1e-3
@@ -514,7 +517,7 @@ class SACAgent(BaseTrainingAgent):
     ) -> SAC:
         """Creates the stable_baselines version of the wanted Agent.
 
-        Uses all Variables given in the object (except type) as the input
+        Uses all Variables given in the object (except agent_type) as the input
         parameters of the agent object creation.
 
         Args:
@@ -525,7 +528,7 @@ class SACAgent(BaseTrainingAgent):
         Returns:
             SAC: Initialized SAC agent.
         """
-        self.get_logger().info(f"Using agent of type {self.type}.")
+        self.get_logger().info(f"Using agent of type {self.agent_type}.")
         return SAC(env=environment, **self.get_additional_kwargs())
 
 
@@ -538,7 +541,7 @@ class DQNAgent(BaseTrainingAgent):
 
     #: What RL algorithm was used to train the agent. Needs to be know to
     #: correctly load the agent.
-    type: Literal["DQN"]
+    agent_type: Literal["DQN"] = Field(alias="type")
     #: The learning rate, it can be a function of the current progress
     #: remaining (from 1 to 0)
     learning_rate: float = 1e-4
@@ -586,7 +589,7 @@ class DQNAgent(BaseTrainingAgent):
     ) -> DQN:
         """Creates the stable_baselines version of the wanted Agent.
 
-        Uses all Variables given in the object (except type) as the input
+        Uses all Variables given in the object (except agent_type) as the input
         parameters of the agent object creation.
 
         Args:
@@ -597,7 +600,7 @@ class DQNAgent(BaseTrainingAgent):
         Returns:
             DQN: Initialized DQN agent.
         """
-        self.get_logger().info(f"Using agent of type {self.type}.")
+        self.get_logger().info(f"Using agent of type {self.agent_type}.")
         return DQN(env=environment, **self.get_additional_kwargs())
 
 
