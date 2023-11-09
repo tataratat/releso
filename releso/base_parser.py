@@ -78,7 +78,8 @@ class BaseParser(BaseModel):
     def learn(self) -> None:
         """Starts the training that is specified in the loaded json file.
 
-        Successive calls to this functions does not train the agent further
+        Successive calls to this function does not train the agent further
+
         but reinitialize the agent.
         """
         train_env: Optional[VecEnv] = None

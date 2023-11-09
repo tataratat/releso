@@ -1,6 +1,7 @@
 """SPOR definition Read Carefully.
 
-Solver Postprocessing Observation Reward (SPOR) is represents all steps which
+Solver Postprocessing Observation Reward (SPOR) represents all steps which
+
 follow after completing Geometry adaption, where the geometry is
 deformed via the actions.
 

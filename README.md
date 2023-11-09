@@ -12,7 +12,7 @@ Documentation generation
 ========================
 
 Install and usage instructions are provided in the documentation of the
-project. The documentation can build with the use of sphinx which is a `python`
+project. The documentation can be built with the use of sphinx which is a `python`
 tool to generate documentation.
 > The sphinx packages can either be installed in the project python environment
 or in a separate environment. If it does not matter in which python environment
@@ -27,8 +27,8 @@ dependencies for building the documentation.
 ```
 
 The documentation is built by executing the following command inside the folder
-"docs/". After executing the command the documentation should be available
-inside the folder ["docs/build/html/"](docs/build/html)
+`docs/`. After executing the command the documentation should be available
+inside the folder [`docs/build/html/`](docs/build/html)
 
 ``` console
 (sphinx) $ make html
@@ -37,7 +37,7 @@ inside the folder ["docs/build/html/"](docs/build/html)
 Installation
 ============
 
-This page covers the installation process of the framework and its
+This section covers the installation process of the framework and its
 prerequisites. The first thing to note is that with version 0.1.0 the strict
 dependency on `splinepy` is not present anymore. But if the
 geometry is to be parameterized by a Spline and the method of Free Form
@@ -46,14 +46,14 @@ necessary.
 
 Prerequisites
 -------------
-To use ReLeSO the following packages have to be installed:
+To use `ReLeSO` the following packages have to be installed:
  - pydantic<2
  - stable-baselines3
  - tensorboard
  - hjson
 
- > The *pydantic* package currently needs to be on version 1.\*, we welcome
- anyone wanting to update *releso* to the new *pydantic* version.
+ > The `pydantic` package currently needs to be on version 1.\*, we welcome
+ anyone wanting to update `releso` to the new `pydantic` version.
 
 The packages can be installed via pip or conda with the following commands:
 
@@ -76,7 +76,7 @@ testing, `bash` is also ok if you use them even though they are not necessary.
 
 If the spline-based shape optimization functionality is needed, the package
 ``splinepy`` is needed. Please visit
-[splinepy on github](https://github.com/tataratat/splinepy) for installation
+[`splinepy` on github](https://github.com/tataratat/splinepy) for installation
 instructions.
 
 **Development**
