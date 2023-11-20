@@ -44,7 +44,8 @@ releso = "releso.__main__:entry"
 
 [tool.setuptools]
 packages = [
-    "releso"
+    "releso",
+    "releso.util",
 ]
 
 [build-system]
