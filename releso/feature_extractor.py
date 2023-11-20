@@ -3,13 +3,14 @@
 These are implemented in a more or less slapdash fashion. Use at own Risk.
 """
 import logging
-from typing import Any, Dict, Literal, Optional
+from typing import Literal, Optional
 
-import numpy as np
 import torch as th
-from gym import Space, spaces
-from stable_baselines3.common.preprocessing import (get_flattened_obs_dim,
-                                                    is_image_space)
+from gymnasium import Space, spaces
+from stable_baselines3.common.preprocessing import (
+    get_flattened_obs_dim,
+    is_image_space,
+)
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.type_aliases import TensorDict
 from torchvision import models, transforms
@@ -24,10 +25,13 @@ class FeatureExtractor(BaseFeaturesExtractor):
     """
 
     def __init__(
-            self, observation_space: Space, features_dim: int = 512,
-            without_linear: bool = False,
-            network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
-            logger: Optional[logging.Logger] = None):
+        self,
+        observation_space: Space,
+        features_dim: int = 128,
+        without_linear: bool = False,
+        network_type: Literal["resnet18", "mobilenet_v2"] = "resnet18",
+        logger: Optional[logging.Logger] = None,
+    ):
         """Constructor for normal feature extractor.
 
         The feature extractor is used to also be able to handle image based
@@ -39,96 +43,132 @@ class FeatureExtractor(BaseFeaturesExtractor):
         Args:
           observation_space (Space): Observations space of the environment.
           cnn_output_dim (int, optional): How many features the feature
-          extractor should return. Defaults to 256.
+            extractor should return. Defaults to 128.
           features_dim (int, optional): Number of dimensions in the feature
-          dimension.
+            dimension.
           without_linear (bool, optional): Use the pretrained nets without a
-          linear layer at the end. Setting the output_dim is not possible since
-          the output sie is directly dependent on the input size.
-          Defaults to False.
+            linear layer at the end. Setting the output_dim is not possible
+            since the output sie is directly dependent on the input size.
+            Defaults to False.
           network_type (Literal["resnet18", "mobilenetv2"], optional):Network
-          to use for the cnn extractor. Defaults to "resnet18".
+            to use for the cnn extractor. Defaults to "resnet18".
           logger (Optional[logging.Logger], optional): Logger to use for
-          logging purposes. Defaults to None.
+            logging purposes. Defaults to None.
 
         """
         super().__init__(observation_space, features_dim=features_dim)
         self.without_linear = without_linear
         # Define the network
         if network_type == "resnet18":
-            pre_network = models.resnet18(pretrained=True)
-            self.model = th.nn.Sequential(*[
-                transforms.Normalize((0.485, 0.456, 0.406),
-                                     (0.229, 0.224, 0.225)),
-                pre_network.conv1, pre_network.bn1, pre_network.relu,
-                pre_network.maxpool, pre_network.layer1, pre_network.layer2,
-                pre_network.layer3, pre_network.layer4, th.nn.Flatten()])
-        elif network_type == "mobilenetv2":
-            pre_network = models.mobilenet_v2(pretrained=True)
-            self.model = th.nn.Sequential(*[
-                transforms.Normalize((0.485, 0.456, 0.406),
-                                     (0.229, 0.224, 0.225)),
-                pre_network.features, th.nn.Flatten()])
-        elif network_type == "mobilenetv3_small":
-            pre_network = models.mobilenet_v3_small(pretrained=True)
-            self.model = th.nn.Sequential(*[
-                transforms.Normalize((0.485, 0.456, 0.406),
-                                     (0.229, 0.224, 0.225)),
-                pre_network.features, th.nn.Flatten()])
-        elif network_type == "mobilenetv3_large":
-            pre_network = models.mobilenet_v3_large(pretrained=True)
-            self.model = th.nn.Sequential(*[
-                transforms.Normalize((0.485, 0.456, 0.406),
-                                     (0.229, 0.224, 0.225)),
-                pre_network.features, th.nn.Flatten()])
-        elif network_type == "inception_v3":
-            if self.without_linear:
-                if logger:
-                    logger.error(
-                        "FeatureExtractor: Inception_v3 can only be used with "
-                        "linear layer.")
-                raise RuntimeError(
-                    "FeatureExtractor: Inception_v3 can only be used with "
-                    "linear layer.")
-            self.model = models.inception_v3(pretrained=True)
+            pre_network = models.resnet18(
+                weights=models.ResNet18_Weights.IMAGENET1K_V1
+            )
+            self.model = th.nn.Sequential(
+                *[
+                    transforms.Normalize(
+                        (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+                    ),
+                    pre_network.conv1,
+                    pre_network.bn1,
+                    pre_network.relu,
+                    pre_network.maxpool,
+                    pre_network.layer1,
+                    pre_network.layer2,
+                    pre_network.layer3,
+                    pre_network.layer4,
+                    th.nn.Flatten(),
+                ]
+            )
+        elif network_type == "mobilenet_v2":
+            pre_network = models.mobilenet_v2(
+                weights=models.MobileNet_V2_Weights.IMAGENET1K_V1
+            )
+            self.model = th.nn.Sequential(
+                *[
+                    transforms.Normalize(
+                        (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+                    ),
+                    pre_network.features,
+                    th.nn.Flatten(),
+                ]
+            )
+        # elif network_type == "mobilenetv3_small":
+        #     pre_network = models.mobilenet_v3_small(pretrained=True)
+        #     self.model = th.nn.Sequential(
+        #         *[
+        #             transforms.Normalize(
+        #                 (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+        #             ),
+        #             pre_network.features,
+        #             th.nn.Flatten(),
+        #         ]
+        #     )
+        # elif network_type == "mobilenetv3_large":
+        #     pre_network = models.mobilenet_v3_large(pretrained=True)
+        #     self.model = th.nn.Sequential(
+        #         *[
+        #             transforms.Normalize(
+        #                 (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+        #             ),
+        #             pre_network.features,
+        #             th.nn.Flatten(),
+        #         ]
+        #     )
+        # elif network_type == "inception_v3":
+        #     # extracting the linear layer is not possible. But can be
+        #     # overwritten see below.
+        #     if self.without_linear:
+        #         if logger:
+        #             logger.error(
+        #                 "FeatureExtractor: Inception_v3 can only be used "
+        #                 "with linear layer."
+        #             )
+        #         raise RuntimeError(
+        #             "FeatureExtractor: Inception_v3 can only be used with "
+        #             "linear layer."
+        #         )
+        #     self.model = models.inception_v3(pretrained=True)
         else:
             if logger:
                 logger.error(
                     f"The given network type of {network_type} is unknown. "
-                    "Please choose one that is known.")
+                    "Please choose one that is known."
+                )
             raise RuntimeError(
                 f"FeatureExtractor: Given network type -{network_type}- "
-                "unknown.")
+                "unknown."
+            )
         # deactivate training
         for param in self.model.parameters():
             param.requires_grad = False
 
-        # # Define the feature dimension of the network
-        # gen = np.random.default_rng()
-        # ins = gen.random((64,*observation_space.shape))
-        # ins_torch = from_numpy(ins).float().to("cpu")
-        # self._features_dim = sum(self.model(ins_torch).shape[1:])
-
         # Compute shape by doing one forward pass
         with th.no_grad():
-            n_flatten = self.model(th.as_tensor(
-                observation_space.sample()[None]).float()).shape
+            n_flatten = self.model(
+                th.as_tensor(observation_space.sample()[None]).float()
+            ).shape
         if self.without_linear:
             features_dim = n_flatten[1]
         else:
-            if network_type == "inception_v3":
-                self.model.fc = th.nn.Linear(
-                    self.model.fc.in_features, features_dim, th.nn.ReLU())
-                # only so that forward correctly works. Actually uses the
-                # linear layer but it is included inside the model itself.
-                self.without_linear = True
-            else:
-                self.linear = th.nn.Sequential(th.nn.Linear(
-                    n_flatten[1], features_dim), th.nn.ReLU())
+            # if network_type == "inception_v3":
+            #     # inception_v3 has the linear layer inside the model in a way
+            #     # that it is not easy to separate it from the convolutional
+            #     # layers. Therefor need to overwrite the model's linear layer
+            #     self.model.fc = th.nn.Linear(
+            #         self.model.fc.in_features, features_dim, th.nn.ReLU()
+            #     )
+            #     # only so that forward correctly works. Actually uses the
+            #     # linear layer but it is included inside the model itself.
+            #     self.without_linear = True
+            # else:
+            self.linear = th.nn.Sequential(
+                th.nn.Linear(n_flatten[1], features_dim), th.nn.ReLU()
+            )
         if logger:
             logger.warning(
                 f"FeatureExtractor: Used pretrained {network_type} results in "
-                f"{features_dim} feature dims.")
+                f"{features_dim} feature dims."
+            )
         self._features_dim = features_dim
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
@@ -140,11 +180,6 @@ class FeatureExtractor(BaseFeaturesExtractor):
         Returns:
             th.Tensor: Output of the network
         """
-        # print("-"*20,flush=True)
-        # print(observations.shape)
-        # print(th.min(observations))
-        # print(th.max(observations))
-        # print("-"*20,flush=True)
         observations = self.model(observations)
         # return observations
         if not self.without_linear:
@@ -161,10 +196,13 @@ class CombinedExtractor(BaseFeaturesExtractor):
     """
 
     def __init__(
-            self, observation_space: spaces.Dict, cnn_output_dim: int = 256,
-            without_linear: bool = False,
-            network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
-            logger: Optional[logging.Logger] = None):
+        self,
+        observation_space: spaces.Dict,
+        cnn_output_dim: int = 256,
+        without_linear: bool = False,
+        network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
+        logger: Optional[logging.Logger] = None,
+    ):
         """Combined Feature extractor constructor.
 
         The feature extractor is used to also be able to handle image based
@@ -202,9 +240,12 @@ class CombinedExtractor(BaseFeaturesExtractor):
         for key, subspace in observation_space.spaces.items():
             if is_image_space(subspace):
                 extractors[key] = FeatureExtractor(
-                    observation_space=subspace, features_dim=cnn_output_dim,
-                    without_linear=without_linear, network_type=network_type,
-                    logger=logger)
+                    observation_space=subspace,
+                    features_dim=cnn_output_dim,
+                    without_linear=without_linear,
+                    network_type=network_type,
+                    logger=logger,
+                )
                 total_concat_size += extractors[key]._features_dim
             else:
                 # The observation key is a vector, flatten it if needed

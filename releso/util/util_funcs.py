@@ -33,17 +33,19 @@ class JSONEncoder(json.JSONEncoder):
         if isinstance(o, np.ndarray):
             return o.astype(float).tolist()
         elif isinstance(o, np.int64):
-            return int(0)
+            return int(o)
         elif isinstance(o, bytes):
             return o.decode("utf-8")
         try:
             return json.JSONEncoder.default(self, o)
-        except TypeError as err:
-            print(type(o), o)
+        except TypeError:
+            print(type(o), o)  # noqa: T201
             return json.JSONEncoder.default(self, "")
 
 
-def which(program: str) -> Optional[str]:
+def which(
+    program: str,
+) -> Optional[str]:  # pragma: no cover # not used anymore
     """Finds if the given program is accessible or in the $PATH.
 
     Args:
@@ -56,6 +58,7 @@ def which(program: str) -> Optional[str]:
     Returns:
         Optional[str]: None if not found else execution file.
     """
+
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
@@ -75,26 +78,26 @@ def which(program: str) -> Optional[str]:
 def call_commandline(command, folder, logger=None):
     """Executes a command which is provided as a string in the command line.
 
-    Author: Michael Binder (e1325632@student.tuwien.ac.at)
+    Loosely based on a function written by Michael Binder
+    (e1325632@student.tuwien.ac.at).
     """
     if logger is not None:
-        logger.debug(f'Executing command {command} in {folder}')
+        logger.debug(f"Executing command {command} in {folder}")
     try:
         # try to execute the provided command in the shell
-        output = subprocess.check_output(command, shell=True, cwd=folder)
-        # print(output.decode('utf-8')) #utf-8 decoding macht öfters Probleme!
+        # WARNING this is a security risk, but necessary to execute the
+        # command line arguments
+        output = subprocess.check_output(
+            command, shell=True, cwd=folder  # noqa: S602
+        )
         exitcode = 0
     except subprocess.CalledProcessError as exc:
         # if anything went wrong, catch the error, report to the user and abort
-
-        # print("error:",exc)
-        # print("output:",exc.output)
-        # print("returncode:",exc.returncode)
-        # print("stderr:",exc.stderr)
-        # print("stdout:",exc.stdout)
         output = exc.output
         if logger is not None:
-            logger.error(f'Execution failed with return code {exc.returncode}')
+            logger.exception(
+                f"Execution failed with return code {exc.returncode}"
+            )
         exitcode = exc.returncode
     return exitcode, output
 
@@ -118,7 +121,7 @@ def get_path_extension() -> str:
 
     If not on a slurm system only the current time stamp is added
     If in a slurm job (non task array) the current time stamp + job id
-    If in slurm task array job the job_id with subfolders for each task with
+    If in slurm task array job the job_id with sub-folders for each task with
     the task_id_timestamp
 
     If on a slurm system the slurm information are read from the environment
@@ -129,14 +132,21 @@ def get_path_extension() -> str:
     """
     ret_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     # check if slurm job is running
-    if os.getenv("SLURM_CLUSTER_NAME"):
+    if os.getenv("SLURM_CLUSTER_NAME"):  # pragma: no cover
         # check if slurm task array is running
-        if os.getenv("SLURM_ARRAY_TASK_COUNT") and \
-            int(os.getenv("SLURM_ARRAY_TASK_COUNT")) > 1 and \
-                os.getenv("SLURM_ARRAY_JOB_ID") and \
-                os.getenv("SLURM_ARRAY_TASK_ID"):
-            ret_str = os.getenv("SLURM_ARRAY_JOB_ID")+"/" + \
-                os.getenv("SLURM_ARRAY_TASK_ID")+"_"+ret_str
+        if (
+            os.getenv("SLURM_ARRAY_TASK_COUNT")
+            and int(os.getenv("SLURM_ARRAY_TASK_COUNT")) > 1
+            and os.getenv("SLURM_ARRAY_JOB_ID")
+            and os.getenv("SLURM_ARRAY_TASK_ID")
+        ):
+            ret_str = (
+                os.getenv("SLURM_ARRAY_JOB_ID")
+                + "/"
+                + os.getenv("SLURM_ARRAY_TASK_ID")
+                + "_"
+                + ret_str
+            )
         elif os.getenv("SLURM_JOB_ID"):  # default slurm job running
-            ret_str += "_"+os.getenv("SLURM_JOB_ID")
+            ret_str += "_" + os.getenv("SLURM_JOB_ID")
     return ret_str

@@ -1,11 +1,15 @@
-"""SPOR step python file making cnn observations based on xns results."""
+"""SPOR step python file making cnn observations based on xns results.
+
+This file is not tested due to it being specific to the xns use case.
+Please check if any updates to the required files are needed before
+using these functions.
+"""
 import datetime
 import pathlib
 from typing import Any, Dict, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from gym import spaces
 
 from releso.observation import ObservationDefinitionMulti
 from releso.util.load_binary import read_mixd_double
@@ -27,13 +31,17 @@ def define_observation_definition() -> ObservationDefinitionMulti:
         value_min=0,
         value_max=255,
         observation_shape=(3, 200, 200),
-        value_type="CNN"
+        value_type="CNN",
     )
 
 
-def get_visual_representation(connectivity: np.ndarray, sol_len: int = 3,
-                              height: int = 10, width: int = 10,
-                              dpi: int = 20):
+def get_visual_representation(
+    connectivity: np.ndarray,
+    sol_len: int = 3,
+    height: int = 10,
+    width: int = 10,
+    dpi: int = 20,
+) -> np.ndarray:
     """Return an array representing the calculated solution.
 
     This function is used to create the array which is used if the
@@ -46,6 +54,7 @@ def get_visual_representation(connectivity: np.ndarray, sol_len: int = 3,
     #TODO make it broader in its application e.g. other solvers?
 
     Args:
+        connectivity (np.ndarray): Connectivity array of the mesh.
         sol_len (int, optional): Number of variables to return per data
             point, input can be more but not less. Assumed is u,v,p.
             Defaults to 3.
@@ -72,22 +81,34 @@ def get_visual_representation(connectivity: np.ndarray, sol_len: int = 3,
     #         "The given mesh has a dimension unequal two. This function "
     #         "was designed to work only with meshes of dimension two.")
     solution = read_mixd_double("ins.out", 3)
-    coordinates = np.fromfile(
-        "mesh/mxyz", dtype=">d").astype(np.float64).reshape(-1, int(2))
+    coordinates = (
+        np.fromfile("mesh/mxyz", dtype=">d").astype(np.float64).reshape(-1, 2)
+    )
 
     # Plotting and creating resulting array
     limits_max = [1, 1, 0.2e8]
     limits_min = [-1, -1, -0.2e8]
 
-    return get_tricontour_solution(width, height, dpi, coordinates,
-                                   connectivity, solution, sol_len,
-                                   limits_min, limits_max)
+    return get_tricontour_solution(
+        width,
+        height,
+        dpi,
+        coordinates,
+        connectivity,
+        solution,
+        sol_len,
+        limits_min,
+        limits_max,
+    )
 
 
 def save_current_solution_as_png(
-        save_location: Union[pathlib.Path, str],
-        include_pressure: bool = True, height: int = 10,
-        width: int = 10, dpi: int = 400):
+    save_location: Union[pathlib.Path, str],
+    include_pressure: bool = True,
+    height: int = 10,
+    width: int = 10,
+    dpi: int = 400,
+):
     """Save the current solver solution as an image at the given location.
 
     Additional parameters for size can be used.
@@ -106,12 +127,15 @@ def save_current_solution_as_png(
     """
     image_arr = get_visual_representation(
         sol_len=3 if include_pressure else 2,
-        width=height, height=width, dpi=dpi)
+        width=height,
+        height=width,
+        dpi=dpi,
+    )
     meta_data_dict = {
         "Author": "Clemens Fricke",
         "Software": "ReLeSO",
         "Creation Time": str(datetime.datetime.now()),
-        "Description": "This is a description"
+        "Description": "This is a description",
     }
     if isinstance(save_location, str):
         save_location = pathlib.Path(save_location)
@@ -135,19 +159,23 @@ def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
     """
     # first time initialization
     if func_data is None:
-        func_data = dict()
-        func_data["connectivity"] = (np.fromfile(
-            "mesh/mien", dtype=">i") - 1).astype(np.int64).reshape(-1, 3)
+        func_data = {}
+        func_data["connectivity"] = (
+            (np.fromfile("mesh/mien", dtype=">i") - 1)
+            .astype(np.int64)
+            .reshape(-1, 3)
+        )
 
     # Loading the correct data and checking if correct attributes are set.
     cnn_observation = get_visual_representation(
-        connectivity=func_data["connectivity"])
+        connectivity=func_data["connectivity"]
+    )
 
     return_dict = {
         "reward": 0,
         "done": False,
         "info": {},
-        "observations": [cnn_observation.T]
+        "observations": [cnn_observation.T],
     }
 
     return return_dict, func_data

@@ -10,10 +10,18 @@ import pathlib
 import pprint
 import shutil
 
+import gymnasium
 import hjson
+import stable_baselines3
+import torch
 
 from releso.__version__ import version
 from releso.base_parser import BaseParser
+
+try:
+    import splinepy
+except ImportError:
+    splinepy = None
 
 
 def main(args) -> None:
@@ -49,8 +57,16 @@ def main(args) -> None:
     #                         #
     ###########################
 
-    shutil.copy(file_path, optimization_object.save_location/file_path.name)
-
+    shutil.copy(file_path, optimization_object.save_location / file_path.name)
+    versions = [
+        f"releso version: {version}; ",
+        f"stable-baselines3 version: {stable_baselines3.__version__}; ",
+        f"torch version: {torch.__version__}; ",
+        f"gymnasium version: {gymnasium.__version__} ",
+    ]
+    if splinepy:
+        versions.append(f"splinepy version: {splinepy.__version__}")
+    optimization_object.get_logger().info("".join(versions))
     ###########################
     #                         #
     #   Validate json file    #
@@ -67,7 +83,7 @@ def main(args) -> None:
     #                         #
     ###########################
     if args.validate_only:
-        optimization_object.evaluate_model(throw_error_if_None=True)
+        optimization_object.evaluate_model(throw_error_if_none=True)
         return
 
     ###########################
@@ -82,26 +98,39 @@ def entry():
     """Entry point if this package is called directly from the command line."""
     parser = argparse.ArgumentParser(
         description="Reinforcement Learning based Shape Optimization (releso) "
-                    "Toolbox. This python program loads a problem "
-                    "definition and trains the resulting problem. Further the "
-                    "model can be evaluated"
-                    f"The package version is: {version}."
+        "Toolbox. This python program loads a problem "
+        "definition and trains the resulting problem. Further the "
+        "model can be evaluated"
+        f"The package version is: {version}."
     )
     parser.add_argument(
-        "-i", "--input_file", action="store",
-        help="Path to the json file storing the optimization definition.")
+        "-i",
+        "--input_file",
+        action="store",
+        help="Path to the json file storing the optimization definition.",
+    )
     parser.add_argument(
-        "-v", "--validate_only", action="store_true",
+        "-v",
+        "--validate_only",
+        action="store_true",
         help="If this is set only validation on this configuration is run. "
         "Please configure the validation object in the json file so that this "
-        "option can be correctly executed.")
+        "option can be correctly executed.",
+    )
     parser.add_argument(
-        "-j", "--json_only", dest="json_validate", action="store_true",
+        "-j",
+        "--json_only",
+        dest="json_validate",
+        action="store_true",
         help="If this is set only the json validation is performed, nothing "
-        "else.")
+        "else.",
+    )
     parser.add_argument(
-        "--version", dest="version", action="store_true",
-        help="Returns the version of the package.")
+        "--version",
+        dest="version",
+        action="store_true",
+        help="Returns the version of the package.",
+    )
     args = parser.parse_args()
     if args.version:
         print(f"releso: {version}")
@@ -110,12 +139,12 @@ def entry():
         print(
             "The command option for the input_file is required.\n",
             "An input file can be added via the -i option.\n",
-            "Please use the -h option to see the help."
+            "Please use the -h option to see the help.",
         )
         return
     print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     main(args)
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     entry()

@@ -8,7 +8,7 @@ and could not be completed.
 from typing import List, Literal, Tuple
 
 import numpy as np
-from gym.spaces import Box, Space
+from gymnasium.spaces import Box, Space
 
 from releso.base_model import BaseModel
 
@@ -22,7 +22,8 @@ class ObservationDefinition(BaseModel):
     The range is necessary due to normalization of the input of the agent
     networks.
     """
-    name: str   #: Name of the observation
+
+    name: str  #: Name of the observation
     #: minimum of the range in which the observation is bound
     value_min: float
     #: maximum of the range in which the observation is bound
@@ -32,16 +33,16 @@ class ObservationDefinition(BaseModel):
         """Provide definition of the defined observations space.
 
         Returns a tuple of name and observation definition defined via the
-        gym.observation interface
+        gymnasium.observation interface
 
         Returns:
             Tuple[str, Space]: Tuple of the name of the observation and a
-            gym.Box definition
+            gymnasium.Box definition
         """
         return (
             self.name,
-            Box(
-                self.value_min, self.value_max, shape=([1]), dtype=np.float32))
+            Box(self.value_min, self.value_max, shape=([1]), dtype=np.float32),
+        )
 
     def get_default_observation(self) -> np.ndarray:
         """Provide default observations.
@@ -54,7 +55,7 @@ class ObservationDefinition(BaseModel):
             np.ndarray: An array filled with ones in the correct shape and size
             of the observation.
         """
-        return np.ones((1,))*self.value_min
+        return np.ones((1,)) * self.value_min
 
 
 class ObservationDefinitionMulti(ObservationDefinition):
@@ -66,6 +67,7 @@ class ObservationDefinitionMulti(ObservationDefinition):
     The range is necessary due to normalization of the input of the agent
     networks.
     """
+
     #: Shape of the Observation space. List of number of elements per dimension
     observation_shape: List[int]
     #: Type of the Observation space. If float uses the value_min etc
@@ -76,23 +78,31 @@ class ObservationDefinitionMulti(ObservationDefinition):
         """Provide definition of the defined observations space.
 
         Returns a tuple of name and observation definition defined via the
-        gym.observation interface
+        gymnasium.observation interface
 
         Returns:
             Tuple[str, Space]: Tuple of the name of the observation
-                and a gym.Box definition
+                and a gymnasium.Box definition
         """
         if self.value_type == "CNN":
             return (
                 self.name,
                 Box(
-                    low=0, high=255, shape=self.observation_shape,
-                    dtype=np.uint8))
+                    low=0,
+                    high=255,
+                    shape=self.observation_shape,
+                    dtype=np.uint8,
+                ),
+            )
         return (
             self.name,
             Box(
-                self.value_min, self.value_max, shape=(self.observation_shape),
-                dtype=np.float32))
+                self.value_min,
+                self.value_max,
+                shape=(self.observation_shape),
+                dtype=np.float32,
+            ),
+        )
 
     def get_default_observation(self) -> np.ndarray:
         """Provide default observations.
@@ -107,4 +117,6 @@ class ObservationDefinitionMulti(ObservationDefinition):
         """
         if self.value_type == "CNN":
             return np.zeros(self.observation_shape, dtype=np.uint8)
-        return np.ones(self.observation_shape, dtype=np.float32)*self.value_min
+        return (
+            np.ones(self.observation_shape, dtype=np.float32) * self.value_min
+        )

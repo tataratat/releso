@@ -1,9 +1,8 @@
 """File holds the definition class for the validation."""
 import pathlib
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pydantic.class_validators import validator
-from pydantic.fields import Field
 from pydantic.types import conint, conlist
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import EvalCallback
@@ -21,9 +20,9 @@ class Validation(BaseModel):
     This class is used for the configuration of how validation is to be
     performed during training.
     """
+
     #: How many timesteps should pass by learning between validation runs
-    validation_freq: Optional[conint(
-        ge=1)]
+    validation_freq: Optional[conint(ge=1)]
     #: List of validation items. This will be revised later on #TODO
     validation_values: conlist(float, min_items=1)
     #: Whether or not to save the best agent. If agent is not saved only
@@ -32,37 +31,34 @@ class Validation(BaseModel):
     save_best_agent: bool
     #: Whether or not to also run a validation when the training is terminated.
     validate_on_training_end: bool
-    mesh_base_path_extension: Optional[str] = None  #: Do not know currently
     #: after how many timesteps inside a single episode should the episode be
     #: terminated.
     max_timesteps_in_episode: Optional[conint(ge=1)] = None
-    #: Should the episode be terminated if the spline representation has not
+    #: Should the episode be terminated if the geometry representation has not
     #: changed between timesteps?
-    end_episode_on_spline_not_changed: bool = False
-    #: What reward should be added to the step reward if the spline was not
+    end_episode_on_geometry_not_changed: bool = False
+    #: What reward should be added to the step reward if the geometry was not
     #: changed for the defined number of steps.
-    reward_on_spline_not_changed: Optional[float] = None
+    reward_on_geometry_not_changed: Optional[float] = None
     #: What reward should be added to the step reward if the maximal timesteps
     #: per episode is exceeded.
     reward_on_episode_exceeds_max_timesteps: Optional[float] = None
-    #: Export for each validation step the solution image. Only works for
-    #: triangular meshes and solutions of the XNS solver.
-    save_image_in_validation: Optional[bool] = False
 
-    @validator("reward_on_spline_not_changed", always=True)
+    @validator("reward_on_geometry_not_changed", always=True)
     @classmethod
-    def check_if_reward_given_if_spline_not_change_episode_killer_activated(
-            cls, value: float, values: Dict[str, Any]) -> float:
-        """Validator for reward_on_spline_not_changed.
+    def check_if_reward_given_if_geometry_not_change_episode_killer_activated(
+        cls, value: float, values: Dict[str, Any]
+    ) -> float:
+        """Validator for reward_on_geometry_not_changed.
 
         Checks that 1) if a reward is set, also the boolean value for the
-        end_episode_on_spline_not_changed is True.
-        2) If end_episode_on_spline_not_changed is True a reward value is set.
+        end_episode_on_geometry_not_changed is True.
+        2) If end_episode_on_geometry_not_changed is True a reward value is set
 
         Args:
             value (float): value to validate
             values (Dict[str, Any]): previously validated values
-            (here end_episode_on_spline_not_changed is important)
+            (here end_episode_on_geometry_not_changed is important)
 
         Raises:
             ParserException: Error is thrown if one of the conditions is
@@ -71,32 +67,42 @@ class Validation(BaseModel):
         Returns:
             float: reward for the specified occurrence.
         """
-        if "end_episode_on_spline_not_changed" not in values:
+        # due to pydantic this first statement should never be able to happen
+        if (
+            "end_episode_on_geometry_not_changed" not in values
+        ):  # pragma: no cover
             raise ParserException(
-                "Validation", "reward_on_spline_not_changed",
+                "Validation",
+                "reward_on_geometry_not_changed",
                 "Could not find definition of parameter "
-                "end_episode_on_spline_not_changed, please define this "
+                "end_episode_on_geometry_not_changed, please define this "
                 "variable since otherwise this variable would have no "
-                "function.")
+                "function.",
+            )
         if value is not None and (
-            values["end_episode_on_spline_not_changed"] is None or
-                not values["end_episode_on_spline_not_changed"]):
+            values["end_episode_on_geometry_not_changed"] is None
+            or not values["end_episode_on_geometry_not_changed"]
+        ):
             raise ParserException(
-                "Validation", "reward_on_spline_not_changed",
-                "Reward can only be set if end_episode_on_spline_not_changed "
-                "is true.")
-        if values["end_episode_on_spline_not_changed"] and value is None:
+                "Validation",
+                "reward_on_geometry_not_changed",
+                "Reward can only be set if end_episode_on_geometry_not_changed"
+                " is true.",
+            )
+        if values["end_episode_on_geometry_not_changed"] and value is None:
             get_parser_logger().warning(
-                "Please set a reward value for spline not changed if episode "
-                "should end on it. Will set 0 for you now, but this might not "
-                "be you intention.")
-            value = 0.
+                "Please set a reward value for geometry not changed if episode"
+                " should end on it. Will set 0 for you now, but this might not"
+                " be you intention."
+            )
+            value = 0.0
         return value
 
     @validator("reward_on_episode_exceeds_max_timesteps", always=True)
     @classmethod
     def check_if_reward_given_if_max_steps_killer_activated(
-            cls, value: float, values: Dict[str, Any]) -> float:
+        cls, value: float, values: Dict[str, Any]
+    ) -> float:
         """Validator for reward_on_episode_exceeds_max_timesteps.
 
         Checks that 1) if a reward is set, also that the value for the
@@ -115,46 +121,32 @@ class Validation(BaseModel):
         Returns:
             float: reward for the specified occurrence.
         """
-        if "max_timesteps_in_episode" not in values:
+        # due to pydantic this first statement should never be able to happen
+        if "max_timesteps_in_episode" not in values:  # pragma: no cover
             raise ParserException(
-                "Validation", "reward_on_episode_exceeds_max_timesteps",
+                "Validation",
+                "reward_on_episode_exceeds_max_timesteps",
                 "Could not find definition of parameter "
                 "max_timesteps_in_episode, please define this variable since "
-                "otherwise this variable would have no function.")
+                "otherwise this variable would have no function.",
+            )
         if value is not None and (
-            values["max_timesteps_in_episode"] is None or
-                not values["max_timesteps_in_episode"]):
+            values["max_timesteps_in_episode"] is None
+            or not values["max_timesteps_in_episode"]
+        ):
             raise ParserException(
-                "Validation", "reward_on_episode_exceeds_max_timesteps",
+                "Validation",
+                "reward_on_episode_exceeds_max_timesteps",
                 "Reward can only be set if max_timesteps_in_episode is a "
-                "positive integer.")
+                "positive integer.",
+            )
         if values["max_timesteps_in_episode"] and value is None:
             get_parser_logger().warning(
                 "Please set a reward value for max time steps exceeded, if "
                 "episode should end on it. Will set 0 for you now, but this "
-                "might not be you intention.")
-            value = 0.
-        return value
-
-    @validator("validation_values")
-    @classmethod
-    def validate_validation_values_list_not_empty(
-            cls, value: List[float], field: str) -> List[float]:
-        """Checks that the validation_values list is not empty.
-
-        Args:
-            value (List[float]): value holding the list
-            field (str): name of the current field
-
-        Raises:
-            ParserException: Thrown if list is empty.
-
-        Returns:
-            List[float]: validated list
-        """
-        if len(value) == 0:
-            raise ParserException(
-                "Validation", field, "You need to provide validation values")
+                "might not be you intention."
+            )
+            value = 0.0
         return value
 
     def should_add_callback(self) -> bool:
@@ -168,17 +160,21 @@ class Validation(BaseModel):
         return False
 
     def get_callback(
-            self, eval_environment: GymEnv,
-            save_location: Optional[pathlib.Path] = None,
-            normalizer_divisor: int = 1) -> EvalCallback:
+        self,
+        eval_environment: GymEnv,
+        save_location: Optional[pathlib.Path] = None,
+        normalizer_divisor: int = 1,
+    ) -> EvalCallback:
         """Creates the EvalCallback with the values given in this object.
 
         Args:
             eval_environment (GymEnv): Evaluation environment. Should be the
-            same as the normal training environment only that here the goal
-            values should be set and not random.
+                same as the normal training environment only that here the goal
+                values should be set and not random.
             save_location (Optional[pathlib.Path]): Path to where the best
-            models should be save to.
+                models should be save to.
+            normalizer_divisor (int, optional): Divisor for the eval_freq.
+                Defaults to 1.
 
         Returns:
             EvalCallback: Validation callback parametrized by this object.
@@ -188,18 +184,19 @@ class Validation(BaseModel):
         variable_dict = {
             "eval_env": eval_environment,
             "n_eval_episodes": len(self.validation_values),
-            "eval_freq": int(self.validation_freq/normalizer_divisor)
+            "eval_freq": int(self.validation_freq / normalizer_divisor),
         }
         # add variables for the case if the best model is to be saved
         if self.save_best_agent and save_location:
-            variable_dict["best_model_save_path"] = save_location / \
-                "eval/best_model"
-            variable_dict["log_path"] = save_location/"eval/log"
+            variable_dict["best_model_save_path"] = (
+                save_location / "eval/best_model"
+            )
+            variable_dict["log_path"] = save_location / "eval/log"
         return EvalCallback(**variable_dict)
 
     def end_validation(
-            self, agent: BaseAlgorithm,
-            environment: GymEnv) -> Tuple[float, float]:
+        self, agent: BaseAlgorithm, environment: GymEnv
+    ) -> Tuple[float, float]:
         """Function is called at the end of a validation.
 
         All clean up and last evaluation is going in here.
@@ -216,51 +213,26 @@ class Validation(BaseModel):
             "env": environment,
             "n_eval_episodes": len(self.validation_values),
             "deterministic": True,
-            "return_episode_rewards": True
+            "return_episode_rewards": True,
         }
         return evaluate_policy(**variable_dict)
 
-    def get_mesh_base_path(self, base_save_location: pathlib.Path) -> str:
-        """Get the path to the initial mesh.
-
-        Appends the read in base_mesh_path to the save_location path given as
-        input parameter. This makes it so that the validation results are
-        stored inside the results storage of the experiment.
-
-        Args:
-            base_save_location (pathlib.Path): Experiment/Trainings run save
-            location.
-
-        Returns:
-            str: str of path pointing to the location where the meshes from the
-            validation are supposed to be stored
-        """
-        return str(base_save_location/self.mesh_base_path_extension) \
-            if self.mesh_base_path_extension else None
-
-    def get_environment_validation_parameters(
-            self, base_save_location: pathlib.Path) -> Dict[str, Any]:
+    def get_environment_validation_parameters(self) -> Dict[str, Any]:
         """Gather the validation arguments used to initialize validator.
 
         Gets the validation parameters that need to be send to the environment
         if it gets converted to be a validation environment.
-
-        Args:
-            base_save_location (pathlib.Path):
-                Experiment/Trainings run save location.
 
         Returns:
             Dict[str, Any]:
                 dict with all the necessary parameters. Should mirror the
                 parameters in parser_environment.Environment.set_validation
         """
-        return {
-            "validation_values": self.validation_values,
-            "base_mesh_path": self.get_mesh_base_path(base_save_location),
-            "end_episode_on_spline_not_change":
-            self.end_episode_on_spline_not_changed,
-            "max_timesteps_in_episode": self.max_timesteps_in_episode,
-            "reward_on_episode_exceeds_max_timesteps":
-            self.reward_on_episode_exceeds_max_timesteps,
-            "reward_on_spline_not_changed": self.reward_on_spline_not_changed,
-            "save_image_in_validation": self.save_image_in_validation}
+        parameters_to_include = [
+            "validation_values",
+            "end_episode_on_geometry_not_changed",
+            "max_timesteps_in_episode",
+            "reward_on_episode_exceeds_max_timesteps",
+            "reward_on_geometry_not_changed",
+        ]
+        return {key: getattr(self, key) for key in parameters_to_include}

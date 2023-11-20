@@ -34,12 +34,19 @@ Example:
 SPOR Object
 -----------
 
-Each SPOR object has the two options which must be set.
+Each SPOR object has the 3 options which must be set:
 
-1. Stop on returned error.
-2. Reward on completion.
-3. Reward on fail (error is returned).
-4. Wether to use the communication interface.
+1. Name of the spor object.
+2. Stop after error.
+3. Reward on error.
+
+and the 2 options which can be set:
+
+4. Reward if the step succeeded. *Default: None*
+5. Additional Observations, defining observations that are produced in this step.
+
+Additional options need/can to be set depending on the specific SPOR object.
+See :doc:`_autosummary/releso.spor` for a list of all available SPOR objects.
 
 .. _sporcominterface:
 
@@ -51,15 +58,16 @@ The communications interface is currently only available for command line calls.
 ::
 
   --run_id uuid4                  # The uuid is custom to this specific task and environment. So if you are in a multi environment setup the same task in different environments can be easily distinguished.
-  --validation_run                # To distinguish between training and validation this parameter is send during validation with the id of the current validation step.
+  --validation_value              # To distinguish between training and validation this parameter is send during validation with the id of the current validation step. If no value is given, default training should be assumed.
         [validation_id]
   --reset                         # This option is only send if the current episode needs to be reset.
+  --json_object                   # Current step information. Need to be activated in spor definition with 'add_step_information'
+  --base_save_location            # This value is the base path to the directory where the records of the current jobs are stored. To keep all information together it is advised to save the logs, memory and persistent data here.
+  --environment_id                # This value will provide a unique id for the current environment. This is needed to be able to distinguish between different environments in a multi environment setup.
 
-.. This following parameter was planned but is removed due to the difficulty of correct memory/access management and the selective copying would also be pretty difficult.
-.. --additional_parameters         # This option is configurable to only send one or the other or neither.
-..       {"mesh": MeshDefinition, "spline": SplineDefinition}
-.. --base_save_location str        # This value is the base path to the directory where the records of the current jobs are stored. To keep all information together it is advised to save the logs, memory and persistent data here.
 
 During the configuration if the validation the number of different episodes each validation should include. Each of these validation episodes gets validation id, which is transmitted to the external program.
 
 To help the user in the development of these external task/steps the framework has helper functions in the :doc:`_autosummary/releso.util.reward_helpers` module. These are able to setup the working space of the task with "persistent" memory and the parsing of the communication interface command line options can also be handled via these functions.
+
+Also look at the examples and tests to see how you can use internalized python functions to speed up execution.

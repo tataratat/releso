@@ -6,21 +6,17 @@ files. Here only types with strictly external contents are created.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Tuple, Union
+from typing import Dict, Tuple, Union
 
 from numpy import ndarray
-
-if TYPE_CHECKING:
-    from releso.shape_parameterization import ShapeDefinition
-    from releso.spline import BSplineDefinition, NURBSDefinition
 
 from releso.util.module_import_raiser import ModuleImportRaiser
 
 try:
     from gustaf import Faces, Volumes
 except ModuleNotFoundError as err:
-    Volumes = ModuleImportRaiser("gustaf", err)
-    Faces = ModuleImportRaiser("gustaf", err)
+    Volumes = ModuleImportRaiser("gustaf", str(err))
+    Faces = ModuleImportRaiser("gustaf", str(err))
 
 
 #: Type definition for Observations.

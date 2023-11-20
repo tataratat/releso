@@ -2,17 +2,18 @@
 from typing import Any, Optional
 
 
-class ModuleImportRaiser():
+class ModuleImportRaiser:
     """Import error deferrer until it is actually called.
 
     Class used to have better import error handling in the case that a package
     package is not installed. This is necessary due to that some packages are
-    not a dependency of `gustaf`, but some parts require them to function.
-    Examples are `gustaf`, `torchvision`, and `imageio`.
+    not a dependency of `splinepy`, but some parts require them to function.
+    Examples are `splinepy`, `torchvision`, and `imageio`.
     """
 
     def __init__(
-            self, lib_name: str, error_mesg: Optional[str] = None) -> None:
+        self, lib_name: str, error_mesg: Optional[str] = None
+    ) -> None:
         """Constructor of object of class ModuleImportRaiser.
 
         Args:
@@ -46,10 +47,10 @@ class ModuleImportRaiser():
         Will notify the user, that the functionality is not accessible and how
         to proceed to access the functionality.
         """
-        if __name == "_ModuleImportRaiser__message":
-            return object.__getattr__(self, __name[-8:])
-        else:
-            raise ImportError(self._message)
+        # if __name == "_ModuleImportRaiser__message":
+        #     return object.__getattr__(self, __name[-8:])
+        # else:
+        raise ImportError(self._message)
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         """Dummy method for object.__name = __value.
@@ -65,6 +66,15 @@ class ModuleImportRaiser():
 
     def __getitem__(self, key):
         """Dummy method for object[key].
+
+        Is called when the object is subscripted object[x]. Will notify the
+        user, that the functionality is not accessible and how to proceed to
+        access the functionality.
+        """
+        raise ImportError(self._message)
+
+    def __setitem__(self, key, value):
+        """Dummy method for object[key] = value.
 
         Is called when the object is subscripted object[x]. Will notify the
         user, that the functionality is not accessible and how to proceed to

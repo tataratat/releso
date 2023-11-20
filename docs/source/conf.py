@@ -12,25 +12,16 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 
 
 """
+import ast
 
-import os
-import sys
-
-try:
-    import releso
-except ModuleNotFoundError:
-    sys.path.insert(0, os.path.abspath('../../'))
-    import releso
-
-
-with open("../../releso/_version.py") as f:
-    version = eval(f.read().strip().split("=")[-1])
+with open("../../releso/__version__.py") as f:
+    version = ast.literal_eval(f.read().strip().split("=")[-1])
 
 # -- Project information -----------------------------------------------------
 
-project = 'ReLeSO'
-copyright = '2022, Clemens Fricke'
-author = 'Clemens Fricke'
+project = "ReLeSO"
+copyright = "2023, Clemens Fricke"  # noqa: A001
+author = "Clemens Fricke"
 
 # The full version, including alpha/beta/rc tags
 release = version
@@ -42,32 +33,34 @@ release = version
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.duration',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon',
+    "sphinx.ext.duration",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
     # 'sphinxcontrib.autodoc_pydantic'
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
-autodoc_mock_imports = [
-    "pydantic",
-    "tensorboard",
-    "hjson",
-    "gym",
-    "stable_baselines3",
-    "pandas",
-    "gustaf",
-    "numpy",
-    "vedo",
-    "matplotlib",
-    "imageio",
-    "torchvision",
-    "torch",
-]
-# autodoc_typehints = 'description'  # show type hints in doc body instead of signature
-# autoclass_content = 'instance'  # get docstring from class level and init simultaneously
+templates_path = ["_templates"]
+# autodoc_mock_imports = [
+#     "pydantic",
+#     "tensorboard",
+#     "hjson",
+#     "gym",
+#     "stable_baselines3",
+#     "pandas",
+#     "gustaf",
+#     "numpy",
+#     "vedo",
+#     "matplotlib",
+#     "imageio",
+#     "torchvision",
+#     "torch",
+# ]
+# show type hints in doc body instead of signature
+# autodoc_typehints = 'description'
+# get docstring from class level and init simultaneously
+# autoclass_content = 'instance'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -77,16 +70,16 @@ exclude_patterns = []
 autodoc_pydantic_model_show_json = True
 autodoc_pydantic_settings_show_json = False
 
-# -- Options for HTML output -------------------------------------------------
+# -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
-html_logo = '_static/logo.png'
-html_favicon = '_static/thumb.png'
+html_theme = "sphinx_rtd_theme"
+html_logo = "_static/logo.png"
+html_favicon = "_static/thumb.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]

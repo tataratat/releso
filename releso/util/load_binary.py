@@ -2,6 +2,8 @@
 
 This file contains functions to read the binary files
 created by the xns solver.
+
+This file is not tested due to it being very specific to the mixd/xns use case.
 """
 
 import os
@@ -12,8 +14,8 @@ import numpy as np
 
 
 def read_mixd_double(
-        filename: str, col: int, element_size: int = 8,
-        element: str = ">d") -> np.ndarray:
+    filename: str, col: int, element_size: int = 8, element: str = ">d"
+) -> np.ndarray:
     """Read a double array from a mixd file.
 
     Author: Daniel Wolff (wolff@avt.rwth-aachen.de)
@@ -21,28 +23,32 @@ def read_mixd_double(
     Args:
         filename (string): filename / location of the mixd file
         col (int): number of columns of the integer array
+        element_size (int, optional): Size of the element in bytes.
+            Defaults to 8.
+        element (string, optional): Format of the element.
+            Defaults to ">d".
 
     Returns:
         retValues (numpy.ndarray): Double array read from the provided file
     """
-    with open(filename, "rb") as fHandle:
+    with open(filename, "rb") as f_handle:
         size = os.stat(filename).st_size
-        if (size % (col*element_size) != 0):
+        if size % (col * element_size) != 0:
             raise RuntimeError("Not enough columns in the requested file!")
 
-        rows = size//(element_size*col)
-        retValues = np.zeros((rows, col))
+        rows = size // (element_size * col)
+        ret_values = np.zeros((rows, col))
         for i in range(rows):
             for j in range(col):
-                data = fHandle.read(element_size)
-                retValues[i, j] = unpack(element, data)[0]
-    return retValues
+                data = f_handle.read(element_size)
+                ret_values[i, j] = unpack(element, data)[0]
+    return ret_values
     # _read_mixd_double()
 
 
 def load_mixd(
-        mesh_file: str, mesh_dim: int, solution_file: str,
-        ndof: int) -> Tuple[np.ndarray, np.ndarray]:
+    mesh_file: str, mesh_dim: int, solution_file: str, ndof: int
+) -> Tuple[np.ndarray, np.ndarray]:
     """Read in the mesh and the solution of an XNS simulation.
 
     After reading in the XNS solution it is stored in the correct attributes

@@ -1,14 +1,14 @@
 """Definition of the geometry to be optimized, which informs the action space.
 
-File holds all classes which define the spline and with that also the action
+File holds all classes which define the geometry and with that also the action
 definition of the problem.
 """
 from typing import Any, List, Optional, Tuple, Union
 from uuid import UUID
 
 import numpy as np
-from gym import spaces
-from pydantic import PrivateAttr, validator
+from gymnasium import spaces
+from pydantic import PrivateAttr
 
 from releso.base_model import BaseModel
 from releso.exceptions import ParserException
@@ -18,16 +18,18 @@ from releso.spline import BSplineDefinition, NURBSDefinition, SplineDefinition
 from releso.util.types import ObservationType
 
 try:
-    from gustaf.spline.ffd import FFD
-except ImportError as err:
+    from splinepy.helpme.ffd import FFD
+except ImportError as err:  # pragma: no cover
     from releso.util.module_import_raiser import ModuleImportRaiser
-    FFD = ModuleImportRaiser("gustaf - FFD", err)
+
+    FFD = ModuleImportRaiser("splinepy - FFD", err)
 
 ShapeTypes = Union[ShapeDefinition, BSplineDefinition, NURBSDefinition]
 
 
 class Geometry(BaseModel):
     """Definition of the Geometry."""
+
     shape_definition: ShapeTypes
     #: use the action space for the observations. If this is set to False
     #: please note that you need to define your own observation via a
@@ -43,7 +45,7 @@ class Geometry(BaseModel):
     #: saved list of all available actions
     _actions: List[VariableLocation] = PrivateAttr()
     #: positions of all actions values of the previous step
-    _last_actions: List[VariableLocation] = PrivateAttr()
+    _last_actions: List[VariableLocation] = PrivateAttr(default=None)
 
     def __init__(self, **data: Any) -> None:
         """Definition of the Geometry.
@@ -74,8 +76,7 @@ class Geometry(BaseModel):
         """
         return self.shape_definition.get_control_points()
 
-    def apply_action(
-            self, action: Union[List[float], int]) -> Optional[Any]:
+    def apply_action(self, action: Union[List[float], int]) -> Optional[Any]:
         """Function that applies a given action to the Spline.
 
         Args:
@@ -84,19 +85,19 @@ class Geometry(BaseModel):
                               Continuous (List[float] - Value for each
                               continuous variable.)
         """
-        self._last_actions = [
-            act.current_position for act in self._actions]
+        self._last_actions = [act.current_position for act in self._actions]
         self.get_logger().debug(f"Applying action {action}")
         if self.discrete_actions:
-            increasing: bool = (action % 2 == 0)
-            action_index: int = int(action/2)
+            increasing: bool = action % 2 == 0
+            action_index: int = int(action / 2)
             self.get_logger().debug(
-                f"Setting discrete action, of variable {action_index}.")
+                f"Setting discrete action, of variable {action_index}."
+            )
             self._actions[action_index].apply_discrete_action(increasing)
             # TODO check if this is correct
         else:
             for new_value, action_obj in zip(action, self._actions):
-                action_obj.apply_continuos_action(new_value)
+                action_obj.apply_continuous_action(new_value)
         return self.apply()
 
     def apply(self) -> Optional[Any]:
@@ -109,7 +110,9 @@ class Geometry(BaseModel):
         geometry is given by the shape directly.
 
         It also returns the basic information about the geometry. In this basic
-        case it just returns the control_points of the shape.
+        case it just returns the control_points of the shape. Do not rely on
+        it returning the control_points since this might not be the case for
+        subclasses. If you need the control_points use the relevant function.
 
         Returns:
             List[List[float]]: Current control points of the shape.
@@ -128,9 +131,11 @@ class Geometry(BaseModel):
         Returns:
             bool: See above.
         """
+        if self._last_actions is None:
+            return False
         return not np.allclose(
             np.array([act.current_position for act in self._actions]),
-            np.array(self._last_actions)
+            np.array(self._last_actions),
         )
 
     def get_action_definition(self) -> spaces.Space:
@@ -157,9 +162,10 @@ class Geometry(BaseModel):
         """
         if not self.action_based_observation:
             self.get_logger().warning(
-                "Observation space is accessed which should not happen.")
+                "Observation space is accessed which should not happen."
+            )
         return "geometry_observation", spaces.Box(
-            low=0, high=1, shape=(len(self._actions), ), dtype=np.float32
+            low=0, high=1, shape=(len(self._actions),), dtype=np.float32
         )
 
     def get_observation(self) -> Optional[np.ndarray]:
@@ -175,12 +181,11 @@ class Geometry(BaseModel):
         if not self.action_based_observation:
             return None
         return np.array(
-            [var_loc.current_position
-                for var_loc in self._actions]
+            [var_loc.current_position for var_loc in self._actions]
         )
 
     def reset(self, validation_id: Optional[int] = None) -> Any:
-        """Resets the spline to its initial values."""
+        """Resets the geometry to its initial values."""
         if self.reset_with_random_action_values:
             self.apply_random_action(validation_id)
         else:
@@ -201,23 +206,27 @@ class Geometry(BaseModel):
                 possible. If None (default) a random seed will be used and
                 the action will be different each time. Defaults to None.
         """
+
         def _parse_string_to_int(string: str) -> int:
             chars_as_ints = [ord(char) for char in str(string)]
             string_as_int = sum(chars_as_ints)
             return string_as_int
+
         seed = _parse_string_to_int(str(seed)) if seed is not None else seed
         self.get_logger().debug(
             f"A random action is applied during reset with the following "
-            f"seed {str(seed)}")
+            f"seed {str(seed)}"
+        )
         rng_gen = np.random.default_rng(seed)
-        random_action = (rng_gen.random((len(self._actions),))*2)-1
+        random_action = (rng_gen.random((len(self._actions),)) * 2) - 1
         for new_value, action_obj in zip(random_action, self._actions):
-            action_obj.apply_continuos_action(new_value)
+            action_obj.apply_continuous_action(new_value)
         return random_action
 
 
 class FFDGeometry(Geometry):
     """FFD based variable shape."""
+
     mesh: MeshTypes
     export_mesh: Optional[MeshExporter] = None
 
@@ -237,8 +246,10 @@ class FFDGeometry(Geometry):
 
         if not issubclass(type(self.shape_definition), SplineDefinition):
             raise ParserException(
-                "FFDGeometry", "shape_definition",
-                "FFD can only be performed with a Gustaf Spline")
+                "FFDGeometry",
+                "shape_definition",
+                "FFD can only be performed with a splinepy Spline",
+            )
         self._FFD = FFD()
 
     def setup(self, environment_id: UUID):
@@ -254,8 +265,7 @@ class FFDGeometry(Geometry):
         if self.export_mesh:
             self.export_mesh.adapt_export_path(environment_id=environment_id)
 
-    def apply_action(
-            self, action: Union[List[float], int]) -> Optional[Any]:
+    def apply_action(self, action: Union[List[float], int]) -> Optional[Any]:
         """Function that applies a given action to the Spline.
 
         Args:
@@ -271,9 +281,9 @@ class FFDGeometry(Geometry):
         Returns:
             Optional[Any]: Return the correct values.
         """
-        return self.apply_FFD()
+        return self.apply_ffd()
 
-    def apply_FFD(self, path: Optional[str] = None) -> Union[str, np.ndarray]:
+    def apply_ffd(self, path: Optional[str] = None) -> Union[str, np.ndarray]:
         """Apply FFD for the current shape.
 
         Might move in the future to a SPORStep. Can be deactivated with

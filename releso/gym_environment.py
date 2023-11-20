@@ -1,8 +1,8 @@
-"""Definition of the interface class for the gym environment definition.
+"""Definition of the interface class for the gymnasium environment definition.
 
 The gym environment is a class that incorporates the interface requirements set
-out by the OpenAI gym library for Reinforcement Learning environment. This
-standard is very commonly used in python based Reinforcement Learning
+out by the OpenAI gymnasium library for Reinforcement Learning environment.
+This standard is very commonly used in python based Reinforcement Learning
 applications and most python libraries supplying Reinforcement Learning agents
 can use this interface.
 
@@ -26,11 +26,10 @@ Note:
 
 from typing import Any, Dict, List, Tuple, Union
 
-import gym
-from gym import spaces
+import gymnasium
 
 
-class GymEnvironment(gym.Env):
+class GymEnvironment(gymnasium.Env):
     """Environment interface class for the gym environment definition.
 
     This class is a placeholder class which complies with the OpenAI gym
@@ -38,7 +37,8 @@ class GymEnvironment(gym.Env):
     by substituting the functions from the
     SbSOvRL.parser_environment.Environment class.
     """
-    metadata = {'render.modes': ['mesh']}
+
+    metadata = {"render.modes": ["mesh"]}
 
     def __init__(self, action_space, observation_space) -> None:
         """Constructor for gym environment object.
@@ -55,20 +55,15 @@ class GymEnvironment(gym.Env):
         self.observation_space = observation_space
 
     def step(
-            self,
-            action: Union[int, List[float]]
+        self, action: Union[int, List[float]]
     ) -> Tuple[Any, float, bool, Dict[str, Any]]:
         """Dummy function definition for gym interface."""
-        pass
 
     def reset(self) -> Any:
         """Dummy function definition for gym interface."""
-        pass
 
     def render(self, mode: str = "mesh") -> None:
         """Dummy function definition for gym interface."""
-        pass
 
     def close(self) -> None:
         """Dummy function definition for gym interface."""
-        pass

@@ -3,6 +3,8 @@
 This file contains some plotting functions these are very limited and should
 were created for the seminar and master thesis of clemens fricke. Other
 plotting function exist but are not part of the library.
+
+This file is not tested due to it being very specific to the mixd/xns use case.
 """
 from typing import List
 
@@ -11,9 +13,16 @@ from matplotlib import pyplot as plt
 
 
 def get_tricontour_solution(
-        width: int, height: int, dpi: int, coordinates: np.ndarray,
-        connectivity: np.ndarray, solution: np.ndarray, sol_len: int,
-        limits_min: List[float], limits_max: List[float], ) -> np.ndarray:
+    width: int,
+    height: int,
+    dpi: int,
+    coordinates: np.ndarray,
+    connectivity: np.ndarray,
+    solution: np.ndarray,
+    sol_len: int,
+    limits_min: List[float],
+    limits_max: List[float],
+) -> np.ndarray:  # pragma: no cover
     """_summary_.
 
     Args:
@@ -34,21 +43,30 @@ def get_tricontour_solution(
     for i in range(sol_len):
         fig = plt.figure(figsize=(width, height), dpi=dpi)
         if i == 2:  # pressure is special
-            mappable = plt.gca().tricontourf(
-                coordinates[:, 0], coordinates[:, 1],
-                np.clip(solution[:, i], limits_min[i], limits_max[i])-1,
-                triangles=connectivity, cmap="Greys", vmin=limits_min[i],
-                vmax=limits_max[i])
+            _ = plt.gca().tricontourf(
+                coordinates[:, 0],
+                coordinates[:, 1],
+                np.clip(solution[:, i], limits_min[i], limits_max[i]) - 1,
+                triangles=connectivity,
+                cmap="Greys",
+                vmin=limits_min[i],
+                vmax=limits_max[i],
+            )
         else:
-            mappable = plt.gca().tricontourf(
-                coordinates[:, 0], coordinates[:, 1], solution[:, i],
-                triangles=connectivity, cmap="Greys", vmin=limits_min[i],
-                vmax=limits_max[i])
+            _ = plt.gca().tricontourf(
+                coordinates[:, 0],
+                coordinates[:, 1],
+                solution[:, i],
+                triangles=connectivity,
+                cmap="Greys",
+                vmin=limits_min[i],
+                vmax=limits_max[i],
+            )
         ax = plt.gca()
         ax.set_xlim((0, 1))
         ax.set_ylim((0, 1))
         ax.margins(tight=True)
-        plt.axis('off')
+        plt.axis("off")
         plt.tight_layout(pad=0, w_pad=0, h_pad=0)
         fig.canvas.draw()
         # Now we can save it to a numpy array.
@@ -57,8 +75,8 @@ def get_tricontour_solution(
         arrays.append(data)
         plt.close()
     arr = np.array(arrays[0])
-    for i in range(sol_len-1):
-        arr[:, :, i+1] = arrays[i+1][:, :, 0]
+    for i in range(sol_len - 1):
+        arr[:, :, i + 1] = arrays[i + 1][:, :, 0]
     return arr
 
 
@@ -218,7 +236,8 @@ def get_tricontour_solution(
 # def plot_spline(
 #         spline: gus.nurbs.Spline, axis: Optional[plt.Axes] = None,
 #         export_path: Optional[str] = None, close: bool = False,
-#         control_point_marker: str = "*", control_point_marker_size: int = 120,
+#         control_point_marker: str = "*",
+#         control_point_marker_size: int = 120,
 #         control_point_color: str = "r", spline_path_color: str = "g",
 #         spline_path_alpha: float = 0.2, num_points: int = 100,
 #         spline_grid_plot_step: int = 1,
@@ -228,7 +247,8 @@ def get_tricontour_solution(
 #     Args:
 #         spline (gus.nurbs.Spline): _description_
 #         axis (Optional[plt.Axes], optional): _description_. Defaults to None.
-#         export_path (Optional[str], optional): _description_. Defaults to None.
+#         export_path (Optional[str], optional): _description_.
+#           Defaults to None.
 #         close (bool, optional): _description_. Defaults to False.
 #         control_point_marker (str, optional): _description_. Defaults to "*".
 #         control_point_marker_size (int, optional):
@@ -317,7 +337,9 @@ def get_tricontour_solution(
 #         max_x_yline = [[b_max[0], y] for y in y_lin]
 #         max_y_xline = [[x, b_max[1]] for x in x_lin]
 
-#         boundary = min_x_yline+max_y_xline+max_x_yline[::-1]+min_y_xline[::-1]
+#         boundary = (
+#               min_x_yline+max_y_xline+max_x_yline[::-1]+min_y_xline[::-1]
+#         )
 #         boundary = spline.evaluate(boundary)
 #         pol = Polygon(boundary, alpha=0.4)
 #         ax.add_patch(pol)
@@ -329,7 +351,3 @@ def get_tricontour_solution(
 #         plt.savefig(export_path)
 #     if close:
 #         plt.close()
-
-
-if __name__ == "__main__":
-    pass

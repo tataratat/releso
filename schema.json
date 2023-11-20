@@ -1,1604 +1,1984 @@
 {
-  "title": "BaseParser",
-  "description": "This class can be used to initialize the SbSOvRL Framework from the command line by reading in a json representation of the Spline based Shape Optimization problem which is to be solved via Reinforcement Learning.",
-  "type": "object",
-  "properties": {
-    "save_location": {
-      "title": "Save Location",
-      "type": "string",
-      "format": "path"
-    },
-    "logger_name": {
-      "title": "Logger Name",
-      "type": "string"
-    },
-    "verbosity": {
-      "$ref": "#/definitions/Verbosity"
-    },
-    "agent": {
-      "title": "Agent",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/PPOAgent"
-        },
-        {
-          "$ref": "#/definitions/DDPGAgent"
-        },
-        {
-          "$ref": "#/definitions/SACAgent"
-        },
-        {
-          "$ref": "#/definitions/PretrainedAgent"
-        },
-        {
-          "$ref": "#/definitions/DQNAgent"
-        },
-        {
-          "$ref": "#/definitions/A2CAgent"
-        }
-      ]
-    },
-    "environment": {
-      "$ref": "#/definitions/Environment"
-    },
-    "number_of_timesteps": {
-      "title": "Number Of Timesteps",
-      "minimum": 1,
-      "type": "integer"
-    },
-    "number_of_episodes": {
-      "title": "Number Of Episodes",
-      "minimum": 1,
-      "type": "integer"
-    },
-    "validation": {
-      "$ref": "#/definitions/Validation"
-    },
-    "n_environments": {
-      "title": "N Environments",
-      "minimum": 1,
-      "type": "integer"
-    },
-    "normalize_training_values": {
-      "title": "Normalize Training Values",
-      "default": false,
-      "type": "boolean"
-    },
-    "multi_env_sequential": {
-      "title": "Multi Env Sequential",
-      "default": false,
-      "type": "boolean"
-    }
-  },
-  "required": [
-    "save_location",
-    "agent",
-    "environment",
-    "number_of_timesteps"
-  ],
-  "additionalProperties": false,
-  "definitions": {
-    "Verbosity": {
-      "title": "Verbosity",
-      "description": "Defines the settings for the different loggers used in the current experiment. This class is the only class which is copied to all children. (this happens outside of the the standard channels and will hopefully not break with multiprocessing)\n\nPlease note, the parser logger only ever can have the following name ``SbSOvRL_parser``",
-      "type": "object",
-      "properties": {
+    "title": "BaseParser",
+    "description": "Class parses the experiment definition and conducts the training.\n\nThis class can be used to initialize the ReLeSO Framework from the command\nline by reading in a json representation of the RL based Shape\nOptimization problem which is to be solved via Reinforcement Learning.",
+    "type": "object",
+    "properties": {
         "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
+            "title": "Save Location",
+            "type": "string",
+            "format": "path"
         },
         "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
+            "title": "Logger Name",
+            "type": "string"
         },
-        "parser": {
-          "title": "Parser",
-          "default": "INFO",
-          "enum": [
-            "ERROR",
-            "WARNING",
-            "DEBUG",
-            "INFO"
-          ],
-          "type": "string"
+        "verbosity": {
+            "$ref": "#/definitions/Verbosity"
+        },
+        "agent": {
+            "title": "Agent",
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/PPOAgent"
+                },
+                {
+                    "$ref": "#/definitions/DDPGAgent"
+                },
+                {
+                    "$ref": "#/definitions/SACAgent"
+                },
+                {
+                    "$ref": "#/definitions/PretrainedAgent"
+                },
+                {
+                    "$ref": "#/definitions/DQNAgent"
+                },
+                {
+                    "$ref": "#/definitions/A2CAgent"
+                }
+            ]
         },
         "environment": {
-          "title": "Environment",
-          "default": "INFO",
-          "enum": [
-            "ERROR",
-            "WARNING",
-            "DEBUG",
-            "INFO"
-          ],
-          "type": "string"
-        },
-        "SbSOvRL_logfile_location": {
-          "title": "Sbsovrl Logfile Location",
-          "default": "logging/",
-          "type": "string"
-        },
-        "console_logging": {
-          "title": "Console Logging",
-          "default": false,
-          "type": "boolean"
-        },
-        "base_logger_name": {
-          "title": "Base Logger Name",
-          "default": "SbSOvRL",
-          "type": "string"
-        },
-        "environment_extension": {
-          "title": "Environment Extension",
-          "default": "rl",
-          "type": "string"
-        }
-      },
-      "required": [
-        "save_location"
-      ],
-      "additionalProperties": false
-    },
-    "PPOAgent": {
-      "title": "PPOAgent",
-      "description": "PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
-          "type": "string"
-        },
-        "policy": {
-          "title": "Policy",
-          "enum": [
-            "MlpPolicy",
-            "CnnPolicy",
-            "MultiInputPolicy"
-          ],
-          "type": "string"
-        },
-        "use_custom_feature_extractor": {
-          "title": "Use Custom Feature Extractor",
-          "enum": [
-            "resnet18",
-            "mobilenetv2",
-            "mobilenetv3_small",
-            "mobilenetv3_large"
-          ],
-          "type": "string"
-        },
-        "cfe_without_linear": {
-          "title": "Cfe Without Linear",
-          "default": false,
-          "type": "boolean"
-        },
-        "policy_kwargs": {
-          "title": "Policy Kwargs",
-          "type": "object"
-        },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "PPO"
-          ],
-          "type": "string"
-        },
-        "learning_rate": {
-          "title": "Learning Rate",
-          "default": 0.0003,
-          "type": "number"
-        },
-        "n_steps": {
-          "title": "N Steps",
-          "default": 2048,
-          "type": "integer"
-        },
-        "batch_size": {
-          "title": "Batch Size",
-          "default": 64,
-          "type": "integer"
-        },
-        "n_epochs": {
-          "title": "N Epochs",
-          "default": 10,
-          "type": "integer"
-        },
-        "gamma": {
-          "title": "Gamma",
-          "default": 0.99,
-          "type": "number"
-        },
-        "gae_lambda": {
-          "title": "Gae Lambda",
-          "default": 0.95,
-          "type": "number"
-        },
-        "clip_range": {
-          "title": "Clip Range",
-          "default": 0.2,
-          "type": "number"
-        },
-        "ent_coef": {
-          "title": "Ent Coef",
-          "default": 0.0,
-          "type": "number"
-        },
-        "vf_coef": {
-          "title": "Vf Coef",
-          "default": 0.5,
-          "type": "number"
-        },
-        "seed": {
-          "title": "Seed",
-          "type": "integer"
-        },
-        "device": {
-          "title": "Device",
-          "default": "auto",
-          "type": "string"
-        }
-      },
-      "required": [
-        "save_location",
-        "policy",
-        "type"
-      ],
-      "additionalProperties": false
-    },
-    "DDPGAgent": {
-      "title": "DDPGAgent",
-      "description": "DDPG definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
-          "type": "string"
-        },
-        "policy": {
-          "title": "Policy",
-          "enum": [
-            "MlpPolicy",
-            "CnnPolicy",
-            "MultiInputPolicy"
-          ],
-          "type": "string"
-        },
-        "use_custom_feature_extractor": {
-          "title": "Use Custom Feature Extractor",
-          "enum": [
-            "resnet18",
-            "mobilenetv2",
-            "mobilenetv3_small",
-            "mobilenetv3_large"
-          ],
-          "type": "string"
-        },
-        "cfe_without_linear": {
-          "title": "Cfe Without Linear",
-          "default": false,
-          "type": "boolean"
-        },
-        "policy_kwargs": {
-          "title": "Policy Kwargs",
-          "type": "object"
-        },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "DDPG"
-          ],
-          "type": "string"
-        },
-        "learning_rate": {
-          "title": "Learning Rate",
-          "default": 0.001,
-          "type": "number"
-        },
-        "buffer_size": {
-          "title": "Buffer Size",
-          "default": 1000000,
-          "type": "integer"
-        },
-        "learning_starts": {
-          "title": "Learning Starts",
-          "default": 100,
-          "type": "integer"
-        },
-        "batch_size": {
-          "title": "Batch Size",
-          "default": 64,
-          "type": "integer"
-        },
-        "tau": {
-          "title": "Tau",
-          "default": 0.005,
-          "type": "number"
-        },
-        "gamma": {
-          "title": "Gamma",
-          "default": 0.99,
-          "type": "number"
-        },
-        "optimize_memory_usage": {
-          "title": "Optimize Memory Usage",
-          "default": 0.95,
-          "type": "number"
-        },
-        "seed": {
-          "title": "Seed",
-          "type": "integer"
-        },
-        "device": {
-          "title": "Device",
-          "default": "auto",
-          "type": "string"
-        }
-      },
-      "required": [
-        "save_location",
-        "policy",
-        "type"
-      ],
-      "additionalProperties": false
-    },
-    "SACAgent": {
-      "title": "SACAgent",
-      "description": "SAC definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
-          "type": "string"
-        },
-        "policy": {
-          "title": "Policy",
-          "enum": [
-            "MlpPolicy",
-            "CnnPolicy",
-            "MultiInputPolicy"
-          ],
-          "type": "string"
-        },
-        "use_custom_feature_extractor": {
-          "title": "Use Custom Feature Extractor",
-          "enum": [
-            "resnet18",
-            "mobilenetv2",
-            "mobilenetv3_small",
-            "mobilenetv3_large"
-          ],
-          "type": "string"
-        },
-        "cfe_without_linear": {
-          "title": "Cfe Without Linear",
-          "default": false,
-          "type": "boolean"
-        },
-        "policy_kwargs": {
-          "title": "Policy Kwargs",
-          "type": "object"
-        },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "SAC"
-          ],
-          "type": "string"
-        },
-        "learning_rate": {
-          "title": "Learning Rate",
-          "default": 0.001,
-          "type": "number"
-        },
-        "buffer_size": {
-          "title": "Buffer Size",
-          "default": 1000000,
-          "type": "integer"
-        },
-        "learning_starts": {
-          "title": "Learning Starts",
-          "default": 100,
-          "type": "integer"
-        },
-        "batch_size": {
-          "title": "Batch Size",
-          "default": 64,
-          "type": "integer"
-        },
-        "tau": {
-          "title": "Tau",
-          "default": 0.005,
-          "type": "number"
-        },
-        "gamma": {
-          "title": "Gamma",
-          "default": 0.99,
-          "type": "number"
-        },
-        "optimize_memory_usage": {
-          "title": "Optimize Memory Usage",
-          "default": false,
-          "type": "boolean"
-        },
-        "ent_coef": {
-          "title": "Ent Coef",
-          "default": "auto",
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "number"
-            }
-          ]
-        },
-        "target_update_interval": {
-          "title": "Target Update Interval",
-          "default": 1,
-          "type": "integer"
-        },
-        "target_entropy": {
-          "title": "Target Entropy",
-          "default": "auto",
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "number"
-            }
-          ]
-        },
-        "use_sde": {
-          "title": "Use Sde",
-          "default": false,
-          "type": "boolean"
-        },
-        "sde_sample_freq": {
-          "title": "Sde Sample Freq",
-          "default": -1,
-          "type": "integer"
-        },
-        "use_sde_at_warmup": {
-          "title": "Use Sde At Warmup",
-          "default": false,
-          "type": "boolean"
-        },
-        "seed": {
-          "title": "Seed",
-          "type": "integer"
-        },
-        "device": {
-          "title": "Device",
-          "default": "auto",
-          "type": "string"
-        }
-      },
-      "required": [
-        "save_location",
-        "policy",
-        "type"
-      ],
-      "additionalProperties": false
-    },
-    "PretrainedAgent": {
-      "title": "PretrainedAgent",
-      "description": "This class can be used to load pretrained agents, instead of using untrained agents. Can also be used to only validate this agent without training it further. Please see validation section for this use-case.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
-          "type": "string"
-        },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "PPO",
-            "SAC",
-            "DDPG",
-            "A2C",
-            "DQN"
-          ],
-          "type": "string"
-        },
-        "path": {
-          "title": "Path",
-          "format": "file-path",
-          "type": "string"
-        },
-        "tesorboard_run_directory": {
-          "title": "Tesorboard Run Directory",
-          "type": "string"
-        }
-      },
-      "required": [
-        "save_location",
-        "type",
-        "path"
-      ],
-      "additionalProperties": false
-    },
-    "DQNAgent": {
-      "title": "DQNAgent",
-      "description": "DQN definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
-          "type": "string"
-        },
-        "policy": {
-          "title": "Policy",
-          "enum": [
-            "MlpPolicy",
-            "CnnPolicy",
-            "MultiInputPolicy"
-          ],
-          "type": "string"
-        },
-        "use_custom_feature_extractor": {
-          "title": "Use Custom Feature Extractor",
-          "enum": [
-            "resnet18",
-            "mobilenetv2",
-            "mobilenetv3_small",
-            "mobilenetv3_large"
-          ],
-          "type": "string"
-        },
-        "cfe_without_linear": {
-          "title": "Cfe Without Linear",
-          "default": false,
-          "type": "boolean"
-        },
-        "policy_kwargs": {
-          "title": "Policy Kwargs",
-          "type": "object"
-        },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "DQN"
-          ],
-          "type": "string"
-        },
-        "learning_rate": {
-          "title": "Learning Rate",
-          "default": 0.0001,
-          "type": "number"
-        },
-        "buffer_size": {
-          "title": "Buffer Size",
-          "default": 1000000,
-          "type": "integer"
-        },
-        "learning_starts": {
-          "title": "Learning Starts",
-          "default": 256,
-          "type": "integer"
-        },
-        "batch_size": {
-          "title": "Batch Size",
-          "default": 32,
-          "type": "integer"
-        },
-        "tau": {
-          "title": "Tau",
-          "default": 1.0,
-          "type": "number"
-        },
-        "gamma": {
-          "title": "Gamma",
-          "default": 0.99,
-          "type": "number"
-        },
-        "train_freq": {
-          "title": "Train Freq",
-          "default": 4,
-          "type": "integer"
-        },
-        "gradient_steps": {
-          "title": "Gradient Steps",
-          "default": 1,
-          "type": "integer"
-        },
-        "optimize_memory_usage": {
-          "title": "Optimize Memory Usage",
-          "default": false,
-          "type": "boolean"
-        },
-        "target_update_interval": {
-          "title": "Target Update Interval",
-          "default": 256,
-          "type": "integer"
-        },
-        "exploration_fraction": {
-          "title": "Exploration Fraction",
-          "default": 0.1,
-          "type": "number"
-        },
-        "exploration_initial_eps": {
-          "title": "Exploration Initial Eps",
-          "default": 1.0,
-          "type": "number"
-        },
-        "exploration_final_eps": {
-          "title": "Exploration Final Eps",
-          "default": 0.05,
-          "type": "number"
-        },
-        "max_grad_norm": {
-          "title": "Max Grad Norm",
-          "default": 10,
-          "type": "number"
-        },
-        "seed": {
-          "title": "Seed",
-          "type": "integer"
-        },
-        "device": {
-          "title": "Device",
-          "default": "auto",
-          "type": "string"
-        }
-      },
-      "required": [
-        "save_location",
-        "policy",
-        "type"
-      ],
-      "additionalProperties": false
-    },
-    "A2CAgent": {
-      "title": "A2CAgent",
-      "description": "PPO definition for the stable_baselines3 implementation for this algorithm. Variable comments are taken from the stable_baselines3 documentation.\n    ",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "tensorboard_log": {
-          "title": "Tensorboard Log",
-          "type": "string"
-        },
-        "policy": {
-          "title": "Policy",
-          "enum": [
-            "MlpPolicy",
-            "CnnPolicy",
-            "MultiInputPolicy"
-          ],
-          "type": "string"
-        },
-        "use_custom_feature_extractor": {
-          "title": "Use Custom Feature Extractor",
-          "enum": [
-            "resnet18",
-            "mobilenetv2",
-            "mobilenetv3_small",
-            "mobilenetv3_large"
-          ],
-          "type": "string"
-        },
-        "cfe_without_linear": {
-          "title": "Cfe Without Linear",
-          "default": false,
-          "type": "boolean"
-        },
-        "policy_kwargs": {
-          "title": "Policy Kwargs",
-          "type": "object"
-        },
-        "type": {
-          "title": "Type",
-          "enum": [
-            "A2C"
-          ],
-          "type": "string"
-        },
-        "learning_rate": {
-          "title": "Learning Rate",
-          "default": 0.0007,
-          "type": "number"
-        },
-        "n_steps": {
-          "title": "N Steps",
-          "default": 5,
-          "type": "integer"
-        },
-        "gamma": {
-          "title": "Gamma",
-          "default": 0.99,
-          "type": "number"
-        },
-        "gae_lambda": {
-          "title": "Gae Lambda",
-          "default": 1.0,
-          "type": "number"
-        },
-        "ent_coef": {
-          "title": "Ent Coef",
-          "default": 0.0,
-          "type": "number"
-        },
-        "vf_coef": {
-          "title": "Vf Coef",
-          "default": 0.5,
-          "type": "number"
-        },
-        "seed": {
-          "title": "Seed",
-          "type": "integer"
-        },
-        "device": {
-          "title": "Device",
-          "default": "auto",
-          "type": "string"
-        },
-        "max_grad_norm": {
-          "title": "Max Grad Norm",
-          "default": 0.5,
-          "type": "number"
-        },
-        "rms_prop_eps": {
-          "title": "Rms Prop Eps",
-          "default": 1e-05,
-          "type": "number"
-        },
-        "use_rms_prop": {
-          "title": "Use Rms Prop",
-          "default": true,
-          "type": "boolean"
-        },
-        "use_sde": {
-          "title": "Use Sde",
-          "default": false,
-          "type": "boolean"
-        },
-        "sde_sample_freq": {
-          "title": "Sde Sample Freq",
-          "default": -1,
-          "type": "integer"
-        },
-        "normalize_advantage": {
-          "title": "Normalize Advantage",
-          "default": false,
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "save_location",
-        "policy",
-        "type"
-      ],
-      "additionalProperties": false
-    },
-    "MultiProcessing": {
-      "title": "MultiProcessing",
-      "description": "Defines if the Problem should use Multiprocessing and with how many \ncores the solver can work. Does not force Multiprocessing for example \nif the solver does not support it.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "number_of_cores": {
-          "title": "Number Of Cores",
-          "default": 1,
-          "minimum": 1,
-          "type": "integer"
-        }
-      },
-      "required": [
-        "save_location"
-      ],
-      "additionalProperties": false
-    },
-    "SplineSpaceDimension": {
-      "title": "SplineSpaceDimension",
-      "description": "Defines a single spline space dimension of the current spline. The dimension is a dimension of the parametric spline dimension.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "name": {
-          "title": "Name",
-          "type": "string"
-        },
-        "number_of_points": {
-          "title": "Number Of Points",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "degree": {
-          "title": "Degree",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "knot_vector": {
-          "title": "Knot Vector",
-          "type": "array",
-          "items": {
-            "type": "number"
-          }
-        }
-      },
-      "required": [
-        "save_location",
-        "name",
-        "number_of_points",
-        "degree"
-      ],
-      "additionalProperties": false
-    },
-    "VariableLocation": {
-      "title": "VariableLocation",
-      "description": "Object of this class defines the position and movement possibilities for a \nsingle dimensions of a single control point of the spline.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "current_position": {
-          "title": "Current Position",
-          "type": "number"
-        },
-        "min_value": {
-          "title": "Min Value",
-          "type": "number"
-        },
-        "max_value": {
-          "title": "Max Value",
-          "type": "number"
-        },
-        "n_steps": {
-          "title": "N Steps",
-          "default": 10,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "step": {
-          "title": "Step",
-          "type": "number"
-        }
-      },
-      "required": [
-        "save_location",
-        "current_position"
-      ],
-      "additionalProperties": false
-    },
-    "NURBSDefinition": {
-      "title": "NURBSDefinition",
-      "description": "Definition of the NURBS implementation of the SbSOvRL Toolbox, in comparison to the B-Spline implementation only an additional weights vector is added. ",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "space_dimensions": {
-          "title": "Space Dimensions",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/SplineSpaceDimension"
-          }
-        },
-        "spline_dimension": {
-          "title": "Spline Dimension",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "control_point_variables": {
-          "title": "Control Point Variables",
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/VariableLocation"
-                },
-                {
-                  "type": "number",
-                  "minimum": 0,
-                  "maximum": 1
-                }
-              ]
-            }
-          }
-        },
-        "weights": {
-          "title": "Weights",
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "$ref": "#/definitions/VariableLocation"
-              }
-            ]
-          }
-        }
-      },
-      "required": [
-        "save_location",
-        "space_dimensions",
-        "spline_dimension",
-        "weights"
-      ],
-      "additionalProperties": false
-    },
-    "BSplineDefinition": {
-      "title": "BSplineDefinition",
-      "description": "Definition of the BSpline implementation of the SbSOvRL Toolbox",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "space_dimensions": {
-          "title": "Space Dimensions",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/SplineSpaceDimension"
-          }
-        },
-        "spline_dimension": {
-          "title": "Spline Dimension",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "control_point_variables": {
-          "title": "Control Point Variables",
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/VariableLocation"
-                },
-                {
-                  "type": "number",
-                  "minimum": 0,
-                  "maximum": 1
-                }
-              ]
-            }
-          }
-        }
-      },
-      "required": [
-        "save_location",
-        "space_dimensions",
-        "spline_dimension"
-      ],
-      "additionalProperties": false
-    },
-    "Spline": {
-      "title": "Spline",
-      "description": "Definition of the spline. Can be deleted in the next round of reworks.\n\nHad a historical significance but had all its additional functions removed. Please remove in next rework.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "spline_definition": {
-          "title": "Spline Definition",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/NURBSDefinition"
-            },
-            {
-              "$ref": "#/definitions/BSplineDefinition"
-            }
-          ]
-        }
-      },
-      "required": [
-        "save_location",
-        "spline_definition"
-      ],
-      "additionalProperties": false
-    },
-    "Mesh": {
-      "title": "Mesh",
-      "description": "Class used to read in the correct base mesh file and load it.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "mxyz_path": {
-          "title": "Mxyz Path",
-          "description": "Please use either the path variable xor the mxyz variable, since if used both the used mxyz path might not be the one you think.",
-          "format": "file-path",
-          "type": "string"
-        },
-        "mien_path": {
-          "title": "Mien Path",
-          "description": "Please use either the path variable xor the mien variable, since if used both the used mien path might not be the one you think.",
-          "format": "file-path",
-          "type": "string"
-        },
-        "path": {
-          "title": "Path",
-          "type": "string"
-        },
-        "export_path": {
-          "title": "Export Path",
-          "type": "string"
-        },
-        "hypercube": {
-          "title": "Hypercube",
-          "description": "If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).",
-          "default": true,
-          "type": "boolean"
-        },
-        "dimensions": {
-          "title": "Dimensions",
-          "minimum": 1,
-          "type": "integer"
-        }
-      },
-      "required": [
-        "save_location",
-        "export_path",
-        "dimensions"
-      ],
-      "additionalProperties": false
-    },
-    "ObservationDefinition": {
-      "title": "ObservationDefinition",
-      "description": "Definition of a single Observations by providing the name of the value and the range in which the value is limited to. \n\nThe range is necessary due to normalization of the input of the agent networks.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "name": {
-          "title": "Name",
-          "type": "string"
-        },
-        "value_min": {
-          "title": "Value Min",
-          "type": "number"
-        },
-        "value_max": {
-          "title": "Value Max",
-          "type": "number"
-        }
-      },
-      "required": [
-        "save_location",
-        "name",
-        "value_min",
-        "value_max"
-      ],
-      "additionalProperties": false
-    },
-    "ObservationDefinitionMulti": {
-      "title": "ObservationDefinitionMulti",
-      "description": "Definition of a single Observations by providing the name of the value and the range in which the value is limited to. \n\nThe range is necessary due to normalization of the input of the agent networks.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "name": {
-          "title": "Name",
-          "type": "string"
-        },
-        "value_min": {
-          "title": "Value Min",
-          "type": "number"
-        },
-        "value_max": {
-          "title": "Value Max",
-          "type": "number"
-        },
-        "observation_shape": {
-          "title": "Observation Shape",
-          "type": "array",
-          "items": {
+            "$ref": "#/definitions/Environment"
+        },
+        "number_of_timesteps": {
+            "title": "Number Of Timesteps",
+            "minimum": 1,
             "type": "integer"
-          }
         },
-        "value_type": {
-          "title": "Value Type",
-          "enum": [
-            "float",
-            "CNN"
-          ],
-          "type": "string"
+        "number_of_episodes": {
+            "title": "Number Of Episodes",
+            "minimum": 1,
+            "type": "integer"
+        },
+        "validation": {
+            "$ref": "#/definitions/Validation"
+        },
+        "n_environments": {
+            "title": "N Environments",
+            "default": 1,
+            "minimum": 1,
+            "type": "integer"
+        },
+        "normalize_training_values": {
+            "title": "Normalize Training Values",
+            "default": false,
+            "type": "boolean"
+        },
+        "multi_env_sequential": {
+            "title": "Multi Env Sequential",
+            "default": false,
+            "type": "boolean"
         }
-      },
-      "required": [
-        "save_location",
-        "name",
-        "value_min",
-        "value_max",
-        "observation_shape",
-        "value_type"
-      ],
-      "additionalProperties": false
     },
-    "MultiProcessor": {
-      "title": "MultiProcessor",
-      "description": "The MultiProcessor gives access to command prefixes which can enable parallelization. Currently only tested for MPI. \n\nNote: \n    The cluster uses PATH variables to correctly call mpi. IF you want to use MPI multiprocessing on the cluster please use :py:class:`SbSOvRL.spor.MPIClusterMultiProcessor`.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "command": {
-          "title": "Command",
-          "default": "mpiexec -np",
-          "type": "string"
-        },
-        "max_core_count": {
-          "title": "Max Core Count",
-          "minimum": 1,
-          "type": "integer"
-        }
-      },
-      "required": [
+    "required": [
         "save_location",
-        "max_core_count"
-      ],
-      "additionalProperties": false
-    },
-    "MPIClusterMultiProcessor": {
-      "title": "MPIClusterMultiProcessor",
-      "description": "Multi-processor extension for the cluster MPI call. ",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "command": {
-          "title": "Command",
-          "default": "$MPIEXEC",
-          "type": "string"
-        },
-        "max_core_count": {
-          "title": "Max Core Count",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "location": {
-          "title": "Location",
-          "enum": [
-            "cluster"
-          ],
-          "type": "string"
-        },
-        "mpi_flags_variable": {
-          "title": "Mpi Flags Variable",
-          "default": "$FLAGS_MPI_BATCH",
-          "type": "string"
-        }
-      },
-      "required": [
-        "save_location",
-        "max_core_count",
-        "location"
-      ],
-      "additionalProperties": false
-    },
-    "SPORObjectCommandLine": {
-      "title": "SPORObjectCommandLine",
-      "description": "Base class for all possible SPOR object classes which use the command line. This class is meant to add some default functionality, so that users do not need to add them themselfs. These are:\n\n1. access to the (MPI) Multi-processors via :py:class:`SbSOvRL.spor.MultiProcessor`\n2. command line command\n3. additional flags\n4. working directory\n5. whether or not to use the :ref:`SPOR Communication Interface <sporcominterface>`",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "name": {
-          "title": "Name",
-          "type": "string"
-        },
-        "stop_after_error": {
-          "title": "Stop After Error",
-          "default": true,
-          "type": "boolean"
-        },
-        "reward_on_error": {
-          "title": "Reward On Error",
-          "type": "number"
-        },
-        "reward_on_completion": {
-          "title": "Reward On Completion",
-          "type": "number"
-        },
-        "run_on_reset": {
-          "title": "Run On Reset",
-          "default": true,
-          "type": "boolean"
-        },
-        "additional_observations": {
-          "title": "Additional Observations",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ObservationDefinition"
+        "agent",
+        "environment",
+        "number_of_timesteps"
+    ],
+    "additionalProperties": false,
+    "definitions": {
+        "Verbosity": {
+            "title": "Verbosity",
+            "description": "Verbosity class.\n\nDefines the settings for the different loggers used in the current\nexperiment. This class is the only class which is copied to all\nchildren. (this happens outside of the the standard channels and will\nhopefully not break with multiprocessing)\n\nPlease note, the parser logger only ever can have the following name\n``ReLeSO_parser``",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "parser": {
+                    "title": "Parser",
+                    "default": "INFO",
+                    "enum": [
+                        "ERROR",
+                        "WARNING",
+                        "DEBUG",
+                        "INFO"
+                    ],
+                    "type": "string"
+                },
+                "environment": {
+                    "title": "Environment",
+                    "default": "INFO",
+                    "enum": [
+                        "ERROR",
+                        "WARNING",
+                        "DEBUG",
+                        "INFO"
+                    ],
+                    "type": "string"
+                },
+                "logfile_location": {
+                    "title": "Logfile Location",
+                    "default": "logging/",
+                    "type": "string"
+                },
+                "console_logging": {
+                    "title": "Console Logging",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "base_logger_name": {
+                    "title": "Base Logger Name",
+                    "default": "ReLeSO",
+                    "type": "string"
+                },
+                "environment_extension": {
+                    "title": "Environment Extension",
+                    "default": "environment",
+                    "type": "string"
+                }
             },
-            {
-              "$ref": "#/definitions/ObservationDefinitionMulti"
+            "required": [
+                "save_location"
+            ],
+            "additionalProperties": false
+        },
+        "PPOAgent": {
+            "title": "PPOAgent",
+            "description": "PPO agent definition.\n\nPPO definition for the stable_baselines3 implementation for this algorithm.\nVariable comments are taken from the stable_baselines3 documentation.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "tensorboard_log": {
+                    "title": "Tensorboard Log",
+                    "type": "string"
+                },
+                "policy": {
+                    "title": "Policy",
+                    "enum": [
+                        "MlpPolicy",
+                        "CnnPolicy",
+                        "MultiInputPolicy"
+                    ],
+                    "type": "string"
+                },
+                "use_custom_feature_extractor": {
+                    "title": "Use Custom Feature Extractor",
+                    "enum": [
+                        "resnet18",
+                        "mobilenet_v2"
+                    ],
+                    "type": "string"
+                },
+                "cfe_without_linear": {
+                    "title": "Cfe Without Linear",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "policy_kwargs": {
+                    "title": "Policy Kwargs",
+                    "type": "object"
+                },
+                "type": {
+                    "title": "Type",
+                    "enum": [
+                        "PPO"
+                    ],
+                    "type": "string"
+                },
+                "learning_rate": {
+                    "title": "Learning Rate",
+                    "default": 0.0003,
+                    "type": "number"
+                },
+                "n_steps": {
+                    "title": "N Steps",
+                    "default": 2048,
+                    "type": "integer"
+                },
+                "batch_size": {
+                    "title": "Batch Size",
+                    "default": 64,
+                    "type": "integer"
+                },
+                "n_epochs": {
+                    "title": "N Epochs",
+                    "default": 10,
+                    "type": "integer"
+                },
+                "gamma": {
+                    "title": "Gamma",
+                    "default": 0.99,
+                    "type": "number"
+                },
+                "gae_lambda": {
+                    "title": "Gae Lambda",
+                    "default": 0.95,
+                    "type": "number"
+                },
+                "clip_range": {
+                    "title": "Clip Range",
+                    "default": 0.2,
+                    "type": "number"
+                },
+                "ent_coef": {
+                    "title": "Ent Coef",
+                    "default": 0.0,
+                    "type": "number"
+                },
+                "vf_coef": {
+                    "title": "Vf Coef",
+                    "default": 0.5,
+                    "type": "number"
+                },
+                "seed": {
+                    "title": "Seed",
+                    "type": "integer"
+                },
+                "device": {
+                    "title": "Device",
+                    "default": "auto",
+                    "type": "string"
+                }
             },
-            {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/ObservationDefinition"
-              }
-            }
-          ]
+            "required": [
+                "save_location",
+                "policy",
+                "type"
+            ],
+            "additionalProperties": false
         },
-        "multi_processor": {
-          "title": "Multi Processor",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/MultiProcessor"
+        "DDPGAgent": {
+            "title": "DDPGAgent",
+            "description": "DDPG agent definition.\n\nDDPG definition for the stable_baselines3 implementation for this\nalgorithm. Variable comments are taken from the stable_baselines3\ndocumentation.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "tensorboard_log": {
+                    "title": "Tensorboard Log",
+                    "type": "string"
+                },
+                "policy": {
+                    "title": "Policy",
+                    "enum": [
+                        "MlpPolicy",
+                        "CnnPolicy",
+                        "MultiInputPolicy"
+                    ],
+                    "type": "string"
+                },
+                "use_custom_feature_extractor": {
+                    "title": "Use Custom Feature Extractor",
+                    "enum": [
+                        "resnet18",
+                        "mobilenet_v2"
+                    ],
+                    "type": "string"
+                },
+                "cfe_without_linear": {
+                    "title": "Cfe Without Linear",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "policy_kwargs": {
+                    "title": "Policy Kwargs",
+                    "type": "object"
+                },
+                "type": {
+                    "title": "Type",
+                    "enum": [
+                        "DDPG"
+                    ],
+                    "type": "string"
+                },
+                "learning_rate": {
+                    "title": "Learning Rate",
+                    "default": 0.001,
+                    "type": "number"
+                },
+                "buffer_size": {
+                    "title": "Buffer Size",
+                    "default": 100000,
+                    "type": "integer"
+                },
+                "learning_starts": {
+                    "title": "Learning Starts",
+                    "default": 100,
+                    "type": "integer"
+                },
+                "batch_size": {
+                    "title": "Batch Size",
+                    "default": 64,
+                    "type": "integer"
+                },
+                "tau": {
+                    "title": "Tau",
+                    "default": 0.005,
+                    "type": "number"
+                },
+                "gamma": {
+                    "title": "Gamma",
+                    "default": 0.99,
+                    "type": "number"
+                },
+                "optimize_memory_usage": {
+                    "title": "Optimize Memory Usage",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "seed": {
+                    "title": "Seed",
+                    "type": "integer"
+                },
+                "device": {
+                    "title": "Device",
+                    "default": "auto",
+                    "type": "string"
+                }
             },
-            {
-              "$ref": "#/definitions/MPIClusterMultiProcessor"
-            }
-          ]
+            "required": [
+                "save_location",
+                "policy",
+                "type"
+            ],
+            "additionalProperties": false
         },
-        "use_communication_interface": {
-          "title": "Use Communication Interface",
-          "default": false,
-          "type": "boolean"
+        "SACAgent": {
+            "title": "SACAgent",
+            "description": "SAC Agent definition.\n\nSAC definition for the stable_baselines3 implementation for this algorithm.\nVariable comments are taken from the stable_baselines3 documentation.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "tensorboard_log": {
+                    "title": "Tensorboard Log",
+                    "type": "string"
+                },
+                "policy": {
+                    "title": "Policy",
+                    "enum": [
+                        "MlpPolicy",
+                        "CnnPolicy",
+                        "MultiInputPolicy"
+                    ],
+                    "type": "string"
+                },
+                "use_custom_feature_extractor": {
+                    "title": "Use Custom Feature Extractor",
+                    "enum": [
+                        "resnet18",
+                        "mobilenet_v2"
+                    ],
+                    "type": "string"
+                },
+                "cfe_without_linear": {
+                    "title": "Cfe Without Linear",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "policy_kwargs": {
+                    "title": "Policy Kwargs",
+                    "type": "object"
+                },
+                "type": {
+                    "title": "Type",
+                    "enum": [
+                        "SAC"
+                    ],
+                    "type": "string"
+                },
+                "learning_rate": {
+                    "title": "Learning Rate",
+                    "default": 0.001,
+                    "type": "number"
+                },
+                "buffer_size": {
+                    "title": "Buffer Size",
+                    "default": 1000000,
+                    "type": "integer"
+                },
+                "learning_starts": {
+                    "title": "Learning Starts",
+                    "default": 100,
+                    "type": "integer"
+                },
+                "batch_size": {
+                    "title": "Batch Size",
+                    "default": 64,
+                    "type": "integer"
+                },
+                "tau": {
+                    "title": "Tau",
+                    "default": 0.005,
+                    "type": "number"
+                },
+                "gamma": {
+                    "title": "Gamma",
+                    "default": 0.99,
+                    "type": "number"
+                },
+                "optimize_memory_usage": {
+                    "title": "Optimize Memory Usage",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "ent_coef": {
+                    "title": "Ent Coef",
+                    "default": "auto",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ]
+                },
+                "target_update_interval": {
+                    "title": "Target Update Interval",
+                    "default": 1,
+                    "type": "integer"
+                },
+                "target_entropy": {
+                    "title": "Target Entropy",
+                    "default": "auto",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ]
+                },
+                "use_sde": {
+                    "title": "Use Sde",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "sde_sample_freq": {
+                    "title": "Sde Sample Freq",
+                    "default": -1,
+                    "type": "integer"
+                },
+                "use_sde_at_warmup": {
+                    "title": "Use Sde At Warmup",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "seed": {
+                    "title": "Seed",
+                    "type": "integer"
+                },
+                "device": {
+                    "title": "Device",
+                    "default": "auto",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "save_location",
+                "policy",
+                "type"
+            ],
+            "additionalProperties": false
         },
-        "add_step_information": {
-          "title": "Add Step Information",
-          "default": false,
-          "type": "boolean"
+        "PretrainedAgent": {
+            "title": "PretrainedAgent",
+            "description": "Pretrained agent definition.\n\nThis class can be used to load pretrained agents, instead of using\nuntrained agents. Can also be used to only validate this agent without\ntraining it further. Please see validation section for this use-case.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "tensorboard_log": {
+                    "title": "Tensorboard Log",
+                    "type": "string"
+                },
+                "type": {
+                    "title": "Type",
+                    "enum": [
+                        "PPO",
+                        "SAC",
+                        "DDPG",
+                        "A2C",
+                        "DQN"
+                    ],
+                    "type": "string"
+                },
+                "path": {
+                    "title": "Path",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "file-path"
+                        },
+                        {
+                            "type": "string",
+                            "format": "path"
+                        }
+                    ]
+                },
+                "tesorboard_run_directory": {
+                    "title": "Tesorboard Run Directory",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "string",
+                            "format": "path"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "save_location",
+                "type",
+                "path"
+            ],
+            "additionalProperties": false
         },
-        "working_directory": {
-          "title": "Working Directory",
-          "type": "string"
+        "DQNAgent": {
+            "title": "DQNAgent",
+            "description": "DQN Agent definition.\n\nDQN definition for the stable_baselines3 implementation for this algorithm.\nVariable comments are taken from the stable_baselines3 documentation.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "tensorboard_log": {
+                    "title": "Tensorboard Log",
+                    "type": "string"
+                },
+                "policy": {
+                    "title": "Policy",
+                    "enum": [
+                        "MlpPolicy",
+                        "CnnPolicy",
+                        "MultiInputPolicy"
+                    ],
+                    "type": "string"
+                },
+                "use_custom_feature_extractor": {
+                    "title": "Use Custom Feature Extractor",
+                    "enum": [
+                        "resnet18",
+                        "mobilenet_v2"
+                    ],
+                    "type": "string"
+                },
+                "cfe_without_linear": {
+                    "title": "Cfe Without Linear",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "policy_kwargs": {
+                    "title": "Policy Kwargs",
+                    "type": "object"
+                },
+                "type": {
+                    "title": "Type",
+                    "enum": [
+                        "DQN"
+                    ],
+                    "type": "string"
+                },
+                "learning_rate": {
+                    "title": "Learning Rate",
+                    "default": 0.0001,
+                    "type": "number"
+                },
+                "buffer_size": {
+                    "title": "Buffer Size",
+                    "default": 1000000,
+                    "type": "integer"
+                },
+                "learning_starts": {
+                    "title": "Learning Starts",
+                    "default": 256,
+                    "type": "integer"
+                },
+                "batch_size": {
+                    "title": "Batch Size",
+                    "default": 32,
+                    "type": "integer"
+                },
+                "tau": {
+                    "title": "Tau",
+                    "default": 1.0,
+                    "type": "number"
+                },
+                "gamma": {
+                    "title": "Gamma",
+                    "default": 0.99,
+                    "type": "number"
+                },
+                "train_freq": {
+                    "title": "Train Freq",
+                    "default": 4,
+                    "type": "integer"
+                },
+                "gradient_steps": {
+                    "title": "Gradient Steps",
+                    "default": 1,
+                    "type": "integer"
+                },
+                "optimize_memory_usage": {
+                    "title": "Optimize Memory Usage",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "target_update_interval": {
+                    "title": "Target Update Interval",
+                    "default": 256,
+                    "type": "integer"
+                },
+                "exploration_fraction": {
+                    "title": "Exploration Fraction",
+                    "default": 0.1,
+                    "type": "number"
+                },
+                "exploration_initial_eps": {
+                    "title": "Exploration Initial Eps",
+                    "default": 1.0,
+                    "type": "number"
+                },
+                "exploration_final_eps": {
+                    "title": "Exploration Final Eps",
+                    "default": 0.05,
+                    "type": "number"
+                },
+                "max_grad_norm": {
+                    "title": "Max Grad Norm",
+                    "default": 10,
+                    "type": "number"
+                },
+                "seed": {
+                    "title": "Seed",
+                    "type": "integer"
+                },
+                "device": {
+                    "title": "Device",
+                    "default": "auto",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "save_location",
+                "policy",
+                "type"
+            ],
+            "additionalProperties": false
         },
-        "execution_command": {
-          "title": "Execution Command",
-          "type": "string"
+        "A2CAgent": {
+            "title": "A2CAgent",
+            "description": "A2c agent definition.\n\nA2C definition for the stable_baselines3 implementation for this algorithm.\nVariable comments are taken from the stable_baselines3 documentation.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "tensorboard_log": {
+                    "title": "Tensorboard Log",
+                    "type": "string"
+                },
+                "policy": {
+                    "title": "Policy",
+                    "enum": [
+                        "MlpPolicy",
+                        "CnnPolicy",
+                        "MultiInputPolicy"
+                    ],
+                    "type": "string"
+                },
+                "use_custom_feature_extractor": {
+                    "title": "Use Custom Feature Extractor",
+                    "enum": [
+                        "resnet18",
+                        "mobilenet_v2"
+                    ],
+                    "type": "string"
+                },
+                "cfe_without_linear": {
+                    "title": "Cfe Without Linear",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "policy_kwargs": {
+                    "title": "Policy Kwargs",
+                    "type": "object"
+                },
+                "type": {
+                    "title": "Type",
+                    "enum": [
+                        "A2C"
+                    ],
+                    "type": "string"
+                },
+                "learning_rate": {
+                    "title": "Learning Rate",
+                    "default": 0.0007,
+                    "type": "number"
+                },
+                "n_steps": {
+                    "title": "N Steps",
+                    "default": 5,
+                    "type": "integer"
+                },
+                "gamma": {
+                    "title": "Gamma",
+                    "default": 0.99,
+                    "type": "number"
+                },
+                "gae_lambda": {
+                    "title": "Gae Lambda",
+                    "default": 1.0,
+                    "type": "number"
+                },
+                "ent_coef": {
+                    "title": "Ent Coef",
+                    "default": 0.0,
+                    "type": "number"
+                },
+                "vf_coef": {
+                    "title": "Vf Coef",
+                    "default": 0.5,
+                    "type": "number"
+                },
+                "seed": {
+                    "title": "Seed",
+                    "type": "integer"
+                },
+                "device": {
+                    "title": "Device",
+                    "default": "auto",
+                    "type": "string"
+                },
+                "max_grad_norm": {
+                    "title": "Max Grad Norm",
+                    "default": 0.5,
+                    "type": "number"
+                },
+                "rms_prop_eps": {
+                    "title": "Rms Prop Eps",
+                    "default": 1e-05,
+                    "type": "number"
+                },
+                "use_rms_prop": {
+                    "title": "Use Rms Prop",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "use_sde": {
+                    "title": "Use Sde",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "sde_sample_freq": {
+                    "title": "Sde Sample Freq",
+                    "default": -1,
+                    "type": "integer"
+                },
+                "normalize_advantage": {
+                    "title": "Normalize Advantage",
+                    "default": false,
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "save_location",
+                "policy",
+                "type"
+            ],
+            "additionalProperties": false
         },
-        "command_options": {
-          "title": "Command Options",
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "MultiProcessing": {
+            "title": "MultiProcessing",
+            "description": "Define multiprocessing capability of environment.\n\nDefines if the Problem should use Multiprocessing and with how many\ncores the solver can work. Does not force Multiprocessing for example\nif the solver does not support it.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "number_of_cores": {
+                    "title": "Number Of Cores",
+                    "default": 1,
+                    "minimum": 1,
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "save_location"
+            ],
+            "additionalProperties": false
+        },
+        "VariableLocation": {
+            "title": "VariableLocation",
+            "description": "Variable location class.\n\nObject of this class defines the position and movement possibilities for a\nsingle dimensions of a single control point of the geometry.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "current_position": {
+                    "title": "Current Position",
+                    "type": "number"
+                },
+                "min_value": {
+                    "title": "Min Value",
+                    "type": "number"
+                },
+                "max_value": {
+                    "title": "Max Value",
+                    "type": "number"
+                },
+                "n_steps": {
+                    "title": "N Steps",
+                    "default": 10,
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "step": {
+                    "title": "Step",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "save_location",
+                "current_position"
+            ],
+            "additionalProperties": false
+        },
+        "ShapeDefinition": {
+            "title": "ShapeDefinition",
+            "description": "Base of shape parameterization, also represents a simple point cloud.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "control_points": {
+                    "title": "Control Points",
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/VariableLocation"
+                        }
+                    }
+                }
+            },
+            "required": [
+                "save_location",
+                "control_points"
+            ],
+            "additionalProperties": false
+        },
+        "SplineSpaceDimension": {
+            "title": "SplineSpaceDimension",
+            "description": "Defines a single spline space dimension of the current spline.\n\nThe dimension is a dimension of the parametric spline dimension.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "number_of_points": {
+                    "title": "Number Of Points",
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "degree": {
+                    "title": "Degree",
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "knot_vector": {
+                    "title": "Knot Vector",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            },
+            "required": [
+                "save_location",
+                "name",
+                "number_of_points",
+                "degree"
+            ],
+            "additionalProperties": false
+        },
+        "BSplineDefinition": {
+            "title": "BSplineDefinition",
+            "description": "Definition of the BSpline implementation of the ReLeSO Toolbox.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "control_points": {
+                    "title": "Control Points",
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/VariableLocation"
+                        }
+                    }
+                },
+                "space_dimensions": {
+                    "title": "Space Dimensions",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SplineSpaceDimension"
+                    }
+                }
+            },
+            "required": [
+                "save_location",
+                "space_dimensions"
+            ],
+            "additionalProperties": false
+        },
+        "NURBSDefinition": {
+            "title": "NURBSDefinition",
+            "description": "Definition of a NURBS spline.\n\nDefinition of the NURBS implementation of the ReLeSO Toolbox, in\ncomparison to the B-Spline implementation only an additional weights\nvector is added.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "control_points": {
+                    "title": "Control Points",
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/VariableLocation"
+                        }
+                    }
+                },
+                "space_dimensions": {
+                    "title": "Space Dimensions",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SplineSpaceDimension"
+                    }
+                },
+                "weights": {
+                    "title": "Weights",
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "$ref": "#/definitions/VariableLocation"
+                            }
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "save_location",
+                "space_dimensions",
+                "weights"
+            ],
+            "additionalProperties": false
+        },
+        "Geometry": {
+            "title": "Geometry",
+            "description": "Definition of the Geometry.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "shape_definition": {
+                    "title": "Shape Definition",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/ShapeDefinition"
+                        },
+                        {
+                            "$ref": "#/definitions/BSplineDefinition"
+                        },
+                        {
+                            "$ref": "#/definitions/NURBSDefinition"
+                        }
+                    ]
+                },
+                "action_based_observation": {
+                    "title": "Action Based Observation",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "discrete_actions": {
+                    "title": "Discrete Actions",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "reset_with_random_action_values": {
+                    "title": "Reset With Random Action Values",
+                    "default": false,
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "save_location",
+                "shape_definition"
+            ],
+            "additionalProperties": false
+        },
+        "MeshExporter": {
+            "title": "MeshExporter",
+            "description": "Class which defines in which format and where the mesh is exported.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "format": {
+                    "title": "Format",
+                    "default": "mixd",
+                    "enum": [
+                        "mixd"
+                    ],
+                    "type": "string"
+                },
+                "export_path": {
+                    "title": "Export Path",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "string",
+                            "format": "path"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "save_location",
+                "export_path"
+            ],
+            "additionalProperties": false
+        },
+        "MeshIOMesh": {
+            "title": "MeshIOMesh",
+            "description": "Provides an interface to load meshio meshes.\n\nSince gustaf currently only really supports .msh files, this also only\nsupports files with this ending. If and when gustaf implements support\nfor additional files types already supported by meshio. This will be\nupdated.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "path": {
+                    "title": "Path",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "string",
+                            "format": "path"
+                        }
+                    ]
+                },
+                "export": {
+                    "$ref": "#/definitions/MeshExporter"
+                },
+                "dimensions": {
+                    "title": "Dimensions",
+                    "minimum": 1,
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "save_location",
+                "dimensions"
+            ],
+            "additionalProperties": false
+        },
+        "MixdMesh": {
+            "title": "MixdMesh",
+            "description": "Class used to read in the correct mixd mesh file and load it.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "path": {
+                    "title": "Path",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "string",
+                            "format": "path"
+                        }
+                    ]
+                },
+                "export": {
+                    "$ref": "#/definitions/MeshExporter"
+                },
+                "dimensions": {
+                    "title": "Dimensions",
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "mxyz_path": {
+                    "title": "Mxyz Path",
+                    "description": "Please use either the path variable xor the mxyz variable, since if used both the used mxyz path might not be the one you think.",
+                    "format": "file-path",
+                    "type": "string"
+                },
+                "mien_path": {
+                    "title": "Mien Path",
+                    "description": "Please use either the path variable xor the mien variable, since if used both the used mien path might not be the one you think.",
+                    "format": "file-path",
+                    "type": "string"
+                },
+                "hypercube": {
+                    "title": "Hypercube",
+                    "description": "If True Mesh is made of hypercubes. If False Mesh is made of simplexes (triangles).",
+                    "default": true,
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "save_location",
+                "dimensions"
+            ],
+            "additionalProperties": false
+        },
+        "FFDGeometry": {
+            "title": "FFDGeometry",
+            "description": "FFD based variable shape.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "shape_definition": {
+                    "title": "Shape Definition",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/ShapeDefinition"
+                        },
+                        {
+                            "$ref": "#/definitions/BSplineDefinition"
+                        },
+                        {
+                            "$ref": "#/definitions/NURBSDefinition"
+                        }
+                    ]
+                },
+                "action_based_observation": {
+                    "title": "Action Based Observation",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "discrete_actions": {
+                    "title": "Discrete Actions",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "reset_with_random_action_values": {
+                    "title": "Reset With Random Action Values",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "mesh": {
+                    "title": "Mesh",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/MeshIOMesh"
+                        },
+                        {
+                            "$ref": "#/definitions/MixdMesh"
+                        }
+                    ]
+                },
+                "export_mesh": {
+                    "$ref": "#/definitions/MeshExporter"
+                }
+            },
+            "required": [
+                "save_location",
+                "shape_definition",
+                "mesh"
+            ],
+            "additionalProperties": false
+        },
+        "ObservationDefinition": {
+            "title": "ObservationDefinition",
+            "description": "Definition of an Observation.\n\nDefinition of a single Observations by providing the name of the\nvalue and the range in which the value is limited to.\n\nThe range is necessary due to normalization of the input of the agent\nnetworks.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "value_min": {
+                    "title": "Value Min",
+                    "type": "number"
+                },
+                "value_max": {
+                    "title": "Value Max",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "save_location",
+                "name",
+                "value_min",
+                "value_max"
+            ],
+            "additionalProperties": false
+        },
+        "ObservationDefinitionMulti": {
+            "title": "ObservationDefinitionMulti",
+            "description": "Define a multidimensional Observations space.\n\nDefinition of a single Observations by providing the name of the value\nand the range in which the value is limited to.\n\nThe range is necessary due to normalization of the input of the agent\nnetworks.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "value_min": {
+                    "title": "Value Min",
+                    "type": "number"
+                },
+                "value_max": {
+                    "title": "Value Max",
+                    "type": "number"
+                },
+                "observation_shape": {
+                    "title": "Observation Shape",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "value_type": {
+                    "title": "Value Type",
+                    "enum": [
+                        "float",
+                        "CNN"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "save_location",
+                "name",
+                "value_min",
+                "value_max",
+                "observation_shape",
+                "value_type"
+            ],
+            "additionalProperties": false
+        },
+        "MultiProcessor": {
+            "title": "MultiProcessor",
+            "description": "Definition of the utilized multiprocessor. Default MPIEXEC.\n\nThe MultiProcessor gives access to command prefixes which can enable\nparallelization. Currently only tested for MPI.\n\nNote:\n    The cluster uses PATH variables to correctly call mpi. IF you want to\n    use MPI multiprocessing on the cluster please use\n    :py:class:`ReLeSO.spor.MPIClusterMultiProcessor`.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "command": {
+                    "title": "Command",
+                    "default": "mpiexec -n",
+                    "type": "string"
+                },
+                "max_core_count": {
+                    "title": "Max Core Count",
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "always_use": {
+                    "title": "Always Use",
+                    "default": false,
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "save_location",
+                "max_core_count"
+            ],
+            "additionalProperties": false
+        },
+        "MPIClusterMultiProcessor": {
+            "title": "MPIClusterMultiProcessor",
+            "description": "Multi-processor extension for the cluster MPI call.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "command": {
+                    "title": "Command",
+                    "default": "$MPIEXEC",
+                    "type": "string"
+                },
+                "max_core_count": {
+                    "title": "Max Core Count",
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "always_use": {
+                    "title": "Always Use",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "location": {
+                    "title": "Location",
+                    "enum": [
+                        "cluster"
+                    ],
+                    "type": "string"
+                },
+                "mpi_flags_variable": {
+                    "title": "Mpi Flags Variable",
+                    "default": "$FLAGS_MPI_BATCH",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "save_location",
+                "max_core_count",
+                "location"
+            ],
+            "additionalProperties": false
+        },
+        "SPORObjectCommandLine": {
+            "title": "SPORObjectCommandLine",
+            "description": "Base definition of a SPORCommandLineObject. Can be instantiated.\n\nBase class for all possible SPOR object classes which use the command\nline. This class is meant to add some default functionality, so that\nusers do not need to add them themselves. These are:\n\n1. access to the (MPI) Multi-processors via\n    :py:class:`ReLeSO.spor.MultiProcessor`\n2. command line command\n3. additional flags\n4. working directory\n5. whether or not to use the\n    :ref:`SPOR Communication Interface <sporcominterface>`",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "stop_after_error": {
+                    "title": "Stop After Error",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "reward_on_error": {
+                    "title": "Reward On Error",
+                    "type": "number"
+                },
+                "reward_on_completion": {
+                    "title": "Reward On Completion",
+                    "type": "number"
+                },
+                "run_on_reset": {
+                    "title": "Run On Reset",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "additional_observations": {
+                    "title": "Additional Observations",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/ObservationDefinition"
+                        },
+                        {
+                            "$ref": "#/definitions/ObservationDefinitionMulti"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/definitions/ObservationDefinition"
+                                    },
+                                    {
+                                        "$ref": "#/definitions/ObservationDefinitionMulti"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "multi_processor": {
+                    "title": "Multi Processor",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/MultiProcessor"
+                        },
+                        {
+                            "$ref": "#/definitions/MPIClusterMultiProcessor"
+                        }
+                    ]
+                },
+                "use_communication_interface": {
+                    "title": "Use Communication Interface",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "add_step_information": {
+                    "title": "Add Step Information",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "working_directory": {
+                    "title": "Working Directory",
+                    "type": "string"
+                },
+                "execution_command": {
+                    "title": "Execution Command",
+                    "type": "string"
+                },
+                "command_options": {
+                    "title": "Command Options",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "save_location",
+                "name",
+                "reward_on_error",
+                "working_directory",
+                "execution_command"
+            ],
+            "additionalProperties": false
+        },
+        "SPORObjectExternalPythonFunction": {
+            "title": "SPORObjectExternalPythonFunction",
+            "description": "Load a python function from an external file.\n\nThis class is meant to load a python function from an external file and\nexecute it. The function will be imported in to the package and run in the\n same python environment as the rest of the package is. If you want to call\n the function you can use the SPORCommandLineObject.\n\nThe function needs to be called main and needs to have the\nfollowing signature:\n    args, logger, func_data\n\nWhere args are the SPOR COMM arguments, logger is a logger provided by\nthe SPORObject and, func_data is a persistent data variable which is not\ntouched by the SPORObject.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "stop_after_error": {
+                    "title": "Stop After Error",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "reward_on_error": {
+                    "title": "Reward On Error",
+                    "type": "number"
+                },
+                "reward_on_completion": {
+                    "title": "Reward On Completion",
+                    "type": "number"
+                },
+                "run_on_reset": {
+                    "title": "Run On Reset",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "additional_observations": {
+                    "title": "Additional Observations",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/ObservationDefinition"
+                        },
+                        {
+                            "$ref": "#/definitions/ObservationDefinitionMulti"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/definitions/ObservationDefinition"
+                                    },
+                                    {
+                                        "$ref": "#/definitions/ObservationDefinitionMulti"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "multi_processor": {
+                    "title": "Multi Processor",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/MultiProcessor"
+                        },
+                        {
+                            "$ref": "#/definitions/MPIClusterMultiProcessor"
+                        }
+                    ]
+                },
+                "use_communication_interface": {
+                    "title": "Use Communication Interface",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "add_step_information": {
+                    "title": "Add Step Information",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "working_directory": {
+                    "title": "Working Directory",
+                    "type": "string"
+                },
+                "python_file_path": {
+                    "title": "Python File Path",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "string",
+                            "format": "path"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "save_location",
+                "name",
+                "reward_on_error",
+                "working_directory",
+                "python_file_path"
+            ],
+            "additionalProperties": false
+        },
+        "SPORObjectInternalPythonFunction": {
+            "title": "SPORObjectInternalPythonFunction",
+            "description": "This class will load SPOR functions provided by this package.\n\nCurrently available functions are the following:\n\n    - xns_cnn: This function will use the result of the xns solver and\n        create an image of the solution. The image is created via contourf.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "stop_after_error": {
+                    "title": "Stop After Error",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "reward_on_error": {
+                    "title": "Reward On Error",
+                    "type": "number"
+                },
+                "reward_on_completion": {
+                    "title": "Reward On Completion",
+                    "type": "number"
+                },
+                "run_on_reset": {
+                    "title": "Run On Reset",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "additional_observations": {
+                    "title": "Additional Observations",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/ObservationDefinition"
+                        },
+                        {
+                            "$ref": "#/definitions/ObservationDefinitionMulti"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/definitions/ObservationDefinition"
+                                    },
+                                    {
+                                        "$ref": "#/definitions/ObservationDefinitionMulti"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "multi_processor": {
+                    "title": "Multi Processor",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/MultiProcessor"
+                        },
+                        {
+                            "$ref": "#/definitions/MPIClusterMultiProcessor"
+                        }
+                    ]
+                },
+                "use_communication_interface": {
+                    "title": "Use Communication Interface",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "add_step_information": {
+                    "title": "Add Step Information",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "working_directory": {
+                    "title": "Working Directory",
+                    "type": "string"
+                },
+                "function_name": {
+                    "title": "Function Name",
+                    "enum": [
+                        "xns_cnn"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "save_location",
+                "name",
+                "reward_on_error",
+                "working_directory",
+                "function_name"
+            ],
+            "additionalProperties": false
+        },
+        "SPORList": {
+            "title": "SPORList",
+            "description": "The SPORList defines the custom defined steps.\n\nIn the current version these steps take place after the FFD is\ndone. These can include the fluid solver, post-processing steps,\nreward generation, additional logging, etc. In a future version the FFD\nmight be incorporated into a SPOR step to stream line the internal\nfunctionality.\n\nIf a step sends a stop signal all consecutive steps will be ignored and the\nEach step can generate observations, rewards and info for the current\nepisode step.  These are aggregated as follows.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "steps": {
+                    "title": "Steps",
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/definitions/SPORObjectCommandLine"
+                            },
+                            {
+                                "$ref": "#/definitions/SPORObjectExternalPythonFunction"
+                            },
+                            {
+                                "$ref": "#/definitions/SPORObjectInternalPythonFunction"
+                            }
+                        ]
+                    }
+                },
+                "reward_aggregation": {
+                    "title": "Reward Aggregation",
+                    "enum": [
+                        "sum",
+                        "min",
+                        "max",
+                        "mean",
+                        "absmax"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "save_location",
+                "steps",
+                "reward_aggregation"
+            ],
+            "additionalProperties": false
+        },
+        "Environment": {
+            "title": "Environment",
+            "description": "Parser class of which the environment is based.\n\nParser Environment object is created by pydantic during the parsing of the\njson object defining the RL based Shape optimization. Each object can\ncreate a gym environment that represents the given problem.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "multi_processing": {
+                    "$ref": "#/definitions/MultiProcessing"
+                },
+                "geometry": {
+                    "title": "Geometry",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/Geometry"
+                        },
+                        {
+                            "$ref": "#/definitions/FFDGeometry"
+                        }
+                    ]
+                },
+                "spor": {
+                    "$ref": "#/definitions/SPORList"
+                },
+                "max_timesteps_in_episode": {
+                    "title": "Max Timesteps In Episode",
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "end_episode_on_geometry_not_changed": {
+                    "title": "End Episode On Geometry Not Changed",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "reward_on_geometry_not_changed": {
+                    "title": "Reward On Geometry Not Changed",
+                    "type": "number"
+                },
+                "reward_on_episode_exceeds_max_timesteps": {
+                    "title": "Reward On Episode Exceeds Max Timesteps",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "save_location",
+                "geometry",
+                "spor"
+            ],
+            "additionalProperties": false
+        },
+        "Validation": {
+            "title": "Validation",
+            "description": "Parser class to define the validation to be performed during training.\n\nThis class is used for the configuration of how validation is to be\nperformed during training.",
+            "type": "object",
+            "properties": {
+                "save_location": {
+                    "title": "Save Location",
+                    "type": "string",
+                    "format": "path"
+                },
+                "logger_name": {
+                    "title": "Logger Name",
+                    "type": "string"
+                },
+                "validation_freq": {
+                    "title": "Validation Freq",
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "validation_values": {
+                    "title": "Validation Values",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "save_best_agent": {
+                    "title": "Save Best Agent",
+                    "type": "boolean"
+                },
+                "validate_on_training_end": {
+                    "title": "Validate On Training End",
+                    "type": "boolean"
+                },
+                "max_timesteps_in_episode": {
+                    "title": "Max Timesteps In Episode",
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "end_episode_on_geometry_not_changed": {
+                    "title": "End Episode On Geometry Not Changed",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "reward_on_geometry_not_changed": {
+                    "title": "Reward On Geometry Not Changed",
+                    "type": "number"
+                },
+                "reward_on_episode_exceeds_max_timesteps": {
+                    "title": "Reward On Episode Exceeds Max Timesteps",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "save_location",
+                "validation_values",
+                "save_best_agent",
+                "validate_on_training_end"
+            ],
+            "additionalProperties": false
         }
-      },
-      "required": [
-        "save_location",
-        "name",
-        "reward_on_error",
-        "working_directory",
-        "execution_command"
-      ],
-      "additionalProperties": false
-    },
-    "SPORList": {
-      "title": "SPORList",
-      "description": "The SPORList defines the steps which need to be taken for after the FFD is done. These can include the fluid solver, post-processing steps, reward generation, additional logging, etc. \n\nIf a step sends a stop signal all consecutive steps will be ignored and the \nEach step can generate observations, rewards and info for the current episode step.  These are aggregated as follows.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "steps": {
-          "title": "Steps",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/SPORObjectCommandLine"
-          }
-        },
-        "reward_aggregation": {
-          "title": "Reward Aggregation",
-          "enum": [
-            "sum",
-            "min",
-            "max",
-            "mean",
-            "minmax"
-          ],
-          "type": "string"
-        }
-      },
-      "required": [
-        "save_location",
-        "steps",
-        "reward_aggregation"
-      ],
-      "additionalProperties": false
-    },
-    "Environment": {
-      "title": "Environment",
-      "description": "Parser Environment object is created by pydantic during the parsing of the \njson object defining the Spline base Shape optimization. Each object can \ncreate a gym environment that represents the given problem.",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "multi_processing": {
-          "$ref": "#/definitions/MultiProcessing"
-        },
-        "spline": {
-          "$ref": "#/definitions/Spline"
-        },
-        "mesh": {
-          "$ref": "#/definitions/Mesh"
-        },
-        "spor": {
-          "$ref": "#/definitions/SPORList"
-        },
-        "discrete_actions": {
-          "title": "Discrete Actions",
-          "default": true,
-          "type": "boolean"
-        },
-        "reset_with_random_control_points": {
-          "title": "Reset With Random Control Points",
-          "default": false,
-          "type": "boolean"
-        },
-        "max_timesteps_in_episode": {
-          "title": "Max Timesteps In Episode",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "end_episode_on_spline_not_changed": {
-          "title": "End Episode On Spline Not Changed",
-          "default": false,
-          "type": "boolean"
-        },
-        "reward_on_spline_not_changed": {
-          "title": "Reward On Spline Not Changed",
-          "type": "number"
-        },
-        "reward_on_episode_exceeds_max_timesteps": {
-          "title": "Reward On Episode Exceeds Max Timesteps",
-          "type": "number"
-        },
-        "use_cnn_observations": {
-          "title": "Use Cnn Observations",
-          "default": false,
-          "type": "boolean"
-        },
-        "save_good_episode_results": {
-          "title": "Save Good Episode Results",
-          "default": false,
-          "type": "boolean"
-        },
-        "save_random_good_episode_results": {
-          "title": "Save Random Good Episode Results",
-          "default": false,
-          "type": "boolean"
-        },
-        "save_random_good_episode_mesh": {
-          "title": "Save Random Good Episode Mesh",
-          "default": false,
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "save_location",
-        "spline",
-        "mesh",
-        "spor"
-      ],
-      "additionalProperties": false
-    },
-    "Validation": {
-      "title": "Validation",
-      "description": "This class is used for the configuration of how validation is to be performed during training. ",
-      "type": "object",
-      "properties": {
-        "save_location": {
-          "title": "Save Location",
-          "type": "string",
-          "format": "path"
-        },
-        "logger_name": {
-          "title": "Logger Name",
-          "type": "string"
-        },
-        "validation_freq": {
-          "title": "Validation Freq",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "validation_values": {
-          "title": "Validation Values",
-          "minItems": 1,
-          "type": "array",
-          "items": {
-            "type": "number"
-          }
-        },
-        "save_best_agent": {
-          "title": "Save Best Agent",
-          "type": "boolean"
-        },
-        "validate_on_training_end": {
-          "title": "Validate On Training End",
-          "type": "boolean"
-        },
-        "mesh_base_path_extension": {
-          "title": "Mesh Base Path Extension",
-          "type": "string"
-        },
-        "max_timesteps_in_episode": {
-          "title": "Max Timesteps In Episode",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "end_episode_on_spline_not_changed": {
-          "title": "End Episode On Spline Not Changed",
-          "default": false,
-          "type": "boolean"
-        },
-        "reward_on_spline_not_changed": {
-          "title": "Reward On Spline Not Changed",
-          "type": "number"
-        },
-        "reward_on_episode_exceeds_max_timesteps": {
-          "title": "Reward On Episode Exceeds Max Timesteps",
-          "type": "number"
-        },
-        "save_image_in_validation": {
-          "title": "Save Image In Validation",
-          "default": false,
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "save_location",
-        "validation_values",
-        "save_best_agent",
-        "validate_on_training_end"
-      ],
-      "additionalProperties": false
     }
-  }
 }
