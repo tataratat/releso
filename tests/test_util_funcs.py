@@ -30,7 +30,7 @@ def test_json_encode(dictionary, wanted_value, capsys):
     if not wanted_value:
         with pytest.raises(TypeError):
             json.dumps(dictionary, cls=JSONEncoder)
-        assert "class 'numpy.longdouble'" in capsys.readouterr().out
+        assert "class 'numpy.float128'" in capsys.readouterr().out
         return
     json_string = json.dumps(dictionary, cls=JSONEncoder)
     py_dict = json.loads(json_string)

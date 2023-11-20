@@ -1,6 +1,7 @@
 """File holds definition classes for the mesh implementation."""
 import pathlib
 from abc import abstractmethod
+from enum import Enum
 from typing import Any, Dict, Literal, Optional, Union
 
 from pydantic import Field, PrivateAttr
@@ -19,6 +20,15 @@ except ImportError as err:  # pragma: no cover
 
     meshio = ModuleImportRaiser("gustaf", err)
     mixd = ModuleImportRaiser("gustaf", err)
+
+
+class MeshHierarchy(Enum):
+    """Enum to define the mesh hierarchy."""
+
+    Vertices = 0
+    Edges = 1
+    Faces = 2
+    Volumes = 3
 
 
 class MeshExporter(BaseModel):
@@ -407,7 +417,7 @@ class MeshIOMesh(Mesh):
         if value:
             path = pathlib.Path(value).resolve().expanduser()
             if path.exists():
-                if path.suffix not in [".msh"]:
+                if path.suffix != ".msh":
                     raise ParserException(
                         "MeshIOMesh", "path", "Mesh type not supported."
                     )
@@ -437,11 +447,27 @@ class MeshIOMesh(Mesh):
         """
         self.get_logger().debug(f"Loading mesh from path ({self.path}).")
         mesh = meshio.load(fname=self.path)
+        final_mesh = None
+        if len(mesh) > 1:
+            for me in mesh:
+                if final_mesh is None:
+                    final_mesh = me
+                    continue
+                if (
+                    MeshHierarchy[me.__class__.__name__].value
+                    > MeshHierarchy[final_mesh.__class__.__name__].value
+                ):
+                    final_mesh = me
+        else:
+            final_mesh = mesh
         self.get_logger().info("Done loading mesh.")
-        return self.delete_dimension_if_possible(mesh)
+        return self.delete_dimension_if_possible(final_mesh)
 
     def delete_dimension_if_possible(self, mesh: GustafMeshTypes):
-        """_summary_.
+        """Looks into the mesh and checks if the dimensionality can be reduced.
+
+        If the bounds of one or more dimensions are equal, the dimension is
+        removed from the mesh.
 
         Args:
             mesh (GustafMeshTypes): _description_
