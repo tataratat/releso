@@ -21,9 +21,9 @@ sphinx is installed ignore the first two lines.
 The following command line calls create a conda environment with all necessary
 dependencies for building the documentation.
 ``` console
- (base) $ conda create -n sphinx python=3.9
- (base) $ conda activate sphinx
- (sphinx) $ pip install sphinx sphinx-rtd-theme
+(base) $ conda create -n sphinx python=3.9
+(base) $ conda activate sphinx
+(sphinx) $ pip install sphinx sphinx-rtd-theme
 ```
 
 The documentation is built by executing the following command inside the folder
