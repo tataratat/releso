@@ -22,9 +22,12 @@ dependencies = [
     "hjson",
 ]
 dynamic = [
-    "version",
-    "readme"
+    "version"
 ]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
 
 [project.optional-dependencies]
 all = [
@@ -42,6 +45,8 @@ docs = [
 [project.scripts]
 releso = "releso.__main__:entry"
 
+
+
 [tool.setuptools]
 packages = [
     "releso",
@@ -54,7 +59,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
 version = {attr = "releso.__version__.version"}
-readme = {file = "README.md"}
 
 [tool.black]
 line-length = 79
