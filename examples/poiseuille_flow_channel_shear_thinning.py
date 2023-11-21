@@ -288,7 +288,7 @@ def compute_quality_criterion(
 def calculate_reward(
     quality_criterions: np.ndarray,
     last_quality_criterions: np.ndarray,
-    **kwargs
+    **kwargs,
 ) -> float:
     """Function that actually calculates the reward.
 
