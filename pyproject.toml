@@ -29,6 +29,12 @@ dynamic = [
 file = "README.md"
 content-type = "text/markdown"
 
+[project.urls]
+homepage = "https://github.com/clemens-fricke/releso"
+documentation = "https://releso.readthedocs.io/en/latest/"
+issues = "https://github.com/clemens-fricke/releso/issues"
+repository = "https://github.com/clemens-fricke/releso.git"
+
 [project.optional-dependencies]
 all = [
     "splinepy[all]"
