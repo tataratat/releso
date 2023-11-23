@@ -90,7 +90,7 @@ class VariableLocation(BaseModel):
 
     @validator("max_value", always=True)
     @classmethod
-    def max_value_is_greater_than_current_value(
+    def check_max_value_is_greater_than_current_value(
         cls, v, values, field
     ) -> float:
         """Validates that the max value is greater-equal to the current value.
@@ -114,7 +114,7 @@ class VariableLocation(BaseModel):
 
     @validator("min_value", always=True)
     @classmethod
-    def min_value_is_smaller_than_current_value(
+    def check_min_value_is_smaller_than_current_value(
         cls, v, values, field
     ) -> float:
         """Validates that the min value is smaller-equal to the current value.
