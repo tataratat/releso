@@ -1,54 +1,39 @@
 Installation
 ============
 
-This page covers the installation process of the framework and its prerequisites.
-
-Prerequisites
--------------
-To use ReLeSO the following packages have to be installed:
- - pydantic<2.0
- - stable-baselines3
- - tensorboard
- - torchvision
- - hjson
- - gustaf
-
-The first two/three packages can be installed via pip and/or conda with the following command:
-
-**pip** (activation of the venv should be done beforehand)
+The package is available via PyPI and can be installed via pip:
 
 .. code-block:: console
 
-   (.venv) $ pip install "pydantic<2.0" stable-baselines3 tensorboard hjson
+   (env) $ pip install releso
 
-**conda**
+This command will install the package with the minimal dependencies.
 
-.. code-block:: console
+The following packages are optional and bring further capabilities to the framework:
+ - splinepy -> Spline based geometries
+ - gustaf -> If Free Form Deformations is used
+ - torchvision -> If Image based observations are used
 
-   (base) $ conda create -n releso python=3.9 pydantic<2.0 tensorboard
-   (base) $ conda activate releso
-   (releso) $ conda install -c pytorch torchvision
-   (releso) $ pip install stable-baselines3 hjson
-
-The next step is to install the ``gustaf`` package which is a python interface for the c++ library SplineLib.
-To install ``gustaf`` the following repository must be downloaded into an external folder and installed into the venv or conda environment as before. The installation process for the gustaf package is documented in the README file of the repository.
-
-
-**Development**
-
-To develop the framework further the sphinx package should also be installed with the currently used sphinx html theme ``sphinx_rtd_theme``.
-The this can be done via:
+These can be automatically install via the following command:
 
 .. code-block:: console
 
-   (releso) $ pip install sphinx sphinx_rtd_theme
+   (env) $ pip install "releso[all]"
 
-Framework
----------
 
-After installing all prerequisites the framework itself can be installed by running the command below in the main repository folder
+.. note::
+    It is recommended to use a environment manager like conda to install the packages into an environment.
+
+Installation from source
+------------------------
+
+Clone the `repository <https://github.com/clemens-fricke/releso>`_ from github.
+
+There are two modes that a package can be installed from source.
 
 **Non-development**
+
+The package is basically installed like it would from PyPI. This can be done via:
 
 .. code-block:: console
 
@@ -56,7 +41,14 @@ After installing all prerequisites the framework itself can be installed by runn
 
 
 **Development**
+The development mode of *pip install* allows to change the source code and have the changed
+directly reflected in the installed package. Meaning no recompliation before starting the
+next script call is necessary (If you use an IPython kernel you will have to restart the kernel
+to see the changes). This is done by adding the ``-e`` flag to the pip install command.
+The development mode can be installed via:
 
 .. code-block:: console
 
-   (releso) $ pip install -e .
+   (releso) $ pip install -e ".[dev]"
+
+The def extension will install all optional dependencies as well as the development dependencies.

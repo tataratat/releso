@@ -1,11 +1,15 @@
 Image based Observations
 ========================
 
+.. Note:: This functionalty has been reworked and the documentation is not up to date. Please check the schema for the renamed/relocated options and functionality.
+
+.. Note:: The solver used in this example is not openly available. The functionality after creating the image should work with any solver.
+
 The framework has now the ability to not only use the spline coordinates as the
 observations but it can also use image based observations. These use flow
-field informations directly from the solver to create a false color image of
+field information directly from the solver to create a false color image of
 the flow field. This means that this feature is currently only available in
-conjuction with the **XNS** solver, from CATS RWTH Aachen. Other solver would
+conjunction with the **XNS** solver, from CATS RWTH Aachen. Other solver would
 need to either do **one** of these options:
 
 #. export the results to the same location and in the same format
