@@ -32,10 +32,12 @@ Reinforcement Learning based Shape Optimization (ReLeSO)
     :target: https://github.com/tataratat/releso/blob/main/LICENSE
     :alt: PyPI - License
 
-**ReLeSO** stands for ``Reinforcement Learning based Shape Optimization`` and is a Python framework combining the spline base shape optimization approach with reinforcement learning.
+**ReLeSO** stands for ``Reinforcement Learning based Shape Optimization`` and is a Python framework combining a spline-based shape optimization approach with reinforcement learning.
+
 
 This documentation includes the usage information and possible configuration parameters of this framework. Please see the thesis "Python Framework for Reinforcement Learning based Shape Optimization" by Clemens Fricke.  Please contact Clemens Fricke (clemens.david.fricke@tuwien.ac.at) or Daniel Wolff (wolff@cats.rwth-aachen.de) to access it.
-We also released two papers with results obtained with this framework, that also go into the theory of the application of Shape Optimization with Reinforcement Learning. The first paper is a short proceedings about the basic concept of concept of ReLeSO for an introductory example to optimzation of extrusion dies [Wolff2023]_ and the second paper is a more detailed paper about the possible optimizations steps towards better learning [Fricke2023]_. In the last paper we compare different agents and the two type RL based Shape Optimization this Framework implements, incremental and direct optimization.
+We also released two papers with results obtained with this framework, that also go into the theory of the application of Shape Optimization with Reinforcement Learning. The first paper is a short proceedings about the basic concept of concept of ReLeSO for an introductory example to optimzation of extrusion dies [Wolff2023]_ and the second paper is a more detailed paper about the possible optimization steps towards better learning [Fricke2023]_. In the last paper we compare different agents and the two types of RL-based shape optimization that this framework implements, namely incremental and direct optimization.
+
 
 This framework is mainly build upon the Python packages ``pydantic`` and ``stable-baselines3``. Especially the RL agents used are from the ``stable-baselines3`` package. So please refer to the documentation of these packages for further information about the agents and a deeper understanding of RL in general. The documentation given `there <https://stable-baselines3.readthedocs.io/en/master/>`_ is very good and easy to understand.
 

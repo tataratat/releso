@@ -10,7 +10,8 @@ Releso is a Library/Framework for
 Reinforcement Learning based Shape Optimization. Please look into the
 Documentation for information on how it works. The instruction on how the
 documentation can be built is given below as well as the instruction on how the
-package can be installed. But it is also available to install via `pip install releso`.
+package can be installed.  
+Alternatively, it can be installed from `pip` via `pip install releso`.
 
 
 Documentation generation
