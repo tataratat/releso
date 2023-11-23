@@ -23,7 +23,7 @@ dependencies for building the documentation.
 ``` console
 (base) $ conda create -n sphinx python=3.9
 (base) $ conda activate sphinx
-(sphinx) $ pip install sphinx sphinx-rtd-theme
+(sphinx) $ pip install ".[docs]"
 ```
 
 The documentation is built by executing the following command inside the folder

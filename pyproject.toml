@@ -37,13 +37,22 @@ repository = "https://github.com/clemens-fricke/releso.git"
 
 [project.optional-dependencies]
 all = [
-    "splinepy[all]"
+    "splinepy[all]",
+    "torchvision",
 ]
 test = [
     "pytest",
     "pytest-cov",
 ]
 docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+dev = [
+    "splinepy[all]",
+    "torchvision",
+    "pytest",
+    "pytest-cov",
     "sphinx",
     "sphinx-rtd-theme",
 ]
