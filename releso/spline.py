@@ -108,7 +108,7 @@ class SplineSpaceDimension(BaseModel):
             else:
                 get_parser_logger().warning(
                     f"The knot vector is shorter {n_knots} than the length "
-                    f"given by the open format {starting_ending*2}. Knot "
+                    f"given by the open format {starting_ending * 2}. Knot "
                     "vector is created by adding the starting and ending "
                     "parts. The knot vector might be to long."
                 )

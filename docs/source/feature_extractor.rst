@@ -1,7 +1,7 @@
 Feature Extractor
 =================
 
-This package has (Version>=1.1) the ability to use custom feature
+This package has the ability to use custom feature
 extractors for the agent networks. When using a custom feature extractor the
 observations are first fed into the feature extractor and the result is then
 fed into the agent networks. Please see the `stable-baselines3

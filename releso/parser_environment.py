@@ -516,7 +516,7 @@ class Environment(BaseModel):
         if observations["geometry_observation"] is None:
             del observations["geometry_observation"]
         end = timer()
-        self.get_logger().debug(f"Step took {end-start} seconds.")
+        self.get_logger().debug(f"Step took {end - start} seconds.")
 
         return self.check_observations(observations), reward, done, False, info
 

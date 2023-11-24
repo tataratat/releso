@@ -203,11 +203,6 @@ class SPORObject(BaseModel):
 
         Validates the the additional observations variable. This is a pre
         validation function only used for back compatibility reasons.
-        See deprecation notice...
-
-        Deprecated functionality: Setting the value of the additional variable
-        to an int value. This is an old option and is not supported anymore.
-        Please define additional variable with the classes given.
 
         Args:
             v (str): See pydantic
@@ -1018,7 +1013,7 @@ class SPORObjectExternalPythonFunction(SPORObjectPythonFunction):
                     ) from err
                 else:
                     self._run_logger = set_up_logger(
-                        f"spor_step_logger_{self.name.replace(' ','_')}",
+                        f"spor_step_logger_{self.name.replace(' ', '_')}",
                         pathlib.Path(self.save_location / "logging"),
                         VerbosityLevel.INFO,
                         console_logging=False,
@@ -1428,6 +1423,6 @@ class SPORList(BaseModel):
             step_information = (observations, reward, done, info)
             end = timer()
             self.get_logger().debug(
-                f"SPOR Step {step.name} took {end-start} seconds."
+                f"SPOR Step {step.name} took {end - start} seconds."
             )
         return step_information

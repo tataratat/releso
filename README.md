@@ -1,11 +1,17 @@
-# Reinforcement Learning based Shape Optimization
+# Reinforcement Learning based Shape Optimization (ReLeSO)
 
-This repository holds a Library/Framework written by Clemens Fricke for
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/tataratat/releso/pypi_upload)](https://github.com/tataratat/releso)
+[![Read the docs](https://readthedocs.org/projects/releso/badge/?version=latest)](https://releso.readthedocs.io/en/latest/?badge=latest)
+[![PyPI - Version](https://img.shields.io/pypi/v/releso)](https://pypi.org/project/releso/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/releso)](https://pypi.org/project/releso/)
+[![PyPI - License](https://img.shields.io/pypi/l/releso)](https://github.com/tataratat/releso/blob/main/LICENSE)
+
+Releso is a Library/Framework for
 Reinforcement Learning based Shape Optimization. Please look into the
 Documentation for information on how it works. The instruction on how the
 documentation can be built is given below as well as the instruction on how the
-package can be installed. It is currently not available from `pip`, this might
-come in the future.
+package can be installed.  
+Alternatively, it can be installed from `pip` via `pip install releso`.
 
 
 Documentation generation
@@ -23,7 +29,7 @@ dependencies for building the documentation.
 ``` console
 (base) $ conda create -n sphinx python=3.9
 (base) $ conda activate sphinx
-(sphinx) $ pip install sphinx sphinx-rtd-theme
+(sphinx) $ pip install ".[docs]"
 ```
 
 The documentation is built by executing the following command inside the folder
@@ -41,7 +47,7 @@ This section covers the installation process of the framework and its
 prerequisites. The first thing to note is that with version 0.1.0 the strict
 dependency on `splinepy` is not present anymore. But if the
 geometry is to be parameterized by a Spline and the method of Free Form
-Deformation is to be used to deform a mesh, `splinepy` is
+Deformation is to be used to deform a mesh, `splinepy` is still
 necessary.
 
 Prerequisites
@@ -70,9 +76,6 @@ The packages can be installed via pip or conda with the following commands:
 (base) $ conda activate releso
 (releso) $ pip install stable-baselines3 hjson
 ```
-> The quotation marks are necessary for some command lines like `zsh`. But from
-testing, `bash` is also ok if you use them even though they are not necessary.
-
 
 If the spline-based shape optimization functionality is needed, the package
 ``splinepy`` is needed. Please visit
@@ -104,5 +107,5 @@ running the command below in the main repository folder.
 **Development**
 
 ``` console
-(releso) $ pip install -e .
+(releso) $ pip install -e "dev."
 ```
