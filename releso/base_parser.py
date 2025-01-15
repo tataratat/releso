@@ -168,7 +168,7 @@ class BaseParser(BaseModel):
         path.parent.mkdir(parents=True, exist_ok=True)
         save_path = path / "model_end.save"
         self._agent.save(save_path)
-        return save_path
+        return str(save_path)
 
     def evaluate_model(
         self,
@@ -242,7 +242,7 @@ class BaseParser(BaseModel):
 
     def _create_validation_environment(
         self, throw_error_if_none: bool = False
-    ) -> Environment:
+    ) -> Optional[Environment]:
         """Creates a validation environment.
 
         Args:

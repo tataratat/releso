@@ -476,7 +476,7 @@ def test_parser_environment_observations_step_reset_simple(
     assert isinstance(info, dict)
     assert len(obs) == 2
 
-    obs, reward, done, truncated, info = gym_env.step(1)
+    obs, _, _, _, info = gym_env.step(1)
     assert pytest.approx(obs) == [4.9, 5.0]
 
     with caplog.at_level(VerbosityLevel.WARNING):
@@ -521,10 +521,10 @@ def test_parser_environment_max_timesteps(
     gym_env = env.get_gym_environment()
     gym_env.reset()
     for idx in range(4):
-        obs, reward, done, truncated, info = gym_env.step(1)
+        obs, _, done, _, info = gym_env.step(1)
         assert pytest.approx(obs) == [5 - ((idx + 1) * 0.1), 5.0]
         assert not done
-    obs, reward, done, truncated, info = gym_env.step(1)
+    obs, _, done, _, info = gym_env.step(1)
     assert pytest.approx(obs) == [4.5, 5.0]
     assert done
     assert info["reset_reason"] == "max_timesteps_exceeded"
@@ -568,12 +568,12 @@ def test_parser_environment_geometry_not_changed(
     gym_env = env.get_gym_environment()
     gym_env.reset()
     for idx in range(4):
-        obs, reward, done, truncated, info = gym_env.step(1)
+        obs, _, done, _, info = gym_env.step(1)
         assert pytest.approx(obs) == [5 - ((idx + 1) * 0.1), 5.0]
         assert not done
     # this should increase the second variable which is at its bound so it will
     #  not change
-    obs, reward, done, truncated, info = gym_env.step(2)
+    obs, _, done, _, info = gym_env.step(2)
     assert pytest.approx(obs) == [4.6, 5.0]
     assert done
     assert info["reset_reason"] == "geometry_not_changed"
@@ -619,7 +619,7 @@ def test_parser_environment_non_geometry_observations(
 
     gym_env = env.get_gym_environment()
     gym_env.reset()
-    obs, reward, done, truncated, info = gym_env.step(2)
+    obs, _, _, _, _ = gym_env.step(2)
     assert obs == pytest.approx([1, 2, 3])
     clean_up_provider(dir_save_location)
 
@@ -666,7 +666,7 @@ def test_parser_environment_validation(
     gym_env = env.get_gym_environment()
     gym_env.reset()
     for _ in range(len(val_values)):
-        obs, reward, done, truncated, info = gym_env.step(2)
+        _ = gym_env.step(2)
         assert (val_v := env.get_validation_id()) in val_values
         gym_env.reset()
         val_values.remove(val_v)

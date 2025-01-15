@@ -8,7 +8,7 @@ Reinforcement Learning based Shape Optimization (ReLeSO)
 |Build Status| |Documentation Status|
 |PyPI| |Python| |License|
 
-.. |Build Status| image:: https://img.shields.io/github/actions/workflow/status/tataratat/releso/pypi_upload
+.. |Build Status| image:: https://github.com/tataratat/releso/actions/workflows/build_and_upload_wheels.yml/badge.svg
    :target: https://github.com/tataratat/releso
    :alt: PyPI - Version
 

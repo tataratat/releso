@@ -37,7 +37,7 @@ repository = "https://github.com/clemens-fricke/releso.git"
 
 [project.optional-dependencies]
 all = [
-    "splinepy[all]",
+    "splinepy[all]>=0.1.2",
     "torchvision",
 ]
 test = [
@@ -50,7 +50,7 @@ docs = [
     "sphinx-jsonschema",
 ]
 dev = [
-    "splinepy[all]",
+    "splinepy[all]>=0.1.2",
     "torchvision",
     "pytest",
     "pytest-cov",
@@ -82,6 +82,10 @@ line-length = 79
 
 [tool.ruff]
 line-length = 79
+preview = true
+exclude = ["examples", "tests/samples"]
+
+[tool.lint]
 # Adding "ANN" would be really nice, but is to much work currently.
 # Adding "PT" would be nice, for pytest naming convention.
 # Adding "SIM" would be nice, but is to much work currently.
@@ -90,14 +94,12 @@ select = [
     "ISC", "ICN", "PIE", "T20", "PYI", "Q", "RSE", "TID", "TCH", "INT", "PD",
     "PGH", "TRY", "FLY", "NPY", "PERF", "FURB", "LOG"]
 ignore = ["N818", "TRY003"]
-preview = true
-exclude = ["examples"]
 
-[tool.ruff.per-file-ignores]
+[tool.lint.per-file-ignores]
 "tests/*.py" = ["D", "S", "E", "CPY", "PIE804", "NPY002"]
 "__main__.py" = ["T20"]
 
-[tool.ruff.pydocstyle]
+[tool.lint.pydocstyle]
 convention = "google"
 
 [tool.pytest.ini_options]
