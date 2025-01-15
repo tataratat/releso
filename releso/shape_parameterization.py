@@ -248,7 +248,8 @@ class ShapeDefinition(BaseModel):
         """Returns the number of points in the Cube.
 
         Number of control points multiplied by the number of dimensions for
-        each cp.
+        each cp. Assumes that all dimensions have the same number of control
+        points.
 
         Returns:
             int: number of points in the geometry

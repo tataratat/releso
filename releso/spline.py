@@ -448,6 +448,20 @@ class NURBSDefinition(SplineDefinition):
         # raise RuntimeError(f"Actions: {actions}")
         return actions
 
+
+    def get_control_points(self) -> List[List[float]]:
+        """Returns the current positions of all control points with weights as
+        well.
+
+        Returns:
+            List[List[float]]: Positions of all control points.
+        """
+        control_points = super().get_control_points()
+        control_points.append(
+            [weight.current_position for weight in self.weights]
+        )
+        return control_points
+
     def reset(self) -> None:
         """Resets the spline to the original shape."""
         super().reset()
