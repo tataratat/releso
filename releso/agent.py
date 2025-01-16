@@ -77,7 +77,7 @@ class BaseAgent(BaseModel):
     #: with a current timestamp is also added.
     tensorboard_log: Optional[str]
 
-    def get_next_tensorboard_experiment_name(self) -> str:
+    def get_next_tensorboard_experiment_name(self) -> Optional[str]:
         """Return tensorboard experiment name.
 
         Adds a date and time marker to the tensorboard experiment name so that
@@ -231,7 +231,7 @@ class PretrainedAgent(BaseAgent):
         else:
             raise AgentUnknownException(self.agent_type)
 
-    def get_next_tensorboard_experiment_name(self) -> str:
+    def get_next_tensorboard_experiment_name(self) -> Optional[str]:
         """Return the name of the tensorboard experiment.
 
         The tensorboard experiment name of the original training run if given
@@ -241,7 +241,7 @@ class PretrainedAgent(BaseAgent):
             str: tensorboard experiment name
         """
         if self.tesorboard_run_directory:
-            return self.tesorboard_run_directory
+            return str(self.tesorboard_run_directory) if not None else None
         if self.tensorboard_log is not None:
             return super().get_next_tensorboard_experiment_name()
         return None
@@ -324,7 +324,7 @@ class A2CAgent(BaseTrainingAgent):
         self.get_logger().info(f"Using agent of type {self.agent_type}.")
         if normalizer_divisor == 0:
             self.get_logger().warning("Normalizer divisor is 0, will use 1.")
-            normalizer_divisor = 1.0
+            normalizer_divisor = 1
         self.n_steps = max(int(self.n_steps / normalizer_divisor), 1)
         return A2C(env=environment, **self.get_additional_kwargs())
 
@@ -398,7 +398,7 @@ class PPOAgent(BaseTrainingAgent):
         self.get_logger().info(f"Using agent of type {self.agent_type}.")
         if normalizer_divisor == 0:
             self.get_logger().warning("Normalizer divisor is 0, will use 1.")
-            normalizer_divisor = 1.0
+            normalizer_divisor = 1
         self.n_steps = max(int(self.n_steps / normalizer_divisor), 1)
         return PPO(env=environment, **self.get_additional_kwargs())
 

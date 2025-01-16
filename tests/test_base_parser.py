@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Union
+import pathlib
 
 import pytest
 
@@ -130,6 +131,8 @@ def test_base_parser_validation(
     )
 
     for file_path in file_paths:
+        print(file_path)
+        file_path = pathlib.Path(file_path)
         assert file_path.exists()
         clean_up_provider(
             file_path.parent

@@ -24,9 +24,11 @@ Note:
     fix for this problem is currently worked on.
 """
 
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, List, Union
 
 import gymnasium
+
+from releso.util.types import StepReturnType
 
 
 class GymEnvironment(gymnasium.Env):
@@ -54,9 +56,7 @@ class GymEnvironment(gymnasium.Env):
         self.action_space = action_space
         self.observation_space = observation_space
 
-    def step(
-        self, action: Union[int, List[float]]
-    ) -> Tuple[Any, float, bool, Dict[str, Any]]:
+    def step(self, action: Union[int, List[float]]) -> StepReturnType:
         """Dummy function definition for gym interface."""
 
     def reset(self) -> Any:

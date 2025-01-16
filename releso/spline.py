@@ -300,7 +300,7 @@ class BSplineDefinition(SplineDefinition):
         """
         self.get_logger().debug("Creating BSpline.")
         self.get_logger().debug(
-            f"With control_points: {self.get_control_points()}"
+            f"With control_points: {self.get_parameter_values()}"
         )
 
         return BSpline(
@@ -309,7 +309,7 @@ class BSplineDefinition(SplineDefinition):
                 space_dim.get_knot_vector()
                 for space_dim in self.space_dimensions
             ],
-            self.get_control_points(),
+            self.get_parameter_values(),
         )
 
 
@@ -430,7 +430,7 @@ class NURBSDefinition(SplineDefinition):
                 space_dim.get_knot_vector()
                 for space_dim in self.space_dimensions
             ],
-            self.get_control_points(),
+            self.get_parameter_values()[:-1],
             self.get_weights(),
         )
 
@@ -447,6 +447,20 @@ class NURBSDefinition(SplineDefinition):
         )
         # raise RuntimeError(f"Actions: {actions}")
         return actions
+
+
+    def get_parameter_values(self) -> List[List[float]]:
+        """Returns the current positions of all control points with weights as
+        well.
+
+        Returns:
+            List[List[float]]: Positions of all control points.
+        """
+        control_points = super().get_parameter_values()
+        control_points.append(
+            [weight.current_position for weight in self.weights]
+        )
+        return control_points
 
     def reset(self) -> None:
         """Resets the spline to the original shape."""

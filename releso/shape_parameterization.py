@@ -240,7 +240,7 @@ class ShapeDefinition(BaseModel):
     """Base of shape parameterization, also represents a simple point cloud."""
 
     #: control_points of the shape. These are the base variables used for the
-    #: optimization. Overwrite `get_actions` and `get_control_points` if
+    #: optimization. Overwrite `get_actions` and `get_parameter_values` if
     #: additional optimization variables are needed. See (WIP) NURBSDefinition.
     control_points: List[List[VariableLocation]]
 
@@ -248,7 +248,8 @@ class ShapeDefinition(BaseModel):
         """Returns the number of points in the Cube.
 
         Number of control points multiplied by the number of dimensions for
-        each cp.
+        each cp. Assumes that all dimensions have the same number of control
+        points.
 
         Returns:
             int: number of points in the geometry
@@ -297,7 +298,7 @@ class ShapeDefinition(BaseModel):
                     ) from None
         return new_list
 
-    def get_control_points(self) -> List[List[float]]:
+    def get_parameter_values(self) -> List[List[float]]:
         """Returns the current positions of all control points.
 
         Returns:
@@ -336,7 +337,7 @@ class ShapeDefinition(BaseModel):
         Returns:
             Any: Shape that is generated.
         """
-        return self.get_control_points()
+        return self.get_parameter_values()
 
     def reset(self) -> None:
         """Resets the shape to the original values."""

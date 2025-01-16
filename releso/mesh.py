@@ -119,7 +119,7 @@ class MeshExporter(BaseModel):
             RuntimeError: _description_
         """
         if self.mesh_format == "mixd":
-            mixd.export(mesh, self._export_path_changed, space_time=space_time)
+            mixd.export(self._export_path_changed, mesh, space_time=space_time)
         else:
             raise RuntimeError(
                 f"The requested format {self.mesh_format} is not supported."

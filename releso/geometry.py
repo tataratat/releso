@@ -68,13 +68,13 @@ class Geometry(BaseModel):
         """
         self._actions = self.shape_definition.get_actions()
 
-    def get_control_points(self) -> List[List[float]]:
+    def get_parameter_values(self) -> List[List[float]]:
         """Return all control_points of the spline.
 
         Returns:
             List[List[float]]: Nested list of control_points.
         """
-        return self.shape_definition.get_control_points()
+        return self.shape_definition.get_parameter_values()
 
     def apply_action(self, action: Union[List[float], int]) -> Optional[Any]:
         """Function that applies a given action to the Spline.
@@ -117,7 +117,7 @@ class Geometry(BaseModel):
         Returns:
             List[List[float]]: Current control points of the shape.
         """
-        return self.get_control_points()
+        return self.get_parameter_values()
 
     def is_geometry_changed(self) -> bool:
         """Checks if the geometry was changed with the previous action apply.

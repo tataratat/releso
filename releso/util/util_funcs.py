@@ -62,7 +62,7 @@ def which(
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
-    fpath, fname = os.path.split(program)
+    fpath, _ = os.path.split(program)
     if fpath:
         if is_exe(program):
             return program
@@ -136,17 +136,20 @@ def get_path_extension() -> str:
         # check if slurm task array is running
         if (
             os.getenv("SLURM_ARRAY_TASK_COUNT")
-            and int(os.getenv("SLURM_ARRAY_TASK_COUNT")) > 1
+            and (
+                (tmp_var := os.getenv("SLURM_ARRAY_TASK_COUNT")) is not None
+                and int(tmp_var) > 1
+            )
             and os.getenv("SLURM_ARRAY_JOB_ID")
             and os.getenv("SLURM_ARRAY_TASK_ID")
         ):
             ret_str = (
-                os.getenv("SLURM_ARRAY_JOB_ID")
+                str(os.getenv("SLURM_ARRAY_JOB_ID"))
                 + "/"
-                + os.getenv("SLURM_ARRAY_TASK_ID")
+                + str(os.getenv("SLURM_ARRAY_TASK_ID"))
                 + "_"
                 + ret_str
             )
         elif os.getenv("SLURM_JOB_ID"):  # default slurm job running
-            ret_str += "_" + os.getenv("SLURM_JOB_ID")
+            ret_str += "_" + str(os.getenv("SLURM_JOB_ID"))
     return ret_str

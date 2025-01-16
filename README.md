@@ -1,6 +1,6 @@
 # Reinforcement Learning based Shape Optimization (ReLeSO)
 
-[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/tataratat/releso/pypi_upload)](https://github.com/tataratat/releso)
+[![pypi_upload](https://github.com/tataratat/releso/actions/workflows/build_and_upload_wheels.yml/badge.svg)](https://github.com/tataratat/releso)
 [![Read the docs](https://readthedocs.org/projects/releso/badge/?version=latest)](https://releso.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - Version](https://img.shields.io/pypi/v/releso)](https://pypi.org/project/releso/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/releso)](https://pypi.org/project/releso/)
@@ -10,7 +10,7 @@ Releso is a Library/Framework for
 Reinforcement Learning based Shape Optimization. Please look into the
 Documentation for information on how it works. The instruction on how the
 documentation can be built is given below as well as the instruction on how the
-package can be installed.  
+package can be installed.
 Alternatively, it can be installed from `pip` via `pip install releso`.
 
 

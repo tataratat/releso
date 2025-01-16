@@ -25,7 +25,7 @@
                 // "control_points": [[0.0,0.0],[0.5,0.0],[1.0,0.0],[0.0,0.2],[0.5,0.2],[1.0,0.2],[0.0,0.4],[0.5,0.4],[1.0,0.4]]
             },
             "mesh": {
-                "path": "examples/2DChannelTria.msh",
+                "path": "2DChannelTria.msh",
                 "dimensions": 2
             },
             "discrete_actions": true,
@@ -39,7 +39,7 @@
                     "run_on_reset": true,
                     "use_communication_interface": true,
                     "working_directory": "./",
-                    "python_file_path": "examples/poiseuille_flow_channel_shear_thinning.py",
+                    "python_file_path": "poiseuille_flow_channel_shear_thinning.py",
                     "add_step_information": true,
                     "additional_observations": 3
                 }
