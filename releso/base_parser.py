@@ -16,7 +16,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
 
 from releso.agent import AgentTypeDefinition
 from releso.base_model import BaseModel
-from releso.callback import EpisodeLogCallback
+from releso.callback import EpisodeLogCallback, StepInformationLogCallback
 from releso.exceptions import ValidationNotSet
 from releso.parser_environment import Environment
 from releso.validation import Validation
@@ -59,6 +59,10 @@ class BaseParser(BaseModel):
     #: updated at the end of the training in any case. But making this number
     #: higher will lower the computational overhead. Defaults to 100.
     episode_log_update: conint(ge=1) = 100
+    #: Number of episodes after which the step log is updated. It will be
+    #: updated at the end of the training in any case. But making this number
+    #: higher will lower the computational overhead. Defaults to 100.
+    step_log_update: conint(ge=1) = 100
 
     # internal objects
     #: Holds the trainable agent for the RL use case. The
@@ -113,6 +117,11 @@ class BaseParser(BaseModel):
                 episode_log_location=self.save_location / "episode_log.csv",
                 verbose=1,
                 update_n_episodes=self.episode_log_update,
+            ),
+            StepInformationLogCallback(
+                step_log_location=self.save_location / "step_log.csv",
+                verbose=1,
+                update_every=self.step_log_update,
             ),
         ]
         if self.number_of_episodes is not None:

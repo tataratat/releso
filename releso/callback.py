@@ -145,3 +145,93 @@ class EpisodeLogCallback(BaseCallback):
     def _on_training_end(self) -> None:
         """Function is called when training is terminated."""
         self._export()
+
+
+
+class StepInformationLogCallback(BaseCallback):
+    """Step Callback class, even for vectorized environments.
+    
+    This class tracks all step-wise information that might come in handy 
+    during evaluation.
+    """
+
+    def __init__(
+        self,
+        step_log_location: Path,
+        verbose: int = 0,
+        update_every: Union[str|int] = "episode",
+    ):
+        super().__init__(verbose)
+
+        self.step_log_location: Path = step_log_location 
+        self.current_episode: int = 0
+        self.update_every: str = update_every
+        if isinstance(self.update_every, int):
+            self.update_frequency = self.update_every
+        else:
+            self.update_frequency = -1
+        self.first_export: bool = True
+
+        self._reset_internal_storage()
+
+    def _reset_internal_storage(self) -> None:
+        self.episodes = []  # Store episode numbers
+        self.timesteps = []  # Store step numbers
+        self.actions = []  # Store actions
+        self.observations = []  # Store observations
+        self.rewards = []  # Optionally store rewards
+
+    def _export(self) -> None:
+        """Export the step-wise information to a csv file."""
+        # Combine all relevant information into a pandas DataFrame
+        export_data_frame = pd.DataFrame(
+            {
+                "episodes": self.episodes,
+                "actions": self.actions,
+                "observations": self.observations,
+                "rewards": self.rewards,
+            }
+        )
+        export_data_frame.index = self.timesteps
+        export_data_frame.index.name = "timesteps"
+        # Write the data to file
+        export_data_frame.to_csv(
+            self.step_log_location, 
+            mode="a" if not self.first_export else "w",
+            header=True if self.first_export else False
+        )
+        self.first_export = False
+        # reset the internal storage
+        self._reset_internal_storage()
+
+    def _on_step(self) -> bool:
+        # Store the step-wise information
+        actions = self.locals["actions"]  # Agent's actions
+        observations = self.locals["new_obs"]  # Resulting observations
+        rewards = self.locals["rewards"]  # Rewards (optional)
+
+        # Store actions, observations, and rewards
+        self.episodes.append(self.current_episode)
+        self.timesteps.append(self.num_timesteps)
+        self.actions.append(actions)
+        self.observations.append(observations)
+        self.rewards.append(rewards)
+
+        dones = self.locals["dones"]
+
+        # Check if the environment has completed an episode
+        if any(dones):
+            if self.update_every == "episode":
+                # if so, export the information
+                self._export()
+            # Increase the episode counter
+            self.current_episode += 1
+        
+        if any(
+            timestep % self.update_frequency == 0 for timestep in self.timesteps
+            ):
+            # If no episode has been completed yet, only export with the given 
+            # frequency
+            self._export()
+
+        return True
