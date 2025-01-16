@@ -103,7 +103,7 @@ ignore = ["N818", "TRY003"]
 convention = "google"
 
 [tool.pytest.ini_options]
-addopts = "--ignore=tests/samples -W ignore::DeprecationWarning"
+addopts = "--ignore=tests/samples --ignore=examples -W ignore::DeprecationWarning"
 markers = [
     "torch_test",
 ]

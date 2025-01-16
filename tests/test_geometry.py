@@ -71,14 +71,14 @@ def test_geometry_init(
 
     # control points
     assert (
-        geometry.get_control_points()
-        == geometry.shape_definition.get_control_points()
+        geometry.get_parameter_values()
+        == geometry.shape_definition.get_parameter_values()
     )
 
     assert geometry.is_geometry_changed() is False
-    assert geometry.apply() == geometry.get_control_points()
+    assert geometry.apply() == geometry.get_parameter_values()
 
-    original_cps = geometry.get_control_points()
+    original_cps = geometry.get_parameter_values()
 
     # actions
     assert len(geometry._actions) == len(
@@ -113,7 +113,7 @@ def test_geometry_init(
             assert geometry.get_observation() is None
 
     # reset
-    current_cps = geometry.get_control_points()
+    current_cps = geometry.get_parameter_values()
     assert current_cps != original_cps
     if geometry.reset_with_random_action_values:
         reset_cps = geometry.reset()
@@ -223,16 +223,15 @@ def test_ffd_geometry_init(
         assert "Found empty dimension" in caplog.text
     # control points
     assert (
-        geometry.get_control_points()
-        == geometry.shape_definition.get_control_points()
+        geometry.get_parameter_values()
+        == geometry.shape_definition.get_parameter_values()
     )
 
     assert geometry.is_geometry_changed() is False
     geometry.apply()
 
-    # assert geometry.apply() == geometry.get_control_points()
 
-    _ = geometry.get_control_points()
+    _ = geometry.get_parameter_values()
 
     # actions
     assert len(geometry._actions) == len(

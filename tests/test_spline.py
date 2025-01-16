@@ -312,7 +312,7 @@ def test_bspline_definition_initiate(
     ):
         assert np.allclose(b_kv, spline_dim.knot_vector)
 
-    assert np.allclose(bspline.control_points, spline_def.get_control_points())
+    assert np.allclose(bspline.control_points, spline_def.get_parameter_values())
 
 
 @pytest.mark.parametrize(
@@ -451,7 +451,7 @@ def test_nurbs_definition_initiate(
     ):
         assert np.allclose(b_kv, spline_dim.knot_vector)
 
-    assert np.allclose(nurbs.control_points, spline_def.get_control_points())
+    assert np.allclose(nurbs.control_points, spline_def.get_parameter_values())
     actions = nurbs_def.get_actions()
     assert len(actions) == (6 if convert else 3)
     original_actions = copy.deepcopy(actions)

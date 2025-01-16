@@ -474,7 +474,7 @@ def test_shape_definition_initiation(
 
     assert shape.get_number_of_points() == n_elements
 
-    cps = shape.get_control_points()
+    cps = shape.get_parameter_values()
     all_the_same = True
     for original_cp_list, cp_list in zip(control_points, cps):
         for point_o, point in zip(original_cp_list, cp_list):
@@ -495,7 +495,7 @@ def test_shape_definition_initiation(
             break
     assert all_the_same
 
-    assert shape.get_shape() == shape.get_control_points()
+    assert shape.get_shape() == shape.get_parameter_values()
 
 
 @pytest.mark.parametrize(
@@ -578,15 +578,15 @@ def test_shape_definition_get_actions(
     actions = shape.get_actions()
     assert len(actions) == n_actions
 
-    original_cps = shape.get_control_points()
+    original_cps = shape.get_parameter_values()
 
     for action in actions:
         action.apply_continuous_action(0.2)
 
-    for o_cp, cp in zip(original_cps, shape.get_control_points()):
+    for o_cp, cp in zip(original_cps, shape.get_parameter_values()):
         assert o_cp != cp
 
     shape.reset()
 
-    for o_cp, cp in zip(original_cps, shape.get_control_points()):
+    for o_cp, cp in zip(original_cps, shape.get_parameter_values()):
         assert o_cp == cp
