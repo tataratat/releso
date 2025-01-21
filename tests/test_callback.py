@@ -35,7 +35,7 @@ def test_callback_step_information_log_callback(
     assert call_back.current_episode == 0
     assert call_back.update_every == "episode"
     assert call_back.update_frequency == -1
-    assert call_back.first_export == True
+    assert call_back.first_export
     env = provide_dummy_environment
     agent = PPO("MlpPolicy", env, verbose=0, n_steps=100)
     agent.learn(100, callback=call_back)
