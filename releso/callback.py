@@ -147,20 +147,28 @@ class EpisodeLogCallback(BaseCallback):
         self._export()
 
 
-
 class StepInformationLogCallback(BaseCallback):
-    """Step Callback class, even for vectorized environments.
+    """Step Callback class.
     
     This class tracks all step-wise information that might come in handy 
-    during evaluation.
+    during evaluation. Originally created to easily track the actions 
+    undertaken in each episode for better evaluation of the learned policy.
     """
 
     def __init__(
         self,
         step_log_location: Path,
         verbose: int = 0,
-        update_every: Union[str|int] = "episode",
+        update_every: Union[str,int] = "episode",
     ):
+        """Constructor for the Callback using SB3 interface.
+
+        Args:
+            step_log_location (Path): Path to the step log file.
+            verbose (int, optional): Verbosity of the callback. Defaults to 0.
+            update_every (Union[str|int], optional): Update the step log file
+            every n steps. Default is after every episode.
+        """
         super().__init__(verbose)
 
         self.step_log_location: Path = step_log_location 
@@ -175,6 +183,9 @@ class StepInformationLogCallback(BaseCallback):
         self._reset_internal_storage()
 
     def _reset_internal_storage(self) -> None:
+        """ Reset the internally used lists which store the step-wise 
+        information since last updating the logfile.
+        """
         self.episodes = []  # Store episode numbers
         self.timesteps = []  # Store step numbers
         self.actions = []  # Store actions
@@ -182,7 +193,7 @@ class StepInformationLogCallback(BaseCallback):
         self.rewards = []  # Optionally store rewards
 
     def _export(self) -> None:
-        """Export the step-wise information to a csv file."""
+        """Convert the step-wise information to a dataframe and export to csv."""
         # Combine all relevant information into a pandas DataFrame
         export_data_frame = pd.DataFrame(
             {
@@ -200,12 +211,18 @@ class StepInformationLogCallback(BaseCallback):
             mode="a" if not self.first_export else "w",
             header=True if self.first_export else False
         )
+        # data frame has been exported already at least once, so reset the flag
         self.first_export = False
         # reset the internal storage
         self._reset_internal_storage()
 
     def _on_step(self) -> bool:
-        # Store the step-wise information
+        """Function that is called after a step was performed.
+
+        Returns:
+            bool: If the callback returns False, training is aborted early.
+        """
+        # Retrieve the step-wise information that we want to keep track of
         actions = self.locals["actions"]  # Agent's actions
         observations = self.locals["new_obs"]  # Resulting observations
         rewards = self.locals["rewards"]  # Rewards (optional)
@@ -221,17 +238,19 @@ class StepInformationLogCallback(BaseCallback):
 
         # Check if the environment has completed an episode
         if any(dones):
+            # If the update is supposed to be performed after an episode has 
+            # been completed and the flag is set ...
             if self.update_every == "episode":
-                # if so, export the information
+                # ... export the information
                 self._export()
-            # Increase the episode counter
+            # Always increase the episode counter
             self.current_episode += 1
         
+        # If no episode has been completed yet, only export with the given 
+        # frequency
         if any(
             timestep % self.update_frequency == 0 for timestep in self.timesteps
             ):
-            # If no episode has been completed yet, only export with the given 
-            # frequency
             self._export()
 
         return True
