@@ -107,5 +107,5 @@ running the command below in the main repository folder.
 **Development**
 
 ``` console
-(releso) $ pip install -e "dev."
+(releso) $ pip install -e ".[dev]"
 ```
