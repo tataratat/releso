@@ -59,11 +59,11 @@ class BaseParser(BaseModel):
     #: updated at the end of the training in any case. But making this number
     #: higher will lower the computational overhead. Defaults to 100.
     episode_log_update: conint(ge=1) = 100
-    #: Number of episodes after which the step log is updated. It will be
+    #: Number of steps after which the step_log is updated. It will be
     #: updated at the end of the training in any case. But making this number
-    #: higher will lower the computational overhead. Defaults to output after
-    #: every episode.
-    step_log_update: Union[str,conint(ge=1)] = 'episode'
+    #: higher will lower the computational overhead. Defaults to -1 which
+    #: triggers the output after every episode.
+    step_log_update: conint(ge=-1) = -1
 
     # internal objects
     #: Holds the trainable agent for the RL use case. The
@@ -122,7 +122,7 @@ class BaseParser(BaseModel):
             StepInformationLogCallback(
                 step_log_location=self.save_location / "step_log.csv",
                 verbose=1,
-                update_every=self.step_log_update,
+                update_n_steps=self.step_log_update,
             ),
         ]
         if self.number_of_episodes is not None:

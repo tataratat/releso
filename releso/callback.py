@@ -159,21 +159,21 @@ class StepInformationLogCallback(BaseCallback):
         self,
         step_log_location: Path,
         verbose: int = 0,
-        update_every: Union[str,int] = "episode",
+        update_n_steps: int = -1,
     ):
         """Constructor for the Callback using SB3 interface.
 
         Args:
             step_log_location (Path): Path to the step log file.
             verbose (int, optional): Verbosity of the callback. Defaults to 0.
-            update_every (Union[str|int], optional): Update the step log file
-            every n steps. Default is after every episode.
+            update_every (int, optional): Update the step log file every n 
+            steps. Defaults to -1 which triggers the update after every episode.
         """
         super().__init__(verbose)
 
         self.step_log_location: Path = step_log_location 
         self.current_episode: int = 0
-        self.update_frequency: int = update_every if isinstance(update_every, int) else -1
+        self.update_n_episodes: int = update_n_steps
         self.first_export: bool = True
 
         self._reset_internal_storage()
@@ -235,8 +235,8 @@ class StepInformationLogCallback(BaseCallback):
         # Check if the environment has completed an episode
         if any(dones):
             # If the update is supposed to be performed after an episode has 
-            # been completed and the flag is set ...
-            if self.update_frequency == -1:
+            # been completed ...
+            if self.update_n_episodes == -1:
                 # ... export the information
                 self._export()
             # Always increase the episode counter
@@ -245,7 +245,7 @@ class StepInformationLogCallback(BaseCallback):
         # If no episode has been completed yet, only export with the given 
         # frequency
         if any(
-            timestep % self.update_frequency == 0 for timestep in self.timesteps
+            timestep % self.update_n_episodes == 0 for timestep in self.timesteps
             ):
             self._export()
 
