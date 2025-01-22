@@ -173,11 +173,7 @@ class StepInformationLogCallback(BaseCallback):
 
         self.step_log_location: Path = step_log_location 
         self.current_episode: int = 0
-        self.update_every: str = update_every
-        if isinstance(self.update_every, int):
-            self.update_frequency = self.update_every
-        else:
-            self.update_frequency = -1
+        self.update_frequency: int = update_every if isinstance(update_every, int) else -1
         self.first_export: bool = True
 
         self._reset_internal_storage()
@@ -240,7 +236,7 @@ class StepInformationLogCallback(BaseCallback):
         if any(dones):
             # If the update is supposed to be performed after an episode has 
             # been completed and the flag is set ...
-            if self.update_every == "episode":
+            if self.update_frequency == -1:
                 # ... export the information
                 self._export()
             # Always increase the episode counter
