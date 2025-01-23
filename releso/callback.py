@@ -244,7 +244,7 @@ class StepInformationLogCallback(BaseCallback):
         
         # If no episode has been completed yet, only export with the given 
         # frequency
-        if any(
+        if self.update_n_episodes != 0 and any(
             timestep % self.update_n_episodes == 0 for timestep in self.timesteps
             ):
             self._export()
