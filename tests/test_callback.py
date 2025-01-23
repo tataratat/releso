@@ -1,7 +1,7 @@
 import pandas as pd
 from stable_baselines3 import PPO
 
-from releso.callback import EpisodeLogCallback, StepInformationLogCallback
+from releso.callback import EpisodeLogCallback, StepLogCallback
 
 
 def test_callback_episode_log_callback(
@@ -28,7 +28,7 @@ def test_callback_step_information_log_callback(
 ):
     # this test is not very good, but it is a start
     # TODO: improve this test
-    call_back = StepInformationLogCallback(
+    call_back = StepLogCallback(
         step_log_location=dir_save_location / "test.csv"
     )
     assert call_back.step_log_location == dir_save_location / "test.csv"

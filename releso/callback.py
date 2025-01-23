@@ -147,7 +147,7 @@ class EpisodeLogCallback(BaseCallback):
         self._export()
 
 
-class StepInformationLogCallback(BaseCallback):
+class StepLogCallback(BaseCallback):
     """Step Callback class.
     
     This class tracks all step-wise information that might come in handy 
