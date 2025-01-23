@@ -188,10 +188,10 @@ def test_mixd_mesh_class(
     # setup mixd
     if not load_sample_file.with_suffix(".mien").exists():
         from gustaf.io import load
-        from gustaf.io.mixd import export
+        from gustaf.io.mixd import export as export_io
 
-        mesh = load(load_sample_file)
-        export(load_sample_file.with_suffix(".xns"), mesh)
+        mesh = load(load_sample_file)[-1]
+        export_io(load_sample_file.with_suffix(".xns"), mesh)
         shutil.copy(
             load_sample_file.with_suffix(".mxyz"),
             load_sample_file.parent / "mxyz",
