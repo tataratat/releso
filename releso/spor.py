@@ -218,6 +218,8 @@ class SPORObject(BaseModel):
                 # We might want to deprecate the hidden option to instantiate
                 #  additional observations via an int. Building up a default
                 #  observation definition.
+                # TODO: change name to something more meaningful for example
+                # using the function name values["name"]
                 v = {
                     "name": f"unnamed_{str(uuid4())}",
                     "value_min": -1,

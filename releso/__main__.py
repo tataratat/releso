@@ -15,7 +15,7 @@ import hjson
 import stable_baselines3
 import torch
 
-from releso.__version__ import version
+from releso.__version__ import __version__
 from releso.base_parser import BaseParser
 
 try:
@@ -59,7 +59,7 @@ def main(args) -> None:
 
     shutil.copy(file_path, optimization_object.save_location / file_path.name)
     versions = [
-        f"releso version: {version}; ",
+        f"releso version: {__version__}; ",
         f"stable-baselines3 version: {stable_baselines3.__version__}; ",
         f"torch version: {torch.__version__}; ",
         f"gymnasium version: {gymnasium.__version__} ",
@@ -101,7 +101,7 @@ def entry():
         "Toolbox. This python program loads a problem "
         "definition and trains the resulting problem. Further the "
         "model can be evaluated"
-        f"The package version is: {version}."
+        f"The package version is: {__version__}."
     )
     parser.add_argument(
         "-i",
@@ -133,7 +133,7 @@ def entry():
     )
     args = parser.parse_args()
     if args.version:
-        print(f"releso: {version}")
+        print(f"releso: {__version__}")
         return
     if args.input_file is None:
         print(

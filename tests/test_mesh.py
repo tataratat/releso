@@ -191,7 +191,7 @@ def test_mixd_mesh_class(
         from gustaf.io.mixd import export
 
         mesh = load(load_sample_file)
-        export(mesh, load_sample_file.with_suffix(".xns"))
+        export(load_sample_file.with_suffix(".xns"), mesh)
         shutil.copy(
             load_sample_file.with_suffix(".mxyz"),
             load_sample_file.parent / "mxyz",

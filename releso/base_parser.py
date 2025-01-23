@@ -59,7 +59,7 @@ class BaseParser(BaseModel):
     #: updated at the end of the training in any case. But making this number
     #: higher will lower the computational overhead. Defaults to 100.
     episode_log_update: conint(ge=1) = 100
-    #: Flag indicating whether the step information (like actions, 
+    #: Flag indicating whether the step information (like actions,
     #: observations, ...) should be logged to file. Defaults to False.
     export_step_log: bool = False
     #: Number of steps after which the step_log is updated. It will be
