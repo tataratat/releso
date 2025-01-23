@@ -159,7 +159,7 @@ class StepInformationLogCallback(BaseCallback):
         self,
         step_log_location: Path,
         verbose: int = 0,
-        update_n_steps: int = -1,
+        update_n_steps: int = 0,
     ):
         """Constructor for the Callback using SB3 interface.
 
@@ -167,7 +167,7 @@ class StepInformationLogCallback(BaseCallback):
             step_log_location (Path): Path to the step log file.
             verbose (int, optional): Verbosity of the callback. Defaults to 0.
             update_every (int, optional): Update the step log file every n 
-            steps. Defaults to -1 which triggers the update after every episode.
+            steps. Defaults to 0 which triggers the update after every episode.
         """
         super().__init__(verbose)
 
@@ -236,7 +236,7 @@ class StepInformationLogCallback(BaseCallback):
         if any(dones):
             # If the update is supposed to be performed after an episode has 
             # been completed ...
-            if self.update_n_episodes == -1:
+            if self.update_n_episodes == 0:
                 # ... export the information
                 self._export()
             # Always increase the episode counter

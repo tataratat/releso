@@ -61,9 +61,9 @@ class BaseParser(BaseModel):
     episode_log_update: conint(ge=1) = 100
     #: Number of steps after which the step_log is updated. It will be
     #: updated at the end of the training in any case. But making this number
-    #: higher will lower the computational overhead. Defaults to -1 which
+    #: higher will lower the computational overhead. Defaults to 0 which
     #: triggers the output after every episode.
-    step_log_update: conint(ge=-1) = -1
+    step_log_update: conint(ge=0) = 0
 
     # internal objects
     #: Holds the trainable agent for the RL use case. The
