@@ -1,6 +1,8 @@
 import pandas as pd
 from stable_baselines3 import PPO
 
+import pytest
+
 from releso.callback import EpisodeLogCallback, StepLogCallback
 
 
@@ -23,17 +25,26 @@ def test_callback_episode_log_callback(
     clean_up_provider(dir_save_location)
 
 
+@pytest.mark.parametrize(
+    ["update_n_steps",],
+    [
+        (0,),
+        (20,),
+    ],
+)
 def test_callback_step_information_log_callback(
-    dir_save_location, clean_up_provider, provide_dummy_environment
+    dir_save_location, clean_up_provider, provide_dummy_environment,
+    update_n_steps
 ):
     # this test is not very good, but it is a start
     # TODO: improve this test
     call_back = StepLogCallback(
-        step_log_location=dir_save_location / "test.csv"
+        step_log_location=dir_save_location / "test.csv",
+        update_n_steps=update_n_steps
     )
     assert call_back.step_log_location == dir_save_location / "test.csv"
     assert call_back.current_episode == 0
-    assert call_back.update_n_episodes == 0
+    assert call_back.update_n_episodes == update_n_steps
     assert call_back.first_export
     env = provide_dummy_environment
     agent = PPO("MlpPolicy", env, verbose=0, n_steps=100)

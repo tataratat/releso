@@ -153,6 +153,7 @@ def test_base_parser_validation(
         "n_environments",
         "normalize_training_values",
         "multi_env_sequential",
+        "export_step_log",
     ],
     [
         (
@@ -168,6 +169,7 @@ def test_base_parser_validation(
             5,
             None,
             False,
+            False,
         ),
         (
             None,
@@ -182,6 +184,7 @@ def test_base_parser_validation(
             5,
             True,
             None,
+            False,
         ),
         (
             None,
@@ -196,6 +199,7 @@ def test_base_parser_validation(
             5,
             None,
             True,
+            True,
         ),
         (
             None,
@@ -209,6 +213,7 @@ def test_base_parser_validation(
             None,
             5,
             True,
+            False,
             False,
         ),
         (
@@ -229,6 +234,7 @@ def test_base_parser_validation(
             None,
             None,
             None,
+            False,
         ),
     ],
     indirect=["basic_agent_definition"],
@@ -244,6 +250,7 @@ def test_base_parser_learn(
     n_environments,
     normalize_training_values,
     multi_env_sequential,
+    export_step_log,
     dir_save_location,
     basic_environment_definition,
     basic_verbosity_definition,
@@ -255,6 +262,7 @@ def test_base_parser_learn(
         "agent": basic_agent_definition,
         "environment": basic_environment_definition,
         "number_of_timesteps": number_of_timesteps,
+        "export_step_log": export_step_log,
     }
     if agent_additions is not None:
         calling_dict["agent"].update(agent_additions)
