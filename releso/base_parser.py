@@ -16,7 +16,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
 
 from releso.agent import AgentTypeDefinition
 from releso.base_model import BaseModel
-from releso.callback import EpisodeLogCallback
+from releso.callback import EpisodeLogCallback, StepLogCallback
 from releso.exceptions import ValidationNotSet
 from releso.parser_environment import Environment
 from releso.validation import Validation
@@ -59,6 +59,14 @@ class BaseParser(BaseModel):
     #: updated at the end of the training in any case. But making this number
     #: higher will lower the computational overhead. Defaults to 100.
     episode_log_update: conint(ge=1) = 100
+    #: Flag indicating whether the step information (like actions,
+    #: observations, ...) should be logged to file. Defaults to False.
+    export_step_log: bool = False
+    #: Number of steps after which the step_log is updated. It will be
+    #: updated at the end of the training in any case. But making this number
+    #: higher will lower the computational overhead. Defaults to 0 which
+    #: triggers the output after every episode.
+    step_log_update: conint(ge=0) = 0
 
     # internal objects
     #: Holds the trainable agent for the RL use case. The
@@ -115,6 +123,16 @@ class BaseParser(BaseModel):
                 update_n_episodes=self.episode_log_update,
             ),
         ]
+
+        if self.export_step_log:
+            callbacks.append(
+                StepLogCallback(
+                    step_log_location=self.save_location / "step_log.csv",
+                    verbose=1,
+                    update_n_steps=self.step_log_update,
+                ),
+            )
+
         if self.number_of_episodes is not None:
             num = self.number_of_episodes
             if self.normalize_training_values:

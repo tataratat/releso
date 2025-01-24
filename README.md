@@ -27,7 +27,7 @@ sphinx is installed ignore the first two lines.
 The following command line calls create a conda environment with all necessary
 dependencies for building the documentation.
 ``` console
-(base) $ conda create -n sphinx python=3.9
+(base) $ conda create -n sphinx python=3.11
 (base) $ conda activate sphinx
 (sphinx) $ pip install ".[docs]"
 ```
@@ -72,7 +72,7 @@ The packages can be installed via pip or conda with the following commands:
 **conda**
 
 ``` console
-(base) $ conda create -n releso python=3.9 "pydantic<2" tensorboard
+(base) $ conda create -n releso python=3.11 "pydantic<2" tensorboard
 (base) $ conda activate releso
 (releso) $ pip install stable-baselines3 hjson
 ```
@@ -107,5 +107,7 @@ running the command below in the main repository folder.
 **Development**
 
 ``` console
-(releso) $ pip install -e "dev."
+(releso) $ pip install -e ".[dev]"
+(releso) $ pip install pre-commit
+(releso) $ pre-commit install
 ```

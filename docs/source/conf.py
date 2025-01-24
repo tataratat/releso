@@ -15,7 +15,7 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 from pydantic import BaseModel
 from sphinx.ext.napoleon import _skip_member
 
-from releso.__version__ import version
+from releso.__version__ import __version__
 
 # sys.path.insert(0, str(releso_dir / "util"))
 # -- Project information -----------------------------------------------------
@@ -25,7 +25,7 @@ copyright = "2023, Clemens Fricke"  # noqa: A001
 author = "Clemens Fricke"
 
 # The full version, including alpha/beta/rc tags
-release = version
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------

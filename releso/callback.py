@@ -145,3 +145,108 @@ class EpisodeLogCallback(BaseCallback):
     def _on_training_end(self) -> None:
         """Function is called when training is terminated."""
         self._export()
+
+
+class StepLogCallback(BaseCallback):
+    """Step Callback class.
+
+    This class tracks all step-wise information that might come in handy
+    during evaluation. Originally created to easily track the actions
+    undertaken in each episode for better evaluation of the learned policy.
+    """
+
+    def __init__(
+        self,
+        step_log_location: Path,
+        verbose: int = 0,
+        update_n_steps: int = 0,
+    ):
+        """Constructor for the Callback using SB3 interface.
+
+        Args:
+            step_log_location (Path): Path to the step log file.
+            verbose (int, optional): Verbosity of the callback. Defaults to 0.
+            update_every (int, optional): Update the step log file every n
+            steps. Defaults to 0 which triggers the update after every episode.
+        """
+        super().__init__(verbose)
+        self.step_log_location: Path = step_log_location
+        self.step_log_location.parent.mkdir(parents=True, exist_ok=True)
+        self.current_episode: int = 0
+        self.update_n_episodes: int = update_n_steps
+        self.first_export: bool = True
+
+        self._reset_internal_storage()
+
+    def _reset_internal_storage(self) -> None:
+        """ Reset the internally used lists which store the step-wise
+        information since last updating the logfile.
+        """
+        self.episodes = []  # Store episode numbers
+        self.timesteps = []  # Store step numbers
+        self.actions = []  # Store actions
+        self.observations = []  # Store observations
+        self.rewards = []  # Optionally store rewards
+
+    def _export(self) -> None:
+        """Convert the step-wise information to a dataframe and export to csv."""
+        # Combine all relevant information into a pandas DataFrame
+        export_data_frame = pd.DataFrame(
+            {
+                "episodes": self.episodes,
+                "actions": self.actions,
+                "observations": self.observations,
+                "rewards": self.rewards,
+            }
+        )
+        export_data_frame.index = self.timesteps
+        export_data_frame.index.name = "timesteps"
+        # Write the data to file
+        export_data_frame.to_csv(
+            self.step_log_location,
+            mode="a" if not self.first_export else "w",
+            header=True if self.first_export else False
+        )
+        # data frame has been exported already at least once, so reset the flag
+        self.first_export = False
+        # reset the internal storage
+        self._reset_internal_storage()
+
+    def _on_step(self) -> bool:
+        """Function that is called after a step was performed.
+
+        Returns:
+            bool: If the callback returns False, training is aborted early.
+        """
+        # Retrieve the step-wise information that we want to keep track of
+        actions = self.locals["actions"]  # Agent's actions
+        observations = self.locals["new_obs"]  # Resulting observations
+        rewards = self.locals["rewards"]  # Rewards (optional)
+
+        # Store actions, observations, and rewards
+        self.episodes.append(self.current_episode)
+        self.timesteps.append(self.num_timesteps)
+        self.actions.append(actions)
+        self.observations.append(observations)
+        self.rewards.append(rewards)
+
+        dones = self.locals["dones"]
+
+        # Check if the environment has completed an episode
+        if any(dones):
+            # If the update is supposed to be performed after an episode has
+            # been completed ...
+            if self.update_n_episodes == 0:
+                # ... export the information
+                self._export()
+            # Always increase the episode counter
+            self.current_episode += 1
+
+        # If no episode has been completed yet, only export with the given
+        # frequency
+        if self.update_n_episodes != 0 and any(
+            timestep % self.update_n_episodes == 0 for timestep in self.timesteps
+            ):
+            self._export()
+
+        return True

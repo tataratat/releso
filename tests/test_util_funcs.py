@@ -21,7 +21,7 @@ from releso.verbosity import VerbosityLevel
         ({"test": np.ones(12)}, np.ones(12).tolist()),
         ({"test": np.int64(123)}, 123),
         ({"test": bytes("test", "utf-8")}, "test"),
-        ({"test": np.float128(13.1)}, False),
+        ({"test": np.longdouble(13.1)}, False),
     ],
 )
 def test_json_encode(dictionary, wanted_value, capsys):
