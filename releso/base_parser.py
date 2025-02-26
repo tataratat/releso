@@ -127,7 +127,7 @@ class BaseParser(BaseModel):
         if self.export_step_log:
             callbacks.append(
                 StepLogCallback(
-                    step_log_location=self.save_location / "step_log.csv",
+                    step_log_location=self.save_location / "step_log.jsonl",
                     verbose=1,
                     update_n_steps=self.step_log_update,
                 ),
