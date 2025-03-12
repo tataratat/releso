@@ -10,6 +10,7 @@ import datetime
 import pathlib
 import pprint
 import shutil
+from typing import Literal, Union
 
 import gymnasium
 import hjson
@@ -45,6 +46,24 @@ def check_positive(value) -> int:
     if value <= 0:
         raise argparse.ArgumentTypeError("Provided value is not positive.")
     return value
+
+
+def check_window_size(value) -> Union[tuple[int, int], Literal["auto"]]:
+    """Check window check for error.
+
+    Raises:
+        argparse.ArgumentTypeError: If value is not correct.
+
+    Returns:
+        Union[tuple[int, int], Literal["auto"]]: Validated value.
+    """
+    if str(value) == "auto":
+        return "auto"
+    elif value := int(value):
+        return value
+    raise argparse.ArgumentTypeError(
+        "Provided values are not 'auto' or two integer values."
+    )
 
 
 def main(args) -> pathlib.Path:
@@ -163,7 +182,11 @@ def entry():
             "Visualize training progress. List all folders you want to "
             "include. If run a training during this call as well the visualization"
             " will be exported after the training has finished and will also "
-            "include the new results automatically."
+            "include the new results automatically. The legend name of each "
+            "experiment is the folder name. If you need to display custom"
+            " names please use the call the function from your own script. "
+            "You can find the function in "
+            "'releso.util.visualization.plot_episode_log'. "
         ),
     )
     parser_visualize.add_argument(
@@ -194,6 +217,14 @@ def entry():
         help="Episode visualization uses windowing to smooth the graph. Set "
         "the window length. Defaults to 5.",
     )
+    parser_visualize.add_argument(
+        "-s",
+        "--figure-size",
+        type=check_window_size,
+        default="auto",
+        nargs="+",
+        help="Figure",
+    )
     args = parser.parse_args()
     if args.version:
         print(f"releso: {__version__}")
@@ -219,7 +250,12 @@ def entry():
         if run_folder is not None:
             folders_to_process.append(run_folder)
         folder_dict = {folder.stem: folder for folder in folders_to_process}
-        plot_episode_log(folder_dict, args.export_path, args.window)
+        plot_episode_log(
+            folder_dict,
+            args.export_path,
+            args.window,
+            window_size=args.figure_size,
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover
