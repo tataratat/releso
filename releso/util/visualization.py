@@ -82,7 +82,9 @@ def plot_episode_log(
     """
     end_episode = []
     df: list[pd.DataFrame] = []
+    # make a separate list for just the names of the experiments
     n_env: list[str] = list(result_folders.keys())
+    # set of all episode end reasons
     unique_values = set()
     for idx, folder in enumerate(result_folders.values()):
         try:
@@ -108,7 +110,10 @@ def plot_episode_log(
     fig = make_subplots(
         rows=6, cols=1, shared_xaxes=True, vertical_spacing=0.01
     )
+    # plot each experiment into each sub plot, the idx is used to determine the
+    # episode end and the episode name
     for idx, dataframe in enumerate(df):
+        # first subplot
         fig.add_trace(
             go.Scatter(
                 x=dataframe["total_timesteps"].iloc[: end_episode[idx]],
@@ -117,14 +122,15 @@ def plot_episode_log(
                 .rolling(window, window)
                 .mean(),
                 mode="lines",
-                legendgroup=f"{n_env[idx]}",
-                name=f"{n_env[idx]}",
+                legendgroup=f"{n_env[idx]}",  # Used so that each experiment can be disabled
+                name=f"{n_env[idx]}",  # name the legend item
                 line=dict(color=plotly_colors[idx]),
-                showlegend=True,
+                showlegend=True,  # show legend only for first subplot
             ),
             row=1,
             col=1,
         )
+        # second subplot
         fig.add_trace(
             go.Scatter(
                 x=dataframe["total_timesteps"].iloc[: end_episode[idx]],
@@ -141,6 +147,7 @@ def plot_episode_log(
             row=2,
             col=1,
         )
+        # third subplot
         fig.add_trace(
             go.Scatter(
                 x=dataframe["total_timesteps"].iloc[: end_episode[idx]],
@@ -157,10 +164,13 @@ def plot_episode_log(
             row=3,
             col=1,
         )
+        # fourth subplot - episode end reason iterate through all reasons
+        # legend for this plot is created at the end
         for marker, unique_key in zip(plotly_lines, unique_values):
             fig.add_trace(
                 go.Scatter(
                     x=dataframe["total_timesteps"].iloc[: end_episode[idx]],
+                    # window is 100 to calculate a crude percentage approximation
                     y=(dataframe["episode_end_reason"] == unique_key)
                     .iloc[: end_episode[idx]]
                     .rolling(100, 0)
@@ -177,6 +187,7 @@ def plot_episode_log(
                 row=4,
                 col=1,
             )
+        # fith subplot
         fig.add_trace(
             go.Scatter(
                 x=dataframe["total_timesteps"].iloc[: end_episode[idx]],
@@ -193,6 +204,7 @@ def plot_episode_log(
             row=5,
             col=1,
         )
+        # sixth subplot
         fig.add_trace(
             go.Scatter(
                 x=dataframe["total_timesteps"].iloc[: end_episode[idx]],
@@ -207,6 +219,7 @@ def plot_episode_log(
             col=1,
         )
 
+    # create end reason legend
     for marker, unique_key in zip(plotly_lines, unique_values):
         fig.add_trace(
             go.Scatter(
@@ -227,11 +240,13 @@ def plot_episode_log(
             col=1,
         )
 
+    # adapt figure size
     fig.update_traces(line=dict(width=0.6))
     if window_size[0] == "auto":
         fig.update_layout(autosize=True)
     else:
         fig.update_layout(height=window_size[0], width=window_size[1])
+    # update axis labels
     fig.update_xaxes(title_text="Total time steps", row=6, col=1)
     fig.update_yaxes(title_text="Episode reward", row=1, col=1)
     fig.update_yaxes(title_text="Steps<br>per episode", row=2, col=1)
@@ -240,7 +255,7 @@ def plot_episode_log(
     fig.update_yaxes(title_text="Seconds<br>per step [s]", row=5, col=1)
     fig.update_yaxes(title_text="Wall time", row=6, col=1)
 
-    # Export the plot as html
+    # Export the plot as the suffix or as "episode_log.html"
     suffix = export_path.suffix
     if suffix == ".html":
         fig.write_html(export_path)
@@ -251,7 +266,7 @@ def plot_episode_log(
     else:
         if not (export_path.parent / "episode_log.html").exists():
             print(
-                "File path suffix is not html nor is the file path a directory. "
+                "File path suffix is not known nor is the file path a directory. "
                 f"Saving to {export_path.parent / 'episode_log.html'}"
             )
             fig.write_html(export_path.parent / "episode_log.html")
