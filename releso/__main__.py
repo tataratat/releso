@@ -4,6 +4,7 @@
 File defines the main entry point of the framework if it is called via the
 command line. (via $python -m ReLeSO; or $releso)
 """
+
 import argparse
 import datetime
 import pathlib
@@ -17,6 +18,7 @@ import torch
 
 from releso.__version__ import __version__
 from releso.base_parser import BaseParser
+from releso.util.visualization import plot_episode_log
 
 try:
     import splinepy
@@ -24,7 +26,28 @@ except ImportError:
     splinepy = None
 
 
-def main(args) -> None:
+def check_positive(value) -> int:
+    """Checks if the provided value is positive.
+
+    Note:
+        Adapted from https://stackoverflow.com/a/14117511.
+
+    Args:
+        value (Any): Value to be cast to integer.
+
+    Raises:
+        argparse.ArgumentTypeError: Throws error if the value is not positive.
+
+    Returns:
+        int: checked value
+    """
+    value = int(value)
+    if value <= 0:
+        raise argparse.ArgumentTypeError("Provided value is not positive.")
+    return value
+
+
+def main(args) -> pathlib.Path:
     """Calling function of framework.
 
     Functions control how the framework works when called from the command
@@ -93,6 +116,8 @@ def main(args) -> None:
     ###########################
     optimization_object.learn()
 
+    return optimization_object.save_location
+
 
 def entry():
     """Entry point if this package is called directly from the command line."""
@@ -131,19 +156,70 @@ def entry():
         action="store_true",
         help="Returns the version of the package.",
     )
+    sub_parser = parser.add_subparsers()
+    parser_visualize = sub_parser.add_parser(
+        "visualize",
+        help=(
+            "Visualize training progress. List all folders you want to "
+            "include. If run a training during this call as well the visualization"
+            " will be exported after the training has finished and will also "
+            "include the new results automatically."
+        ),
+    )
+    parser_visualize.add_argument(
+        "-f",
+        "--folders",
+        type=pathlib.Path,
+        nargs="*",
+        help="Visualize given training episode logs."
+        "If training was performed the results will be exported after training"
+        " is finished and will also include the new results. You can also use"
+        " wildcard arguments '*' or '?' at least on some systems.",
+    )
+    parser_visualize.add_argument(
+        "-e",
+        "--export_path",
+        type=pathlib.Path,
+        default="./",
+        help="Path where the visualization should be saved to. If folder it "
+        "will be saved to 'path/episode_log.html'. If it is a path with a "
+        "suffix it will be exported in the suffix if it is possible. Available"
+        " suffixes are [png, jpg, webp, svg, pdf, html]. Defaults to './'.",
+    )
+    parser_visualize.add_argument(
+        "-w",
+        "--window",
+        type=check_positive,
+        default=5,
+        help="Episode visualization uses windowing to smooth the graph. Set "
+        "the window length. Defaults to 5.",
+    )
     args = parser.parse_args()
     if args.version:
         print(f"releso: {__version__}")
         return
+
+    run_folder = None
     if args.input_file is None:
-        print(
-            "The command option for the input_file is required.\n",
-            "An input file can be added via the -i option.\n",
-            "Please use the -h option to see the help.",
-        )
-        return
-    print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-    main(args)
+        if not hasattr(args, "folders"):
+            print(
+                "The command option for the input_file is required.\n",
+                "An input file can be added via the -i option.\n",
+                "Please use the -h option to see the help.",
+            )
+            return
+    else:
+        print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        run_folder = main(args)
+
+    if hasattr(args, "folders"):
+        folders_to_process: list = [
+            folder.resolve() for folder in args.folders
+        ]
+        if run_folder is not None:
+            folders_to_process.append(run_folder)
+        folder_dict = {folder.stem: folder for folder in folders_to_process}
+        plot_episode_log(folder_dict, args.export_path, args.window)
 
 
 if __name__ == "__main__":  # pragma: no cover
