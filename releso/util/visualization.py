@@ -259,7 +259,7 @@ def plot_episode_log(
     suffix = export_path.suffix
     if suffix == ".html":
         fig.write_html(export_path)
-    elif suffix in ["png", "jpg", "jpeg", "webp", "svg", "pdf"]:
+    elif suffix in [".png", ".jpg", ".jpeg", ".webp", ".svg", ".pdf"]:
         fig.write_image(export_path)
     elif export_path.is_dir():
         fig.write_html(export_path / "episode_log.html")
