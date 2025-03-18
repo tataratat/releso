@@ -43,6 +43,9 @@ all = [
 test = [
     "pytest",
     "pytest-cov",
+    "requests",
+    "splinepy[all]>=0.1.2",
+    "torchvision",
 ]
 docs = [
     "sphinx",
