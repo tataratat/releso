@@ -182,11 +182,14 @@ class StepLogCallback(BaseCallback):
         """ Reset the internally used lists which store the step-wise
         information since last updating the logfile.
         """
-        self.episodes = []  # Store episode numbers
         self.timesteps = []  # Store step numbers
+        self.episodes = []  # Store episode numbers
+        self.dones = []  # Store if the episode has ended
+        self.prev_obs = []  # Store observations at the start of time step
         self.actions = []  # Store actions
-        self.observations = []  # Store observations
+        self.new_obs = []  # Store observations after completion of time step
         self.rewards = []  # Optionally store rewards
+        self.infos = []  # Optionally store additional information
 
     def _export(self) -> None:
         """Convert the step-wise information to a dataframe and export to csv."""
@@ -194,18 +197,20 @@ class StepLogCallback(BaseCallback):
         export_data_frame = pd.DataFrame(
             {
                 "episodes": self.episodes,
+                "dones": self.dones,
+                "prev_obs": self.prev_obs,
                 "actions": self.actions,
-                "observations": self.observations,
+                "new_obs": self.new_obs,
                 "rewards": self.rewards,
+                "infos": self.infos,
             }
         )
         export_data_frame.index = self.timesteps
         export_data_frame.index.name = "timesteps"
         # Write the data to file
-        export_data_frame.to_csv(
-            self.step_log_location,
-            mode="a" if not self.first_export else "w",
-            header=True if self.first_export else False
+        export_data_frame.to_json(
+            self.step_log_location, orient="records", lines=True,
+            mode="a" if not self.first_export else "w"
         )
         # data frame has been exported already at least once, so reset the flag
         self.first_export = False
@@ -219,21 +224,31 @@ class StepLogCallback(BaseCallback):
             bool: If the callback returns False, training is aborted early.
         """
         # Retrieve the step-wise information that we want to keep track of
+        dones = self.locals["dones"]  # Flad indicating if the episode has ended
+        prev_obs = self.model._last_obs  # Old observations
         actions = self.locals["actions"]  # Agent's actions
-        observations = self.locals["new_obs"]  # Resulting observations
+        new_obs = self.locals["new_obs"]  # New observations
         rewards = self.locals["rewards"]  # Rewards (optional)
+        infos = self.locals["infos"]  # Additional information
 
-        # Store actions, observations, and rewards
-        self.episodes.append(self.current_episode)
+        # Store additional information
         self.timesteps.append(self.num_timesteps)
+        self.episodes.append(self.current_episode)
+        self.dones.append(dones)
+        self.prev_obs.append(prev_obs)
         self.actions.append(actions)
-        self.observations.append(observations)
+        self.new_obs.append(new_obs)
         self.rewards.append(rewards)
-
-        dones = self.locals["dones"]
+        self.infos.append(infos)
 
         # Check if the environment has completed an episode
         if any(dones):
+            # If the environment has completed an episode, locals["new_obs"]
+            # will already contain the observation AFTER a reset has been
+            # performed and not the original terminal observation with which the
+            # episode ended, so overwrite the entries with the true terminal
+            # observation
+            self.new_obs[-1] = [info["terminal_observation"] for info in self.locals["infos"]]
             # If the update is supposed to be performed after an episode has
             # been completed ...
             if self.update_n_episodes == 0:
