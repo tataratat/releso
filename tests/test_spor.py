@@ -347,7 +347,7 @@ def test_spor_object_executor(
             False,
         ),
         ("non_existing/folder", "as/", False, False, True),
-        ("existing/folder", "existing/folder/", False, True, False),
+        ("existing/folder/", "existing/folder/", True, True, False),
         (
             "{}/test/{}",
             "test_save_location_please_delete/test/idididid/",
