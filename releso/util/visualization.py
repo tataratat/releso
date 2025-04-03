@@ -242,7 +242,7 @@ def plot_episode_log(
 
     # adapt figure size
     fig.update_traces(line=dict(width=0.6))
-    if window_size[0] == "auto":
+    if not isinstance(window_size, list) and window_size == "auto":
         fig.update_layout(autosize=True)
     else:
         fig.update_layout(height=window_size[0], width=window_size[1])
