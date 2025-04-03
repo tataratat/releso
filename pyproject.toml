@@ -49,6 +49,10 @@ docs = [
     "sphinx-rtd-theme",
     "sphinx-jsonschema",
 ]
+visualize = [
+    "plotly",
+    "kaleido",
+]
 dev = [
     "splinepy[all]>=0.1.2",
     "torchvision",
@@ -57,6 +61,8 @@ dev = [
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-jsonschema",
+    "plotly",
+    "kaleido",
 ]
 
 [project.scripts]
