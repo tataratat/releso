@@ -71,3 +71,10 @@ During the configuration if the validation the number of different episodes each
 To help the user in the development of these external task/steps the framework has helper functions in the :doc:`_autosummary/releso.util.reward_helpers` module. These are able to setup the working space of the task with "persistent" memory and the parsing of the communication interface command line options can also be handled via these functions.
 
 Also look at the examples and tests to see how you can use internalized python functions to speed up execution.
+
+Custom Python based SPOR object
+-------------------------------
+
+The framework is able to use custom python based SPOR objects. In most examples ReLeSO is currently used in this is the main way to integrate the external solver and reward calculation.
+
+Use the definition for the :doc:`_autosummary/releso.spor.SPORObjectExternalPythonFunction` to use this functionality. A small example is given :doc:`mini_example`.
