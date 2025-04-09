@@ -1,7 +1,7 @@
 name: DEV Publish Python 🐍 distribution 📦 to test-PyPI
 
 on:
-  pull_request:
+  push:
     branches: ["develop"]
 
 jobs:
