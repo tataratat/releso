@@ -91,7 +91,7 @@ def plot_episode_log(
             temp_df = pd.read_csv(folder / "episode_log.csv", index_col=0)
         except EmptyDataError as err:
             print(
-                f"Error occured with data in folder {folder}. The error is {err}"
+                f"Error occurred with data in folder {folder}. The error is {err}"
             )
             continue
         end_episode.append(
@@ -208,7 +208,10 @@ def plot_episode_log(
         fig.add_trace(
             go.Scatter(
                 x=dataframe["total_timesteps"].iloc[: end_episode[idx]],
-                y=dataframe["run_time"].iloc[: end_episode[idx]],
+                y=dataframe["run_time"]
+                .iloc[: end_episode[idx]]
+                .dt.total_seconds()
+                / 3600.0,
                 mode="lines",
                 legendgroup=f"{n_env[idx]}",
                 name=f"{n_env[idx]}",
@@ -253,7 +256,7 @@ def plot_episode_log(
     fig.update_yaxes(title_text="Mean step<br>reward", row=3, col=1)
     fig.update_yaxes(title_text="Episode<br>end reason", row=4, col=1)
     fig.update_yaxes(title_text="Seconds<br>per step [s]", row=5, col=1)
-    fig.update_yaxes(title_text="Wall time", row=6, col=1)
+    fig.update_yaxes(title_text="Wall time [h]", row=6, col=1)
 
     # Export the plot as the suffix or as "episode_log.html"
     suffix = export_path.suffix
