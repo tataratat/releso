@@ -38,7 +38,7 @@ jobs:
     - build
     runs-on: ubuntu-latest
     environment:
-      name: pypi
+      name: pypitest
       url: https://test.pypi.org/p/releso
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
