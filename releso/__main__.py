@@ -250,11 +250,15 @@ def entry():
         if run_folder is not None:
             folders_to_process.append(run_folder)
         folder_dict = {folder.stem: folder for folder in folders_to_process}
+
+        figure_size = args.figure_size
+        if len(figure_size) == 1:
+            figure_size = figure_size[0]
         plot_episode_log(
             folder_dict,
             args.export_path,
             args.window,
-            window_size=args.figure_size,
+            window_size=figure_size,
         )
 
 
