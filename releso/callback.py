@@ -209,8 +209,10 @@ class StepLogCallback(BaseCallback):
         export_data_frame.index.name = "timesteps"
         # Write the data to file
         export_data_frame.to_json(
-            self.step_log_location, orient="records", lines=True,
-            mode="a" if not self.first_export else "w"
+            self.step_log_location,
+            orient="records",
+            lines=True,
+            mode="a" if not self.first_export else "w",
         )
         # data frame has been exported already at least once, so reset the flag
         self.first_export = False
