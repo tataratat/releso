@@ -19,7 +19,7 @@ import torch
 
 from releso.__version__ import __version__
 from releso.base_parser import BaseParser
-from releso.util.visualization import plot_episode_log
+from releso.util.visualization import plot_episode_log, plot_step_log
 
 try:
     import splinepy
@@ -142,32 +142,10 @@ def entry():
     """Entry point if this package is called directly from the command line."""
     parser = argparse.ArgumentParser(
         description="Reinforcement Learning based Shape Optimization (releso) "
-        "Toolbox. This python program loads a problem "
-        "definition and trains the resulting problem. Further the "
-        "model can be evaluated"
+        "Toolbox. This python program loads a problem definition and trains "
+        "an RL agent to solve the resulting problem. Furthermore a trained "
+        "agent can be evaluated or data gathered during a training visualized. "
         f"The package version is: {__version__}."
-    )
-    parser.add_argument(
-        "-i",
-        "--input_file",
-        action="store",
-        help="Path to the json file storing the optimization definition.",
-    )
-    parser.add_argument(
-        "-v",
-        "--validate_only",
-        action="store_true",
-        help="If this is set only validation on this configuration is run. "
-        "Please configure the validation object in the json file so that this "
-        "option can be correctly executed.",
-    )
-    parser.add_argument(
-        "-j",
-        "--json_only",
-        dest="json_validate",
-        action="store_true",
-        help="If this is set only the json validation is performed, nothing "
-        "else.",
     )
     parser.add_argument(
         "--version",
@@ -175,41 +153,101 @@ def entry():
         action="store_true",
         help="Returns the version of the package.",
     )
-    sub_parser = parser.add_subparsers()
+    sub_parser = parser.add_subparsers(
+        title="execution modes",
+        dest="execution_mode"
+    )
+    parser_run = sub_parser.add_parser(
+        "run",
+        help=(
+            "Start a releso run with a given json file. Choose this option if "
+            "you want to train a model or validate a given input file."
+        ),
+    )
+    parser_run.add_argument(
+        "-i",
+        "--input_file",
+        action="store",
+        required=True,
+        help="Path to the json file storing the optimization definition.",
+    )
+    parser_run.add_argument(
+        "-v",
+        "--validate_only",
+        action="store_true",
+        help="If this is set only validation on this configuration is run. "
+        "Please configure the validation object in the json file so that this "
+        "option can be correctly executed.",
+    )
+    parser_run.add_argument(
+        "-j",
+        "--json_only",
+        dest="json_validate",
+        action="store_true",
+        help="If this is set only the json validation is performed, nothing "
+        "else.",
+    )
     parser_visualize = sub_parser.add_parser(
         "visualize",
         help=(
-            "Visualize training progress. List all folders you want to "
-            "include. If run a training during this call as well the visualization"
-            " will be exported after the training has finished and will also "
-            "include the new results automatically. The legend name of each "
-            "experiment is the folder name. If you need to display custom"
-            " names please use the call the function from your own script. "
-            "You can find the function in "
-            "'releso.util.visualization.plot_episode_log'. "
+            "Visualize training data. Choose between visualizing the data "
+            "contained in the episode log (global training information) and "
+            "the data contained in the step log (more in-depth training "
+            "specific information)."
         ),
     )
-    parser_visualize.add_argument(
-        "-f",
-        "--folders",
-        type=pathlib.Path,
-        nargs="*",
-        help="Visualize given training episode logs."
-        "If training was performed the results will be exported after training"
-        " is finished and will also include the new results. You can also use"
-        " wildcard arguments '*' or '?' at least on some systems.",
-    )
-    parser_visualize.add_argument(
+    visualize_shared_args = argparse.ArgumentParser(add_help=False)
+    visualize_shared_args.add_argument(
         "-e",
         "--export_path",
         type=pathlib.Path,
         default="./",
-        help="Path where the visualization should be saved to. If folder it "
-        "will be saved to 'path/episode_log.html'. If it is a path with a "
-        "suffix it will be exported in the suffix if it is possible. Available"
-        " suffixes are [png, jpg, webp, svg, pdf, html]. Defaults to './'.",
+        help=(
+            "Path where the visualization should be saved to. If a directory "
+            "is provided the created figure will be saved in that directory "
+            "as html file under a default filename which depends on the type "
+            "of visualization that has been chosen. If the path contains a "
+            "filename with a suffix, it will be exported as the file type "
+            "indicated by the suffix if that is possible. Available suffixes "
+            "are [png, jpg, webp, svg, pdf, html]. Defaults to './'."
+        ),
     )
-    parser_visualize.add_argument(
+    visualize_shared_args.add_argument(
+        "-s",
+        "--figure-size",
+        type=check_window_size,
+        default="auto",
+        nargs="+",
+        help="Size of the figure.",
+    )
+    sub_parser_visualize = parser_visualize.add_subparsers(
+        title="visualization modes",
+        dest="visualization_mode",
+        required=True
+    )
+    parser_visualize_episodelog = sub_parser_visualize.add_parser(
+        "episode_log",
+        parents=[visualize_shared_args],
+        help=(
+            "Visualize training progress. List all folders you want to "
+            "include. If run a training during this call as well the visualization "
+            "will be exported after the training has finished and will also "
+            "include the new results automatically. The legend name of each "
+            "experiment is the folder name. If you need to display custom "
+            "names please use the call the function from your own script. "
+            "You can find the function in 'releso.util.visualization.plot_episode_log'. "
+        ),
+    )
+    parser_visualize_episodelog.add_argument(
+        "-f",
+        "--folders",
+        type=pathlib.Path,
+        nargs="*",
+        required=True,
+        help="Visualize given training episode logs. You can also use "
+        "wildcard arguments '*' or '?' at least on some systems.",
+    )
+    parser_visualize_episodelog.add_argument(
         "-w",
         "--window",
         type=check_positive,
@@ -217,13 +255,49 @@ def entry():
         help="Episode visualization uses windowing to smooth the graph. Set "
         "the window length. Defaults to 5.",
     )
-    parser_visualize.add_argument(
-        "-s",
-        "--figure-size",
-        type=check_window_size,
-        default="auto",
-        nargs="+",
-        help="Figure",
+    # subparser_visualize_steplog = parser_visualize.add_subparsers()
+    parser_visualize_steplog = sub_parser_visualize.add_parser(
+        "step_log",
+        parents=[visualize_shared_args],
+        help=(
+            "Visualize the strategy of the agent employed in each episode. "
+            "If you want to customize the visualization please use the call "
+            "the corresponding function from your own script. "
+            "You can find the function in 'releso.util.visualization.plot_step_log'. "
+        ),
+    )
+    parser_visualize_steplog.add_argument(
+        "-l",
+        "--logfile",
+        type=pathlib.Path,
+        required=True,
+        help="Visualize a given training step log to analyze the strategy " \
+        "learned by an agent in a specific run."
+    )
+    parser_visualize_steplog.add_argument(
+        "-i",
+        "--episode_id",
+        type=check_positive,
+        default=0,
+        help="ID of the environment whose data is supposed to be visualized "
+        "(only relevant for multi-environment trainings). Defaults to 0."
+    )
+    parser_visualize_steplog.add_argument(
+        "-f",
+        "--from_episode",
+        type=check_positive,
+        default=0,
+        help="Starting episode of the interactive visualization. "
+        "Defaults to 0.",
+    )
+    parser_visualize_steplog.add_argument(
+        "-u",
+        "--until_episode",
+        type=check_positive,
+        default=None,
+        help="Final episode of the interactive visualization. "
+        "Defaults to None, which means that all episodes after the chosen " \
+        "starting one will be visualized.",
     )
     args = parser.parse_args()
     if args.version:
@@ -231,35 +305,41 @@ def entry():
         return
 
     run_folder = None
-    if args.input_file is None:
-        if not hasattr(args, "folders"):
-            print(
-                "The command option for the input_file is required.\n",
-                "An input file can be added via the -i option.\n",
-                "Please use the -h option to see the help.",
-            )
-            return
-    else:
+
+    # We want to run releso
+    if args.execution_mode == "run":
         print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         run_folder = main(args)
-
-    if hasattr(args, "folders"):
-        folders_to_process: list = [
-            folder.resolve() for folder in args.folders
-        ]
-        if run_folder is not None:
-            folders_to_process.append(run_folder)
-        folder_dict = {folder.stem: folder for folder in folders_to_process}
-
+    # We want to use releso for visualization
+    else: # args.execution_mode == "visualize"
+        # Determine the figure size
         figure_size = args.figure_size
         if len(figure_size) == 1:
             figure_size = figure_size[0]
-        plot_episode_log(
-            folder_dict,
-            args.export_path,
-            args.window,
-            window_size=figure_size,
-        )
+        # Visualize contents of episode_log.csv
+        if args.visualization_mode == "episode_log":
+            folders_to_process: list = [
+                folder.resolve() for folder in args.folders
+            ]
+            if run_folder is not None:
+                folders_to_process.append(run_folder)
+            folder_dict = {folder.stem: folder for folder in folders_to_process}
+
+            plot_episode_log(
+                folder_dict,
+                args.export_path,
+                args.window,
+                window_size=figure_size,
+            )
+        # Visualize contents of step_log.jsonl
+        else: # args.visualization_mode == "step_log"
+            plot_step_log(
+                args.logfile.resolve(),
+                args.export_path,
+                args.episode_id,
+                episode_start=args.from_episode,
+                episode_end=args.until_episode,
+            )
 
 
 if __name__ == "__main__":  # pragma: no cover
