@@ -149,6 +149,8 @@ def plot_episode_log(
                 name=f"{n_env[idx]}",  # name the legend item
                 line=dict(color=plotly_colors[idx]),
                 showlegend=True,  # show legend only for first subplot
+                customdata=dataframe.index,
+                hovertemplate="(%{x:d},%{y:.2f}) Episode: %{customdata:d}",
             ),
             row=1,
             col=1,
@@ -285,22 +287,21 @@ def plot_episode_log(
 
 
 def plot_step_log(
-        step_log_file,
-        export_path,
-        env_id,
-        episode_start=0,
-        episode_end=None,
-        figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
-    ):
-    """
-    """
+    step_log_file,
+    export_path,
+    env_id,
+    episode_start=0,
+    episode_end=None,
+    figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
+):
+    """ """
     # Load the steplog data from the provided path
     try:
         df_raw = pd.read_json(step_log_file, lines=True)
     except RuntimeError as err:
         print(
-                f"Error occurred when trying to read {step_log_file}. The error is {err}"
-            )
+            f"Error occurred when trying to read {step_log_file}. The error is {err}"
+        )
         return
 
     # Process the data for the visualization
@@ -316,7 +317,7 @@ def plot_step_log(
     # Convert obs vector into columns
     obs_array = np.vstack(df_raw["obs"].values)
     obs_df = pd.DataFrame(
-        obs_array, columns=[f"obs_{i-1}" for i in range(obs_array.shape[1])]
+        obs_array, columns=[f"obs_{i - 1}" for i in range(obs_array.shape[1])]
     )
 
     # Combine everything
@@ -328,7 +329,9 @@ def plot_step_log(
     # Filter only the selected episodes
     if episode_end is None:
         episode_end = df["episodes"].max()
-    df = df[(df["episodes"] >= episode_start) & (df["episodes"] <= episode_end)]
+    df = df[
+        (df["episodes"] >= episode_start) & (df["episodes"] <= episode_end)
+    ]
 
     # Create the interactive visualization
 
@@ -343,9 +346,12 @@ def plot_step_log(
         rows=2,
         cols=1,
         shared_xaxes=True,
-        specs=[[{"secondary_y": True}], [{}]],  # Enable secondary y-axis for row 1
+        specs=[
+            [{"secondary_y": True}],
+            [{}],
+        ],  # Enable secondary y-axis for row 1
         subplot_titles=("Reward and Objective", "Design variables"),
-        vertical_spacing=0.1
+        vertical_spacing=0.1,
     )
 
     # Build one trace group per episode
@@ -356,61 +362,65 @@ def plot_step_log(
         # First subplot: reward and objective
         fig.add_trace(
             go.Scatter(
-                x=steps_per_episode, y=ep_data["objective"],
-                name=f"Objective (Ep. {ep})", visible=(ep == episode_start),
-                line=dict(color="green")
+                x=steps_per_episode,
+                y=ep_data["objective"],
+                name=f"Objective (Ep. {ep})",
+                visible=(ep == episode_start),
+                line=dict(color="green"),
             ),
-            row=1, col=1
+            row=1,
+            col=1,
         )
         fig.add_trace(
             go.Scatter(
-                x=steps_per_episode, y=ep_data["reward"],
-                name=f"Reward (Ep. {ep})", visible=(ep == episode_start),
-                line=dict(color="blue")
+                x=steps_per_episode,
+                y=ep_data["reward"],
+                name=f"Reward (Ep. {ep})",
+                visible=(ep == episode_start),
+                line=dict(color="blue"),
             ),
-            row=1, col=1, secondary_y=True
+            row=1,
+            col=1,
+            secondary_y=True,
         )
 
         # Second subplot: selected observation dimensions
         for j, dim in enumerate(obs_dims_to_plot):
             fig.add_trace(
                 go.Scatter(
-                    x=steps_per_episode, y=ep_data[dim],
-                    name=f"{dim} (Ep. {ep})", visible=(ep == episode_start)
+                    x=steps_per_episode,
+                    y=ep_data[dim],
+                    name=f"{dim} (Ep. {ep})",
+                    visible=(ep == episode_start),
                 ),  # one trace per dimension
-                row=2, col=1
+                row=2,
+                col=1,
             )
 
     # once all traces are added, set up slider steps
     sliders = []
     for id, ep in enumerate(episodes):
         # Create slider step
-        sliders.append(
-            {
-                "label": f"Episode {ep}",
-                "method": "update",
-                "args": [
-                    {"visible": [False] * len(fig.data)},
-                    {"title": f"Steplog Evaluation — Episode {ep}"}
-                ]
-            }
-        )
+        sliders.append({
+            "label": f"Episode {ep}",
+            "method": "update",
+            "args": [
+                {"visible": [False] * len(fig.data)},
+                {"title": f"Steplog Evaluation — Episode {ep}"},
+            ],
+        })
         # Make the traces for this episode visible
         n_traces_per_episode = 2 + len(obs_dims_to_plot)
         for k in range(n_traces_per_episode):
-            sliders[id]["args"][0]["visible"][id * n_traces_per_episode + k] = True
+            sliders[id]["args"][0]["visible"][
+                id * n_traces_per_episode + k
+            ] = True
 
     # Set up slider control
     fig.update_layout(
-        sliders=[
-            {
-                "active": 0,
-                "pad": {"t": 50},
-                "steps": sliders
-            }
-        ],
+        sliders=[{"active": 0, "pad": {"t": 50}, "steps": sliders}],
         title="Steplog Evaluation",
-        showlegend=True
+        showlegend=True,
     )
 
     # rescale the figure
