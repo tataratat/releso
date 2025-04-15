@@ -8,6 +8,7 @@ from pandas.errors import EmptyDataError
 from releso.util.module_import_raiser import ModuleImportRaiser
 
 try:
+    import plotly
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 except ModuleNotFoundError:
@@ -30,7 +31,24 @@ plotly_colors = [
 plotly_lines = ["solid", "dash", "dot", "dashdot"]
 
 
-def export_figure(fig, export_path, default_filename):
+def export_figure(
+        fig: plotly.graph_objs.Figure,
+        export_path: pathlib.Path,
+        default_filename: str
+    ) -> None:
+    """Exports a given figure to a specified path.
+    The function checks the file extension of the export path and saves the
+    figure accordingly. If the path is a directory, it saves the figure with
+    the specified default filename in that directory. If the path contains a
+    file, it saves the figure with the specified extension if supported or
+    prints an error message if the extension is not recognized.
+
+    Args:
+        fig (plotly.graph_objs.Figure): The figure to be exported.
+        export_path (pathlib.Path): The path where the figure should be saved.
+        default_filename (str): The default filename to fall back to if the
+          path is a directory or if the file extension is not recognized.
+    """
     # Export the plot as the suffix or as "episode_log.html"
     suffix = export_path.suffix
     if suffix == ".html":
@@ -55,11 +73,10 @@ def export_figure(fig, export_path, default_filename):
 
 def plot_episode_log(
     result_folders: dict[str, pathlib.Path],
-    export_path: pathlib.Path,
     window: int = 5,
     window_size: Union[tuple[int, int], Literal["auto"]] = "auto",
     cut_off_point: int = np.iinfo(int).max,
-):
+) -> plotly.graph_objs.Figure:
     """Plot one or multiple episodes to check out the training progress.
 
     This function can already be called once the first results are in the
@@ -92,9 +109,6 @@ def plot_episode_log(
     Args:
         result_folders (dict[str, pathlib.Path]): Dict of name and path to each
           experiment to visualize.
-        export_path (pathlib.Path): Path to export the visualization to. If
-          file name the suffix will be used to determine the file format. If a
-          folder is given a file 'episode_log.html' will be created.
         window (int, optional): Windowing is used to smooth the plots.
           Defaults to 5.
         window_size (Union[tuple[int, int], Literal['auto']], optional): Size
@@ -102,6 +116,10 @@ def plot_episode_log(
          or container size. Defaults to "auto".
         cut_off_point (int, optional): Plot the episode only to a certain
          number of time steps. Defaults to max int.
+
+    Returns:
+        fig (plotly.graph_objects.Figure): Plotly figure object with the
+         requested plots for further customization or export.
     """
     end_episode = []
     df: list[pd.DataFrame] = []
@@ -283,19 +301,60 @@ def plot_episode_log(
     fig.update_yaxes(title_text="Seconds<br>per step [s]", row=5, col=1)
     fig.update_yaxes(title_text="Wall time [h]", row=6, col=1)
 
-    export_figure(fig, export_path, "episode_log.html")
+    return fig
 
 
 def plot_step_log(
-        step_log_file,
-        export_path,
-        env_id,
-        episode_start=0,
-        episode_end=None,
-        step=1,
+        step_log_file: pathlib.Path,
+        env_id: int,
+        episode_start: int = 0,
+        episode_end: int = None,
+        episode_step: int = 1,
         figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
-    ):
-    """
+    ) -> plotly.graph_objects.Figure:
+    """Plot the step log data of a single run for multiple episodes.
+
+    This function is used to visualize the step log data of a single run
+    with the intention of understanding the training progression and the
+    policy that is learned by the agent.
+    It creates an interactive plot with two subplots:
+
+    1. The first subplot shows the reward and objective value over the number
+    of timesteps within the current episode.
+    2. The second subplot shows the values of the design variables (observations)
+    over the number of timesteps within the current episode.
+    The plot is interactive, allowing users to select different episodes via a
+    slider to view the corresponding data.
+
+    Since plotly does not recompute data when the user interacts with the
+    plot, the data for all episodes is precomputed and stored in the figure.
+    This can result in large file sizes, especially when the optimization
+    contained a lot of design parameters and when the chosen episode range is
+    large. Please be aware of this when using the function.
+
+    Author: Daniel Wolff (d.wolff@unibw.de)
+
+    Args:
+        step_log_file (pathlib.Path): Path to the step log file.
+        env_id (int): ID of the environment whose results should be visualized.
+          This parameter is only relevant in the case of multi-environment
+          training. If the training did not use multiple environments, this
+          parameter should be set to 0.
+        episode_start (int, optional): First episode that should be included in
+          the visualization. Defaults to 0.
+        episode_end (int, optional): Last episode that should be included in
+          the visualization. If None, the maximum episode number is used.
+          Defaults to None.
+        episode_step (int, optional): Step size for selecting episodes.
+          Defaults to 1, which means that every episode between the starting
+          and final episide are visualized.
+        figure_size (Union[tuple[int, int], Literal['auto']], optional):
+          Size of the figure. If 'auto', the size will be adjusted to fit the
+          container. Defaults to 'auto'.
+
+    Returns:
+        plotly.graph_objects.Figure: A Plotly figure object containing the
+          interactive plot for further customization or export.
     """
     # Load the steplog data from the provided path
     try:
@@ -331,7 +390,7 @@ def plot_step_log(
     # Filter only the selected episodes
     if episode_end is None:
         episode_end = df["episodes"].max()
-    selected_episodes = df["episodes"].unique()[episode_start:(episode_end+1):step]
+    selected_episodes = df["episodes"].unique()[episode_start:(episode_end+1):episode_step]
     df = df[df["episodes"].isin(selected_episodes)]
 
     # Create the interactive visualization
@@ -435,5 +494,4 @@ def plot_step_log(
     fig.update_yaxes(title_text="Reward", row=1, col=1, secondary_y=True)
     fig.update_yaxes(title_text="Observation Value", row=2, col=1)
 
-    # Export the plot as the suffix or as "steplog_plot.html"
-    export_figure(fig, export_path, "steplog_plot.html")
+    return fig
