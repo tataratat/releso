@@ -20,7 +20,8 @@ import torch
 
 from releso.__version__ import __version__
 from releso.base_parser import BaseParser
-from releso.util.visualization import plot_episode_log, plot_step_log
+from releso.util.visualization import export_figure, plot_episode_log, \
+    plot_step_log
 
 try:
     import splinepy
@@ -367,24 +368,25 @@ def entry():
                 folders_to_process.append(run_folder)
             folder_dict = {folder.stem: folder for folder in folders_to_process}
 
-            plot_episode_log(
+            fig = plot_episode_log(
                 folder_dict,
-                args.export_path,
                 args.window,
                 window_size=figure_size,
                 cut_off_point=args.cut_off_point,
             )
+            export_figure(fig, args.export_path, "episode_log.html")
         # Visualize contents of step_log.jsonl
         else: # args.visualization_mode == "step_log"
-            plot_step_log(
+            fig = plot_step_log(
                 args.logfile.resolve(),
-                args.export_path,
                 args.episode_id,
                 episode_start=args.from_episode,
                 episode_end=args.until_episode,
-                step=args.xsteps,
+                episode_step=args.n_episodes,
                 figure_size=figure_size,
             )
+            # Export the plot as the suffix or as "steplog_plot.html"
+            export_figure(fig, args.export_path, "steplog_plot.html")
 
 
 if __name__ == "__main__":  # pragma: no cover
