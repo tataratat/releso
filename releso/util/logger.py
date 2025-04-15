@@ -3,6 +3,7 @@
 This file holds the verbosity definitions and helper functions for the logger
 used in this package.
 """
+
 import enum
 import logging
 import pathlib
@@ -35,7 +36,7 @@ def set_up_logger(
     logger_name: str = "",
     log_file_location: pathlib.Path = pathlib.Path("."),
     verbosity: VerbosityLevel = VerbosityLevel.INFO,
-    console_logging: bool = True,
+    console_logging: bool = False,
     logger: Optional[logging.Logger] = None,
 ) -> logging.Logger:
     """Create a logger instance with a specified name.
