@@ -68,7 +68,7 @@ def test_set_up_logger(
             n_handlers += 1
     else:
         n_handlers += 1
-    if console_logging is None or console_logging:
+    if console_logging:
         n_handlers += 1
     assert len(ret_logger.handlers) == n_handlers
     if log_file_location is not None:
