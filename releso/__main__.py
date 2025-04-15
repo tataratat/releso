@@ -142,11 +142,13 @@ def main(args) -> pathlib.Path:
 def entry():
     """Entry point if this package is called directly from the command line."""
     parser = argparse.ArgumentParser(
-        description="Reinforcement Learning based Shape Optimization (releso) "
-        "Toolbox. This python program loads a problem definition and trains "
-        "an RL agent to solve the resulting problem. Furthermore a trained "
-        "agent can be evaluated or data gathered during a training visualized. "
-        f"The package version is: {__version__}."
+        description=(
+            "Reinforcement Learning based Shape Optimization (releso) Toolbox. "
+            "This python program loads a problem definition and trains an RL "
+            "agent to solve the resulting problem. Furthermore a trained "
+            "agent can be evaluated or data gathered during a training "
+            f"visualized. The package version is: {__version__}."
+        )
     )
     parser.add_argument(
         "--version",
@@ -167,26 +169,30 @@ def entry():
     )
     parser_run.add_argument(
         "-i",
-        "--input_file",
+        "--input-file",
         action="store",
         required=True,
         help="Path to the json file storing the optimization definition.",
     )
     parser_run.add_argument(
         "-v",
-        "--validate_only",
+        "--validate-only",
         action="store_true",
-        help="If this is set only validation on this configuration is run. "
-        "Please configure the validation object in the json file so that this "
-        "option can be correctly executed.",
+        help=(
+            "If this is set only validation on this configuration is run. "
+            "Please configure the validation object in the json file so that "
+            "this option can be correctly executed.",
+        )
     )
     parser_run.add_argument(
         "-j",
-        "--json_only",
+        "--json-only",
         dest="json_validate",
         action="store_true",
-        help="If this is set only the json validation is performed, nothing "
-        "else.",
+        help=(
+            "If this is set only the json validation is performed, nothing "
+            "else."
+        ),
     )
     parser_visualize = sub_parser.add_parser(
         "visualize",
@@ -200,7 +206,7 @@ def entry():
     visualize_shared_args = argparse.ArgumentParser(add_help=False)
     visualize_shared_args.add_argument(
         "-e",
-        "--export_path",
+        "--export-path",
         type=pathlib.Path,
         default="./",
         help=(
@@ -227,7 +233,7 @@ def entry():
         required=True
     )
     parser_visualize_episodelog = sub_parser_visualize.add_parser(
-        "episode_log",
+        "episode-log",
         parents=[visualize_shared_args],
         help=(
             "Visualize training progress. List all folders you want to "
@@ -245,16 +251,21 @@ def entry():
         type=pathlib.Path,
         nargs="*",
         required=True,
-        help="Visualize given training episode logs. You can also use "
-        "wildcard arguments '*' or '?' at least on some systems.",
+        help=(
+            "Visualize given training episode logs. You can also use wildcard "
+            "arguments '*' or '?' at least on some systems."
+        )
+        ,
     )
     parser_visualize_episodelog.add_argument(
         "-w",
         "--window",
         type=check_positive,
         default=5,
-        help="Episode visualization uses windowing to smooth the graph. Set "
-        "the window length. Defaults to 5.",
+        help=(
+            "Episode visualization uses windowing to smooth the graph. Set "
+            "the window length. Defaults to 5."
+        ),
     )
     parser_visualize_episodelog.add_argument(
         "-c",
@@ -269,7 +280,7 @@ def entry():
         )
     )
     parser_visualize_steplog = sub_parser_visualize.add_parser(
-        "step_log",
+        "step-log",
         parents=[visualize_shared_args],
         help=(
             "Visualize the strategy of the agent employed in each episode. "
@@ -283,43 +294,52 @@ def entry():
         "--logfile",
         type=pathlib.Path,
         required=True,
-        help="Visualize a given training step log to analyze the strategy " \
-        "learned by an agent in a specific run."
+        help=(
+            "Visualize a given training step log to analyze the strategy "
+            "learned by an agent in a specific run."
+        )
     )
     parser_visualize_steplog.add_argument(
         "-i",
-        "--episode_id",
+        "--episode-id",
         type=check_positive,
         default=0,
-        help="ID of the environment whose data is supposed to be visualized "
-        "(only relevant for multi-environment trainings). Defaults to 0."
+        help=(
+            "ID of the environment whose data is supposed to be visualized "
+            "(only relevant for multi-environment trainings). Defaults to 0."
+        )
     )
     parser_visualize_steplog.add_argument(
         "-f",
-        "--from_episode",
+        "--from-episode",
         type=check_positive,
         default=0,
-        help="Starting episode of the interactive visualization. "
-        "Defaults to 0.",
+        help=(
+            "Starting episode of the interactive visualization. Defaults to 0."
+        ),
     )
     parser_visualize_steplog.add_argument(
         "-n",
-        "--nepisodes",
+        "--n-episodes",
         type=check_positive,
         default=1,
-        help="Select the number of episodes to be included in each visualization. "
-        "Defaults to 1 which means that every episode between from_episode and "
-        "until_episode will be visualized. Set to a larger value to include"
-        "less episodes in the visualization.",
+        help=(
+            "Select the number of episodes to be included in each visualization. "
+            "Defaults to 1 which means that every episode between from_episode "
+            "and until_episode will be visualized. Set to a larger value to "
+            "include less episodes in the visualization."
+        ),
     )
     parser_visualize_steplog.add_argument(
         "-u",
-        "--until_episode",
+        "--until-episode",
         type=check_positive,
         default=None,
-        help="Final episode of the interactive visualization. "
-        "Defaults to None, which means that all episodes after the chosen "
-        "starting one will be visualized.",
+        help=(
+            "Final episode of the interactive visualization. Defaults to None, "
+            "which means that all episodes after the chosen starting one will "
+            "be visualized."
+        ),
     )
     args = parser.parse_args()
     if args.version:
