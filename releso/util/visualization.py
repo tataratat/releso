@@ -287,6 +287,7 @@ def plot_episode_log(
 
 
 def plot_step_log(
+<<<<<<< HEAD
     step_log_file,
     export_path,
     env_id,
@@ -295,6 +296,18 @@ def plot_step_log(
     figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
 ):
     """ """
+=======
+        step_log_file,
+        export_path,
+        env_id,
+        episode_start=0,
+        episode_end=None,
+        step=1,
+        figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
+    ):
+    """
+    """
+>>>>>>> 7278870 (Add option to not plot all episodes in the selected range)
     # Load the steplog data from the provided path
     try:
         df_raw = pd.read_json(step_log_file, lines=True)
@@ -329,9 +342,14 @@ def plot_step_log(
     # Filter only the selected episodes
     if episode_end is None:
         episode_end = df["episodes"].max()
+<<<<<<< HEAD
     df = df[
         (df["episodes"] >= episode_start) & (df["episodes"] <= episode_end)
     ]
+=======
+    selected_episodes = df["episodes"].unique()[episode_start:(episode_end+1):step]
+    df = df[df["episodes"].isin(selected_episodes)]
+>>>>>>> 7278870 (Add option to not plot all episodes in the selected range)
 
     # Create the interactive visualization
 
