@@ -14,6 +14,7 @@ from typing import Literal, Union
 
 import gymnasium
 import hjson
+import numpy as np
 import stable_baselines3
 import torch
 
@@ -255,7 +256,18 @@ def entry():
         help="Episode visualization uses windowing to smooth the graph. Set "
         "the window length. Defaults to 5.",
     )
-    # subparser_visualize_steplog = parser_visualize.add_subparsers()
+    parser_visualize_episodelog.add_argument(
+        "-c",
+        "--cut-off-point",
+        type=check_positive,
+        default=np.iinfo(int).max,
+        help=(
+            "Cut off point for the visualization (in timesteps). If set, the "
+            "visualization will exclude all timesteps after the specified "
+            "cutoff point. Defaults to np.iinfo(int).max, which means that all "
+            "timesteps will be included."
+        )
+    )
     parser_visualize_steplog = sub_parser_visualize.add_parser(
         "step_log",
         parents=[visualize_shared_args],
@@ -340,6 +352,7 @@ def entry():
                 args.export_path,
                 args.window,
                 window_size=figure_size,
+                cut_off_point=args.cut_off_point,
             )
         # Visualize contents of step_log.jsonl
         else: # args.visualization_mode == "step_log"
