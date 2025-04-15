@@ -52,7 +52,8 @@ class BaseParser(BaseModel):
     n_environments: Optional[conint(ge=1)] = 1
     #: Should training parameters be normalized to the number of environments?
     #: If True the number of steps between learnings are divided by the number
-    #: of environments. This is increases the training speed for PPO and A2C
+    #: of environments. This increases the training speed for PPO and A2C
+
     #: but the training might be a little bit more unstable.
     #: Defaults to False.
     normalize_training_values: bool = False
