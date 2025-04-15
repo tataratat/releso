@@ -291,12 +291,22 @@ def entry():
         "Defaults to 0.",
     )
     parser_visualize_steplog.add_argument(
+        "-n",
+        "--nepisodes",
+        type=check_positive,
+        default=1,
+        help="Select the number of episodes to be included in each visualization. "
+        "Defaults to 1 which means that every episode between from_episode and "
+        "until_episode will be visualized. Set to a larger value to include"
+        "less episodes in the visualization.",
+    )
+    parser_visualize_steplog.add_argument(
         "-u",
         "--until_episode",
         type=check_positive,
         default=None,
         help="Final episode of the interactive visualization. "
-        "Defaults to None, which means that all episodes after the chosen " \
+        "Defaults to None, which means that all episodes after the chosen "
         "starting one will be visualized.",
     )
     args = parser.parse_args()
@@ -339,6 +349,8 @@ def entry():
                 args.episode_id,
                 episode_start=args.from_episode,
                 episode_end=args.until_episode,
+                step=args.xsteps,
+                figure_size=figure_size,
             )
 
 
