@@ -301,7 +301,7 @@ def plot_step_log(
     step_log_file: pathlib.Path,
     env_id: int,
     episode_start: int = 0,
-    episode_end: int = None,
+    episode_end: int = np.iinfo(int).max,
     episode_step: int = 1,
     figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
 ) -> Figure:
@@ -361,12 +361,11 @@ def plot_step_log(
     # Process the data for the visualization
 
     # Extract scalar reward and observation (we use new_obs for visualization)
-    df_raw["reward"] = df_raw["rewards"].apply(
-        lambda x: x[env_id] if isinstance(x, list) else x
-    )
-    df_raw["obs"] = df_raw["new_obs"].apply(
-        lambda x: x[env_id] if isinstance(x, list) else x
-    )
+    # The underlying assumption of the extraction is that we are always dealing
+    # with a vectorized environment, i.e., that the rewards and observations
+    # corresponding to each environment are collected in a list
+    df_raw["reward"] = df_raw["rewards"].apply(lambda x: x[env_id])
+    df_raw["obs"] = df_raw["new_obs"].apply(lambda x: x[env_id])
 
     # Convert obs vector into columns
     obs_array = np.vstack(df_raw["obs"].values)
@@ -381,8 +380,8 @@ def plot_step_log(
     df = df.rename(columns={"obs_-1": "objective"})
 
     # Filter only the selected episodes
-    if episode_end is None:
-        episode_end = df["episodes"].max()
+    if episode_end > (max_idx:=df["episodes"].max()):
+        episode_end = max_idx
     selected_episodes = df["episodes"].unique()[
         episode_start : (episode_end + 1) : episode_step
     ]
