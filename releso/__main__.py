@@ -20,13 +20,23 @@ import torch
 
 from releso.__version__ import __version__
 from releso.base_parser import BaseParser
-from releso.util.visualization import export_figure, plot_episode_log, \
-    plot_step_log
+from releso.util.module_import_raiser import ModuleImportRaiser
 
 try:
     import splinepy
-except ImportError:
-    splinepy = None
+except ModuleNotFoundError:
+    splinepy = ModuleImportRaiser("splinepy")
+
+try:
+    from releso.util.visualization import (
+        export_figure,
+        plot_episode_log,
+        plot_step_log,
+    )
+except ModuleNotFoundError:
+    export_figure = ModuleImportRaiser("plotly")
+    plot_episode_log = export_figure
+    plot_step_log = export_figure
 
 
 def check_positive(value) -> int:
@@ -158,8 +168,7 @@ def entry():
         help="Returns the version of the package.",
     )
     sub_parser = parser.add_subparsers(
-        title="execution modes",
-        dest="execution_mode"
+        title="execution modes", dest="execution_mode", required=True
     )
     parser_run = sub_parser.add_parser(
         "run",
@@ -183,7 +192,7 @@ def entry():
             "If this is set only validation on this configuration is run. "
             "Please configure the validation object in the json file so that "
             "this option can be correctly executed.",
-        )
+        ),
     )
     parser_run.add_argument(
         "-j",
@@ -229,9 +238,7 @@ def entry():
         help="Size of the figure.",
     )
     sub_parser_visualize = parser_visualize.add_subparsers(
-        title="visualization modes",
-        dest="visualization_mode",
-        required=True
+        title="visualization modes", dest="visualization_mode", required=True
     )
     parser_visualize_episodelog = sub_parser_visualize.add_parser(
         "episode-log",
@@ -255,8 +262,7 @@ def entry():
         help=(
             "Visualize given training episode logs. You can also use wildcard "
             "arguments '*' or '?' at least on some systems."
-        )
-        ,
+        ),
     )
     parser_visualize_episodelog.add_argument(
         "-w",
@@ -278,7 +284,7 @@ def entry():
             "visualization will exclude all timesteps after the specified "
             "cutoff point. Defaults to np.iinfo(int).max, which means that all "
             "timesteps will be included."
-        )
+        ),
     )
     parser_visualize_steplog = sub_parser_visualize.add_parser(
         "step-log",
@@ -298,7 +304,7 @@ def entry():
         help=(
             "Visualize a given training step log to analyze the strategy "
             "learned by an agent in a specific run."
-        )
+        ),
     )
     parser_visualize_steplog.add_argument(
         "-i",
@@ -308,7 +314,7 @@ def entry():
         help=(
             "ID of the environment whose data is supposed to be visualized "
             "(only relevant for multi-environment trainings). Defaults to 0."
-        )
+        ),
     )
     parser_visualize_steplog.add_argument(
         "-f",
@@ -354,7 +360,7 @@ def entry():
         print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         run_folder = main(args)
     # We want to use releso for visualization
-    else: # args.execution_mode == "visualize"
+    elif args.execution_mode == "visualize":
         # Determine the figure size
         figure_size = args.figure_size
         if len(figure_size) == 1:
@@ -366,7 +372,9 @@ def entry():
             ]
             if run_folder is not None:
                 folders_to_process.append(run_folder)
-            folder_dict = {folder.stem: folder for folder in folders_to_process}
+            folder_dict = {
+                folder.stem: folder for folder in folders_to_process
+            }
 
             fig = plot_episode_log(
                 folder_dict,
@@ -376,7 +384,7 @@ def entry():
             )
             export_figure(fig, args.export_path, "episode_log.html")
         # Visualize contents of step_log.jsonl
-        else: # args.visualization_mode == "step_log"
+        else:  # args.visualization_mode == "step_log"
             fig = plot_step_log(
                 args.logfile.resolve(),
                 args.episode_id,
@@ -387,6 +395,9 @@ def entry():
             )
             # Export the plot as the suffix or as "steplog_plot.html"
             export_figure(fig, args.export_path, "steplog_plot.html")
+    else:
+        parser.print_help()
+        exit(1)
 
 
 if __name__ == "__main__":  # pragma: no cover
