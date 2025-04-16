@@ -3,18 +3,10 @@ from typing import Literal, Union
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 from pandas.errors import EmptyDataError
-
-from releso.util.module_import_raiser import ModuleImportRaiser
-
-try:
-    import plotly
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-except ModuleNotFoundError:
-    go = ModuleImportRaiser("plotly")
-    make_subplots = ModuleImportRaiser("plotly")
-
+from plotly.graph_objects import Figure
+from plotly.subplots import make_subplots
 
 plotly_colors = [
     "red",
@@ -32,10 +24,10 @@ plotly_lines = ["solid", "dash", "dot", "dashdot"]
 
 
 def export_figure(
-        fig: plotly.graph_objs.Figure,
-        export_path: pathlib.Path,
-        default_filename: str
-    ) -> None:
+    fig: Figure,
+    export_path: pathlib.Path,
+    default_filename: str,
+) -> None:
     """Exports a given figure to a specified path.
     The function checks the file extension of the export path and saves the
     figure accordingly. If the path is a directory, it saves the figure with
@@ -76,33 +68,34 @@ def plot_episode_log(
     window: int = 5,
     window_size: Union[tuple[int, int], Literal["auto"]] = "auto",
     cut_off_point: int = np.iinfo(int).max,
-) -> plotly.graph_objs.Figure:
+) -> Figure:
     """Plot one or multiple episodes to check out the training progress.
 
     This function can already be called once the first results are in the
-     episode log file, to check out progress during training. But, in general,
-     this function is normally used to compare different runs to see
-     differences in the learning progress. In general all values are plotted
-     over the total number of steps taken during the training. The following
-     variables are shown:
+    episode log file, to check out progress during training. But, in general,
+    this function is normally used to compare different runs to see
+    differences in the learning progress. In general all values are plotted
+    over the total number of steps taken during the training. The following
+    variables are shown:
 
     1. Episode reward - Best used to see if the training is progressing
     2. Steps per Episode - Here you can see if the number of steps to solve
-     the environment decreases over time.
+       the environment decreases over time.
     3. Mean step reward - The higher the better each action actually is.
-     (Calculated value episode_reward/steps_per_episode)
+       (Calculated value episode_reward/steps_per_episode)
     4. Episode End Reason - For each run multiple lines to show why the
-     episode was terminated. !ATTENTION! the window here is 100 to calculate a
-     crude percentage.
+       episode was terminated. !ATTENTION! the window here is 100 to calculate a
+       crude percentage.
     5. Seconds per Step - Time each step took to compute. Should not have much
-     variation in general. But use case specific can have differences.
+       variation in general. But use case specific can have differences.
     6. Wall time - How much time did elapse to this time step. (Integral of
-      previous plot).
+       previous plot).
+
 
     To check out the training I like to look at all the plots at once to see if
-     there is anything that should concern me. For publishing most values have
-     no informational gain so feel free to adapt (Remove certain sub plot, etc)
-      the function.
+    there is anything that should concern me. For publishing most values have
+    no informational gain so feel free to adapt (Remove certain sub plot, etc)
+    the function.
 
     Author: Clemens Fricke (clemens.david.fricke@tuwien.ac.at)
 
@@ -305,13 +298,13 @@ def plot_episode_log(
 
 
 def plot_step_log(
-        step_log_file: pathlib.Path,
-        env_id: int,
-        episode_start: int = 0,
-        episode_end: int = None,
-        episode_step: int = 1,
-        figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
-    ) -> plotly.graph_objects.Figure:
+    step_log_file: pathlib.Path,
+    env_id: int,
+    episode_start: int = 0,
+    episode_end: int = None,
+    episode_step: int = 1,
+    figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
+) -> Figure:
     """Plot the step log data of a single run for multiple episodes.
 
     This function is used to visualize the step log data of a single run
@@ -320,11 +313,11 @@ def plot_step_log(
     It creates an interactive plot with two subplots:
 
     1. The first subplot shows the reward and objective value over the number
-    of timesteps within the current episode.
+       of timesteps within the current episode.
     2. The second subplot shows the values of the design variables (observations)
-    over the number of timesteps within the current episode.
-    The plot is interactive, allowing users to select different episodes via a
-    slider to view the corresponding data.
+       over the number of timesteps within the current episode.
+       The plot is interactive, allowing users to select different episodes via a
+       slider to view the corresponding data.
 
     Since plotly does not recompute data when the user interacts with the
     plot, the data for all episodes is precomputed and stored in the figure.
@@ -347,7 +340,7 @@ def plot_step_log(
           Defaults to None.
         episode_step (int, optional): Step size for selecting episodes.
           Defaults to 1, which means that every episode between the starting
-          and final episide are visualized.
+          and final episode are visualized.
         figure_size (Union[tuple[int, int], Literal['auto']], optional):
           Size of the figure. If 'auto', the size will be adjusted to fit the
           container. Defaults to 'auto'.
@@ -356,7 +349,7 @@ def plot_step_log(
         plotly.graph_objects.Figure: A Plotly figure object containing the
           interactive plot for further customization or export.
     """
-    # Load the steplog data from the provided path
+    # Load the step log data from the provided path
     try:
         df_raw = pd.read_json(step_log_file, lines=True)
     except RuntimeError as err:
@@ -390,7 +383,9 @@ def plot_step_log(
     # Filter only the selected episodes
     if episode_end is None:
         episode_end = df["episodes"].max()
-    selected_episodes = df["episodes"].unique()[episode_start:(episode_end+1):episode_step]
+    selected_episodes = df["episodes"].unique()[
+        episode_start : (episode_end + 1) : episode_step
+    ]
     df = df[df["episodes"].isin(selected_episodes)]
 
     # Create the interactive visualization
