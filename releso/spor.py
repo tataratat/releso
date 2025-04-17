@@ -445,9 +445,6 @@ class SPORObjectExecutor(SPORObject):
             environment_id (UUID4): Id of the environment. This is the working
                 directory.
         """
-        print(
-            f"Starting: {self.save_location}, {self.working_directory}, {environment_id}"
-        )
         if self.working_directory.startswith("{}"):
             self.working_directory = self.working_directory.format(
                 self.save_location, environment_id
@@ -483,7 +480,6 @@ class SPORObjectExecutor(SPORObject):
             if self.name == "main_solver":  # pragma: no cover
                 shutil.copyfile(path.parent / "xns_multi.in", path / "xns.in")
                 self.get_logger().info("Copying file.....")
-        print("Ending:", self.working_directory)
 
     def get_multiprocessing_prefix(self, core_count: int) -> str:
         """Add commandline prefix for mpi multiprocessor.

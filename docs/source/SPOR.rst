@@ -75,6 +75,7 @@ Also look at the examples and tests to see how you can use internalized python f
 Custom Python based SPOR object
 -------------------------------
 
-The framework is able to use custom python based SPOR objects. In most examples ReLeSO is currently used in this is the main way to integrate the external solver and reward calculation.
+The framework is able to use custom python based SPOR objects. In most examples ReLeSO is currently used like this. It is the main way to integrate the external solver and reward calculation.
+
 
 Use the definition for the :doc:`_autosummary/releso.spor.SPORObjectExternalPythonFunction` to use this functionality. A small example is given :doc:`mini_example`.
