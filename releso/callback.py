@@ -3,6 +3,7 @@
 Defines the custom call backs the ReLeSO library uses. Works now with
 Multi-Environment training and should work with all agents.
 """
+
 from datetime import datetime
 from itertools import count
 from pathlib import Path
@@ -58,16 +59,14 @@ class EpisodeLogCallback(BaseCallback):
 
     def _export(self):
         """Function exports the current information into a csv file."""
-        export_data_frame = pd.DataFrame(
-            {
-                "steps_in_episode": self.episode_n_steps,
-                "episode_reward": self.episode_rewards,
-                "episode_end_reason": self.episode_end,
-                "total_timesteps": self.episode_steps_total,
-                "environment_id": self.environment_id,
-                "wall_time": self.episode_wall_time,
-            }
-        )
+        export_data_frame = pd.DataFrame({
+            "steps_in_episode": self.episode_n_steps,
+            "episode_reward": self.episode_rewards,
+            "episode_end_reason": self.episode_end,
+            "total_timesteps": self.episode_steps_total,
+            "environment_id": self.environment_id,
+            "wall_time": self.episode_wall_time,
+        })
         # export_data_frame.to_csv(self.episode_log_location)
         # export_data_frame.reset_index(drop=True, inplace=True)
         export_data_frame.index = np.arange(
@@ -101,9 +100,10 @@ class EpisodeLogCallback(BaseCallback):
                 Dict[str, Union[List[float], int]]
             ] = []
             for _ in range(len(self.locals["dones"])):
-                self.inter_episode_dicts.append(
-                    {"current_episode_rewards": [], "last_start_step": 0}
-                )
+                self.inter_episode_dicts.append({
+                    "current_episode_rewards": [],
+                    "last_start_step": 0,
+                })
         continue_training = True
         for idx, loc_vars, done, reward, info in zip(
             count(),
@@ -179,7 +179,7 @@ class StepLogCallback(BaseCallback):
         self._reset_internal_storage()
 
     def _reset_internal_storage(self) -> None:
-        """ Reset the internally used lists which store the step-wise
+        """Reset the internally used lists which store the step-wise
         information since last updating the logfile.
         """
         self.timesteps = []  # Store step numbers
@@ -194,17 +194,15 @@ class StepLogCallback(BaseCallback):
     def _export(self) -> None:
         """Convert the step-wise information to a dataframe and export to csv."""
         # Combine all relevant information into a pandas DataFrame
-        export_data_frame = pd.DataFrame(
-            {
-                "episodes": self.episodes,
-                "dones": self.dones,
-                "prev_obs": self.prev_obs,
-                "actions": self.actions,
-                "new_obs": self.new_obs,
-                "rewards": self.rewards,
-                "infos": self.infos,
-            }
-        )
+        export_data_frame = pd.DataFrame({
+            "episodes": self.episodes,
+            "dones": self.dones,
+            "prev_obs": self.prev_obs,
+            "actions": self.actions,
+            "new_obs": self.new_obs,
+            "rewards": self.rewards,
+            "infos": self.infos,
+        })
         export_data_frame.index = self.timesteps
         export_data_frame.index.name = "timesteps"
         # Write the data to file
@@ -226,7 +224,9 @@ class StepLogCallback(BaseCallback):
             bool: If the callback returns False, training is aborted early.
         """
         # Retrieve the step-wise information that we want to keep track of
-        dones = self.locals["dones"]  # Flad indicating if the episode has ended
+        dones = self.locals[
+            "dones"
+        ]  # Field indicating if the episode has ended
         prev_obs = self.model._last_obs  # Old observations
         actions = self.locals["actions"]  # Agent's actions
         new_obs = self.locals["new_obs"]  # New observations
@@ -243,27 +243,35 @@ class StepLogCallback(BaseCallback):
         self.rewards.append(rewards)
         self.infos.append(infos)
 
+        done_export = False
         # Check if the environment has completed an episode
-        if any(dones):
-            # If the environment has completed an episode, locals["new_obs"]
-            # will already contain the observation AFTER a reset has been
-            # performed and not the original terminal observation with which the
-            # episode ended, so overwrite the entries with the true terminal
-            # observation
-            self.new_obs[-1] = [info["terminal_observation"] for info in self.locals["infos"]]
-            # If the update is supposed to be performed after an episode has
-            # been completed ...
-            if self.update_n_episodes == 0:
-                # ... export the information
-                self._export()
-            # Always increase the episode counter
-            self.current_episode += 1
+        for idx, done in enumerate(dones):
+            if done:
+                # If the environment has completed an episode, locals["new_obs"]
+                # will already contain the observation AFTER a reset has been
+                # performed and not the original terminal observation with which the
+                # episode ended, so overwrite the entries with the true terminal
+                # observation
+                self.new_obs[-1][idx] = self.locals["infos"][idx][
+                    "terminal_observation"
+                ]
+                # If the update is supposed to be performed after an episode has
+                # been completed ...
+                if self.update_n_episodes == 0:
+                    # schedule the export of the information
+                    done_export = True
+                # Always increase the episode counter
+                self.current_episode += 1
 
-        # If no episode has been completed yet, only export with the given
+        # If export scheduled or export with the given
         # frequency
-        if self.update_n_episodes != 0 and any(
-            timestep % self.update_n_episodes == 0 for timestep in self.timesteps
-            ):
+        if done_export or (
+            self.update_n_episodes != 0
+            and any(
+                timestep % self.update_n_episodes == 0
+                for timestep in self.timesteps
+            )
+        ):
             self._export()
 
         return True
