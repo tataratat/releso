@@ -172,9 +172,10 @@ class StepLogCallback(BaseCallback):
         super().__init__(verbose)
         self.step_log_location: Path = step_log_location
         self.step_log_location.parent.mkdir(parents=True, exist_ok=True)
-        self.current_episode: int = 0
+        self.current_episodes: list[int] = []
         self.update_n_episodes: int = update_n_steps
         self.first_export: bool = True
+        self.current_max_episodes: int = 0
 
         self._reset_internal_storage()
 
@@ -227,6 +228,9 @@ class StepLogCallback(BaseCallback):
         dones = self.locals[
             "dones"
         ]  # Field indicating if the episode has ended
+        if len(self.current_episodes) == 0:
+            self.current_episodes = [idx for idx in range(len(dones))]
+            self.current_max_episodes = max(self.current_episodes)
         prev_obs = self.model._last_obs  # Old observations
         actions = self.locals["actions"]  # Agent's actions
         new_obs = self.locals["new_obs"]  # New observations
@@ -235,7 +239,7 @@ class StepLogCallback(BaseCallback):
 
         # Store additional information
         self.timesteps.append(self.num_timesteps)
-        self.episodes.append(self.current_episode)
+        self.episodes.append(self.current_episodes)
         self.dones.append(dones)
         self.prev_obs.append(prev_obs)
         self.actions.append(actions)
@@ -261,8 +265,8 @@ class StepLogCallback(BaseCallback):
                     # schedule the export of the information
                     done_export = True
                 # Always increase the episode counter
-                self.current_episode += 1
-
+                self.current_episodes[idx] = self.current_max_episodes + 1
+                self.current_max_episodes = self.current_episodes[idx]
         # If export scheduled or export with the given
         # frequency
         if done_export or (
