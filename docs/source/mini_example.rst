@@ -2,7 +2,7 @@
 Mini Example
 ======================
 
-This minimal example goes through the definition of all required files for the follwing task:
+This minimal example goes through the definition of all required files for the following task:
 
 
 The mini example consists of 5 points in space which are movable only in x direction. The goal is to move the points to the maximal x direction. The reward given is dense and consists of the sum of all x coordinates of the points.
@@ -17,13 +17,33 @@ As a separate part of the **Environment** the **SPOR** system needs to be discus
 Environment
 -----------
 
+You can define the environment by defining the geometry, the SPOR system and environment parameters.
+
+In the following the environment definition is shown. The geometry and SPOR part are shortened since they will be expanded later on.
+
+.. code-block::
+
+    "environment": {
+        "geometry": {...},
+        "spor": {...},
+        "max_timesteps_in_episode": 50,
+        "reward_on_episode_exceeds_max_timesteps": 0,
+        "multi_processing": {
+            "number_of_cores": 1
+        }
+    }
+
+
+The max_timesteps_in_episode defines the maximum number of steps in an episode. If this number is exceeded, the episode is terminated and the reward is set to the value defined in *reward_on_episode_exceeds_max_timesteps*. The default reward value is 0.0.
+multi_processing defines the number of cores that should be used for the environment, this is mostly for MPI applications. Only define something else if you really know what you are doing. The default value is 1 core.
+
 
 Geometry
 ~~~~~~~~
 
 The first step in the definition of the environment is the definition of the geometry. The geometry defines the actions and some of the observations.
 
-For the example given above the geometry consists of 5 control points, where each can be moved in the y direction between [-3,3]. This can be defined in the *hjson* file as:
+For the example given above the geometry consists of 5 control points, where each can be moved in the x direction between [-3,3]. This can be defined in the *hjson* file as:
 
 
 .. code-block::
@@ -33,52 +53,52 @@ For the example given above the geometry consists of 5 control points, where eac
                 "control_points": [
                     [
                         {
-                            "current_position": 0.0
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0,
                         },
+                        {
+                            "current_position": 0.0
+                        }
+                    ],
+                    [
                         {
                             "current_position": 0.0,
                             "min_value": -3.0,
                             "max_value": 3.0,
-                        }
-                    ],
-                    [
+                        },
                         {
                             "current_position": 1.0
-                        },
+                        }
+                    ],
+                    [
                         {
                             "current_position": 0.0,
                             "min_value": -3.0,
                             "max_value": 3.0,
-                        }
-                    ],
-                    [
+                        },
                         {
                             "current_position": 2.0
-                        },
-                        {
-                            "current_position": 0.0,
-                            "min_value": -3.0,
-                            "max_value": 3.0,
-                        },
-                    ],
-                    [
-                        {
-                            "current_position": 3.0
-                        },
-                        {
-                            "current_position": 0.0,
-                            "min_value": -3.0,
-                            "max_value": 3.0,
                         }
                     ],
                     [
                         {
-                            "current_position": 4.0
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0,
                         },
+                        {
+                            "current_position": 3.0
+                        }
+                    ],
+                    [
                         {
                             "current_position": 0.0,
                             "min_value": -3.0,
                             "max_value": 3.0,
+                        },
+                        {
+                            "current_position": 4.0
                         }
                     ],
                 ]
@@ -113,10 +133,7 @@ For this simple example the SPOR definition could look like this:
                 "reward_on_error": -10,
                 "run_on_reset": true,
                 "working_directory": "./",
-                "execution_command": "python",
-                "command_options": [
-                    "examples/dummy.py"
-                ],
+                "python_file_path": "mini_example.py",
                 "use_communication_interface": true,
                 "add_step_information": true
             }
@@ -159,10 +176,12 @@ In this example the *python* script could look this this:
 .. code-block:: python
 
     from collections import namedtuple
-    from releso.util.reward_helpers import spor_com_parse_arguments
+    from releso.util.reward_helpers import spor_com_parse_arguments, write_json, load_json
     import numpy as np
     from logging import Logger
     from typing import Optional, Any
+    from pathlib import Path
+    import os
 
     def main(args: namedtuple, logger: Logger, func_data: Optional[Any]):
         done = False
@@ -178,23 +197,25 @@ In this example the *python* script could look this this:
             func_data = dict()
 
         # calculate the reward
-        reward = sum(np.array(args.json_object["info"]["geometry_information"]))
-        logger.info(
-            f"{args.json_object['info']['geometry_information']}, Sum: {sum(np.array(args.json_object['info']['geometry_information']))[0]}, Reward: {reward}"
-            )
+        reward = sum(np.array(args.json_object["info"]["geometry_information"]))[0]
 
         # if reward is very close to the maximum of 15 it is considered as done
         if reward >= (15-1e-7):
             logger.warning(f"This is triggered why? : {reward}")
-            reward = 5
+            reward = 30
             done = True
             info["reset_reason"] = "goal_reached"
+
+        logger.info(
+            f"{args.json_object['info']['geometry_information']}, Sum: {sum(np.array(args.json_object['info']['geometry_information']))[0]}, Reward: {reward}"
+        )
+
         return {
                 "reward": reward,
                 "done": done,
                 "info": info,
                 "observations": []
-            }, func_data
+        }, func_data
 
     # Add option of running the script manually, or with original command line
     # spor step in ReLeSO.
@@ -203,19 +224,20 @@ In this example the *python* script could look this this:
         if not args.json_object:
             print("No additional payload, please provide the needed payload.")
 
-        #
+        # create path to a folder usable as variable store
         path = Path(f"{os.getcwd()}/{args.run_id}")
         path.mkdir(exist_ok=True, parents=True)
 
         local_variable_store_path = path/"local_variable_store.json"
+        # create the local variable store if it does not exist
         if not path.exists():
             func_data = {
                 "last_error": 0
             }
             write_json(local_variable_store_path, func_data)
-
         func_data = load_json(local_variable_store_path)
 
+        # run the main function
         step_data, func_data = main(args, False, func_data)
 
         write_json(path, func_data)
@@ -224,4 +246,45 @@ In this example the *python* script could look this this:
 
 
 
-In general you won't need the last five lines of code since ReLeSO will directly call the *main* function. but it can be used to trouble shoot the script manually (and also is an old way to use the SPOR system).
+
+In general you won't need the last 25 lines of code since ReLeSO will directly call the *main* function. but it can be used to trouble shoot the script manually (and also is an old way to use the SPOR system).
+
+
+Agent
+~~~~~
+
+The agent is defined in the *hjson* file. The agent is a standard agent from Stable Baselines3. In this case the PPO agent is used. The only thing that needs to be defined is the type of agent and the parameters for the agent. The parameters are passed directly to the constructor of the agent.
+
+The *tensorboard_log* parameter is used to define the path where the tensorboard logs should be saved. This is not needed, but it is recommended to use it since it helps to debug the agent and the training process.
+
+.. code-block::
+
+    "agent": {
+        "type": "PPO",
+        "policy": "MlpPolicy",
+        "tensorboard_log": "tensorboard",
+    },
+
+
+General
+~~~~~~~
+The general part of the *hjson* file defines the number of episodes, the number of steps, the verbosity and the path to the log file. The verbosity is used to define how much information should be printed to the console. The log file is used to save the logs of the training process.
+
+.. code-block::
+
+    {
+        "agent": {...},
+        "environment": {...},
+        "number_of_timesteps": 100000,
+        "number_of_episodes": 100000,
+        "save_location": "mini_example_{}/",
+        "verbosity": {
+            "environment": "INFO",
+            "parser": "INFO"
+        }
+    }
+
+
+The *number_of_timesteps* defines the number of timesteps that should be used for training. The *number_of_episodes* defines the number of episodes that should be used for training. The *save_location* defines the location where the logs should be saved. The *verbosity* defines the verbosity of the logs.
+
+In the full example can be found in the *examples* folder of the ReLeSO repository.
