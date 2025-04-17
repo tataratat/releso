@@ -33,52 +33,52 @@ For the example given above the geometry consists of 5 control points, where eac
                 "control_points": [
                     [
                         {
+                            "current_position": 0.0
+                        },
+                        {
                             "current_position": 0.0,
                             "min_value": -3.0,
                             "max_value": 3.0,
-                        },
-                        {
-                            "current_position": 0.0
                         }
                     ],
                     [
-                        {
-                            "current_position": 0.0,
-                            "min_value": -3.0,
-                            "max_value": 3.0,
-                        },
                         {
                             "current_position": 1.0
-                        }
-                    ],
-                    [
+                        },
                         {
                             "current_position": 0.0,
                             "min_value": -3.0,
                             "max_value": 3.0,
-                        },
+                        }
+                    ],
+                    [
                         {
                             "current_position": 2.0
-                        }
-                    ],
-                    [
+                        },
                         {
                             "current_position": 0.0,
                             "min_value": -3.0,
                             "max_value": 3.0,
                         },
+                    ],
+                    [
                         {
                             "current_position": 3.0
-                        }
-                    ],
-                    [
+                        },
                         {
                             "current_position": 0.0,
                             "min_value": -3.0,
                             "max_value": 3.0,
-                        },
+                        }
+                    ],
+                    [
                         {
                             "current_position": 4.0
+                        },
+                        {
+                            "current_position": 0.0,
+                            "min_value": -3.0,
+                            "max_value": 3.0,
                         }
                     ],
                 ]
@@ -196,12 +196,31 @@ In this example the *python* script could look this this:
                 "observations": []
             }, func_data
 
+    # Add option of running the script manually, or with original command line
+    # spor step in ReLeSO.
     if __name__ == "__main__":
         args = spor_com_parse_arguments()
         if not args.json_object:
             print("No additional payload, please provide the needed payload.")
 
-        print(main(args, False))
+        #
+        path = Path(f"{os.getcwd()}/{args.run_id}")
+        path.mkdir(exist_ok=True, parents=True)
+
+        local_variable_store_path = path/"local_variable_store.json"
+        if not path.exists():
+            func_data = {
+                "last_error": 0
+            }
+            write_json(local_variable_store_path, func_data)
+
+        func_data = load_json(local_variable_store_path)
+
+        step_data, func_data = main(args, False, func_data)
+
+        write_json(path, func_data)
+
+        print(step_data)
 
 
 
