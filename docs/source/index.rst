@@ -47,6 +47,7 @@ For guidance on the installation process see :doc:`installation`.
 .. toctree::
    installation
    usage
+   mini_example
    json_schema
    ReLeSO
    SPOR

@@ -12,6 +12,7 @@ ReLeSO communication protocol.
 A more in depth documentation of the SPOR concept is given here
 :ref:`SPOR Communication Interface <sporcominterface>`
 """
+
 import importlib
 import json
 import os
@@ -277,9 +278,9 @@ class SPORObject(BaseModel):
             for item in self.additional_observations:
                 observations[item.name] = item.get_default_observation()
         else:
-            observations[
-                self.additional_observations.name
-            ] = self.additional_observations.get_default_observation()
+            observations[self.additional_observations.name] = (
+                self.additional_observations.get_default_observation()
+            )
         return observations
 
     def run(
@@ -349,9 +350,11 @@ class SPORObjectExecutor(SPORObject):
     #: interface commandline options including the observations, info, done,
     #: reward
     add_step_information: bool = False
-    #: Path to the directory in which the program should run in helpful for
-    #: programs using relative paths. When {} appear in the string a UUID will
-    #: be inserted for multiprocessing purposes.
+    #: Path to the directory in which the program should run, helpful for
+    #: programs using relative paths. If `{}` are the first characters of the
+    #: path, they will be replaced by the save_location of the current run. If
+    #: `{}` are present in the path, the current environment id will be used to
+    #: replace the placeholder. This is necessary for multiprocessing.
     working_directory: str
 
     # communication_interface_variables
@@ -381,17 +384,22 @@ class SPORObjectExecutor(SPORObject):
         """
         # check if placeholder for multiprocessing is available if not use
         # v to validate directory path
-        path = pathlib.Path(v.split("{}")[0]) if "{}" in v else pathlib.Path(v)
-        if not (path.is_dir() and path.exists()):
-            raise ParserException(
-                "SPORObjectCommandline",
-                "unknown",
-                f"The work_directory path {v} does not exist or is not a"
-                " valid directory."
-                " If you are using the multiprocessing placeholder {}, make "
-                "sure, that the path before the placeholder is valid and "
-                "exist.",
+        if not v.startswith("{}"):
+            path = (
+                pathlib.Path(v.split("{}")[0])
+                if "{}" in v
+                else pathlib.Path(v)
             )
+            if not (path.is_dir() and path.exists()):
+                raise ParserException(
+                    "SPORObjectCommandline",
+                    "unknown",
+                    f"The work_directory path {v} does not exist or is not a"
+                    " valid directory."
+                    " If you are using the multiprocessing placeholder {}, make "
+                    "sure, that the path before the placeholder is valid and "
+                    "exists.",
+                )
         return v
 
     @validator("add_step_information")
@@ -437,20 +445,37 @@ class SPORObjectExecutor(SPORObject):
             environment_id (UUID4): Id of the environment. This is the working
                 directory.
         """
-        if "{}" in self.working_directory:
+        if self.working_directory.startswith("{}"):
             self.working_directory = self.working_directory.format(
-                environment_id
+                self.save_location, environment_id
+            )
+            pathlib.Path(self.working_directory).expanduser().resolve().mkdir(
+                parents=True, exist_ok=True
             )
             self.get_logger().info(
                 f"Found placeholder for step with name {self.name}. New "
-                f"working directory is {self.working_directory}"
+                f"working directory is {self.working_directory}. Directory was created."
+            )
+        elif "{}" in self.working_directory:
+            self.working_directory = self.working_directory.format(
+                environment_id
             )
 
             # create run folder if necessary
             path = pathlib.Path(self.working_directory).expanduser().resolve()
             if not path.exists():
                 path.mkdir(parents=True, exist_ok=True)
-
+                self.get_logger().info(
+                    f"Found placeholder for step with name {self.name}. New "
+                    f"working directory is {self.working_directory}. "
+                    "Directory was created."
+                )
+            else:
+                self.get_logger().info(
+                    f"Found placeholder for step with name {self.name}. New "
+                    f"working directory is {self.working_directory}. "
+                    "Directory already exists, step will use it."
+                )
             # TODO this is a XNS specific case
             if self.name == "main_solver":  # pragma: no cover
                 shutil.copyfile(path.parent / "xns_multi.in", path / "xns.in")
@@ -509,16 +534,18 @@ class SPORObjectExecutor(SPORObject):
 
         # collect all parts of the communication interface
         interface_options: List[str] = ["--run_id", str(self._run_id)]
-        interface_options.extend(
-            ["--base_save_location", str(self.save_location)]
-        )
+        interface_options.extend([
+            "--base_save_location",
+            str(self.save_location),
+        ])
         interface_options.extend(["--environment_id", str(environment_id)])
         if reset:
             interface_options.append("--reset")
         if validation_id is not None:
-            interface_options.extend(
-                ["--validation_value", str(validation_id)]
-            )
+            interface_options.extend([
+                "--validation_value",
+                str(validation_id),
+            ])
         if self.add_step_information:
             json_step_information = {
                 "observations": step_information[0],
@@ -527,14 +554,10 @@ class SPORObjectExecutor(SPORObject):
                 "info": step_information[3],
             }
             # print(json_step_information)
-            interface_options.extend(
-                [
-                    "--json_object",
-                    "'"
-                    + json.dumps(json_step_information, cls=JSONEncoder)
-                    + "'",
-                ]
-            )
+            interface_options.extend([
+                "--json_object",
+                "'" + json.dumps(json_step_information, cls=JSONEncoder) + "'",
+            ])
         return interface_options
 
     def spor_com_interface_read(self, output: bytes, step_dict: Dict):
@@ -585,9 +608,9 @@ class SPORObjectExecutor(SPORObject):
                     "observations"
                 ][item.name]
         else:
-            step_dict["observation"][
-                self.additional_observations.name
-            ] = np.array(returned_step_dict["observations"])
+            step_dict["observation"][self.additional_observations.name] = (
+                np.array(returned_step_dict["observations"])
+            )
 
         join_infos(
             step_dict["info"][self.name],
@@ -748,9 +771,9 @@ class SPORObjectPythonFunction(SPORObjectExecutor):
                         "Will stop episode now, due to thrown error."
                     )
                     step_return["done"] = True
-                    step_return["info"][
-                        "reset_reason"
-                    ] = f"ExecutionFailed-{self.name}"
+                    step_return["info"]["reset_reason"] = (
+                        f"ExecutionFailed-{self.name}"
+                    )
                 step_return["reward"] = self.reward_on_error
                 if self.additional_observations is not None:
                     step_return["observation"] = self.get_default_observation(
@@ -1182,26 +1205,26 @@ class SPORObjectCommandLine(SPORObjectExecutor):
                     if (
                         self.name == "main_solver" and int(exit_code) == 137
                     ):  # pragma: no cover # this is a XNS specific case
-                        step_return["info"][
-                            "reset_reason"
-                        ] = f"meshTangled-{self.name}"
+                        step_return["info"]["reset_reason"] = (
+                            f"meshTangled-{self.name}"
+                        )
                     # the main_solver should always have an output only time
                     # no output is generated srun aborted early (hopefully)
                     elif (
                         self.name == "main_solver" and not output
                     ):  # pragma: no cover # this is a cluster specific case
-                        step_return["info"][
-                            "reset_reason"
-                        ] = f"srunError-{self.name}"
+                        step_return["info"]["reset_reason"] = (
+                            f"srunError-{self.name}"
+                        )
                         self.get_logger().warning(
                             "Could not find any output of failed command "
                             "assuming srun/mpi error. Trying to exit training "
                             "now."
                         )
                     else:
-                        step_return["info"][
-                            "reset_reason"
-                        ] = f"ExecutionFailed-{self.name}"
+                        step_return["info"]["reset_reason"] = (
+                            f"ExecutionFailed-{self.name}"
+                        )
                 step_return["reward"] = self.reward_on_error
                 if self.additional_observations is not None:
                     step_return["observation"] = self.get_default_observation(

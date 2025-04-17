@@ -1,0 +1,94 @@
+{
+    "agent": {
+        "type": "PPO",
+        "policy": "MlpPolicy",
+        "tensorboard_log": "tensorboard",
+    },
+    "environment": {
+        "geometry": {
+            "shape_definition":{
+                    "control_points": [
+                        [
+                            {
+                                "current_position": 0.0,
+                                "min_value": -3.0,
+                                "max_value": 3.0,
+                            },
+                            {
+                                "current_position": 0.0
+                            }
+                        ],
+                        [
+                            {
+                                "current_position": 0.0,
+                                "min_value": -3.0,
+                                "max_value": 3.0,
+                            },
+                            {
+                                "current_position": 1.0
+                            }
+                        ],
+                        [
+                            {
+                                "current_position": 0.0,
+                                "min_value": -3.0,
+                                "max_value": 3.0,
+                            },
+                            {
+                                "current_position": 2.0
+                            }
+                        ],
+                        [
+                            {
+                                "current_position": 0.0,
+                                "min_value": -3.0,
+                                "max_value": 3.0,
+                            },
+                            {
+                                "current_position": 3.0
+                            }
+                        ],
+                        [
+                            {
+                                "current_position": 0.0,
+                                "min_value": -3.0,
+                                "max_value": 3.0,
+                            },
+                            {
+                                "current_position": 4.0
+                            }
+                        ],
+                    ]
+                },
+            "discrete_actions": true,
+            "action_based_observation": true,
+        },
+        "spor": {
+            "steps": [
+                {
+                    "name": "control_point_sum",
+                    "stop_after_error": false,
+                    "reward_on_error": -10,
+                    "run_on_reset": true,
+                    "working_directory": "./",
+                    "python_file_path": "mini_example.py",
+                    "use_communication_interface": true,
+                    "add_step_information": true
+                }
+            ],
+            "reward_aggregation": "sum"
+        },
+        "max_timesteps_in_episode": 50,
+        "reward_on_episode_exceeds_max_timesteps": 0,
+        "multi_processing": {
+            "number_of_cores": 1
+        }
+    },
+    "number_of_timesteps": 100000,
+    "number_of_episodes": 100000,
+    "save_location": "mini_example_{}/",
+    "verbosity": {
+        "environment": "INFO",
+        "parser": "INFO"
+    }
+}
