@@ -229,7 +229,8 @@ class StepLogCallback(BaseCallback):
             "dones"
         ]  # Field indicating if the episode has ended
         if len(self.current_episodes) == 0:
-            self.current_episodes = [idx for idx in range(len(dones))]
+            n_dones = len(dones)
+            self.current_episodes = [idx - n_dones for idx in range(n_dones)]
             self.current_max_episodes = max(self.current_episodes)
         prev_obs = self.model._last_obs  # Old observations
         actions = self.locals["actions"]  # Agent's actions

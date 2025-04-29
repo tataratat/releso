@@ -1,7 +1,6 @@
 import pandas as pd
-from stable_baselines3 import PPO
-
 import pytest
+from stable_baselines3 import PPO
 
 from releso.callback import EpisodeLogCallback, StepLogCallback
 
@@ -26,7 +25,9 @@ def test_callback_episode_log_callback(
 
 
 @pytest.mark.parametrize(
-    ["update_n_steps",],
+    [
+        "update_n_steps",
+    ],
     [
         (0,),
         (20,),
@@ -45,7 +46,7 @@ def test_callback_step_information_log_callback(
         update_n_steps=update_n_steps,
     )
     assert call_back.step_log_location == dir_save_location / "test.jsonl"
-    assert call_back.current_episode == 0
+    assert call_back.current_episodes == []
     assert call_back.update_n_episodes == update_n_steps
     assert call_back.first_export
     env = provide_dummy_environment
