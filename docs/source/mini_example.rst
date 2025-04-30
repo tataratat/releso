@@ -34,8 +34,8 @@ In the following the environment definition is shown. The geometry and SPOR part
     }
 
 
-The max_timesteps_in_episode defines the maximum number of steps in an episode. If this number is exceeded, the episode is terminated and the reward is set to the value defined in *reward_on_episode_exceeds_max_timesteps*. The default reward value is 0.0.
-multi_processing defines the number of cores that should be used for the environment, this is mostly for MPI applications. Only define something else if you really know what you are doing. The default value is 1 core.
+The ``max_timesteps_in_episode`` defines the maximum number of steps in an episode. If this number is exceeded, the episode is terminated and the reward is set to the value defined in ``reward_on_episode_exceeds_max_timesteps``. The default reward value is 0.0.
+``multi_processing`` defines the number of cores that should be used for the environment, this is mostly for MPI applications. Only define something else if you really know what you are doing. The default value is 1 core.
 
 
 Geometry
@@ -43,7 +43,7 @@ Geometry
 
 The first step in the definition of the environment is the definition of the geometry. The geometry defines the actions and some of the observations.
 
-For the example given above the geometry consists of 5 control points, where each can be moved in the x direction between [-3,3]. This can be defined in the *hjson* file as:
+For the example given above the geometry consists of 5 control points, where each can be moved in the x direction between :math:`[-3,3]`. This can be defined in the *hjson* file as:
 
 
 .. code-block::
@@ -109,12 +109,12 @@ For the example given above the geometry consists of 5 control points, where eac
     }
 
 The geometry is defined by a shape and by the actions that arise out of this shape. In this case the most basic shape definition ReLeSO offers is used. The shape is only defined by a list of control points.
-In this example each control point exists in two dimensions, where the second dimension is fixed in place. For the first dimension each control point is bounded by [-3,3] with a starting value of 0.0.
+In this example each control point exists in two dimensions, where the second dimension is fixed in place. For the first dimension each control point is bounded by :math:`[-3,3]` with a starting value of 0.0.
 
 The actions that arise out of this shape can either be discrete or continuous actions. In this case discrete actions are chosen. This means that for each movable dimension, for each control point, two actions are defined. One to increase the value and one to decrease the value. This means that his example has 10 actions.
 The step length of the actions are not directly defined here, so it uses default value which means the step length is 1/10 of the range of the parameter, in this case 3/5.
 
-The last item *actions_based_observation*, defines that the observations should also include the current location of the movable control points.
+The last item ``actions_based_observation``, defines that the observations should also include the current location of the movable control points.
 
 SPOR
 ~~~~
@@ -146,11 +146,11 @@ In this example an external python script is used to calculate the reward.
 
 Only a single step is defined. The definition can be categorized into 3 parts:
 **General** The name of the step/task, whether or not to stop and terminate the episode if an error is thrown in this step, if a reward should be applied if the step fails and, whether or not the run the task during a reset step. There are more potential options, but they are not used here since the default values for those are sufficient.
-**User Defined Python Function** First the location where the python script should be run is defined, then that it is a python script that is called (Attention: The script is not called with this command, but first releso tries to load a specific *main()* function from the script (see below) and run it "internalized"), the path to the script, and lastly there are two options that define if the communication interface should be used and if the step information should be added to the communication.
+**User Defined Python Function** First the location where the python script should be run is defined, then that it is a python script that is called (Attention: The script is not called with this command, but first releso tries to load a specific ``main()`` function from the script (see below) and run it "internalized"), the path to the script, and lastly there are two options that define if the communication interface should be used and if the step information should be added to the communication.
 
 **Reward Aggregation** The last part is the aggregation of the reward. In this case the sum of all rewards is used. This means that if multiple steps are defined, the reward of all steps is summed up. If only one step is defined, the reward of that step is used.
 
-As mentioned before if a python file is defined as shown above ReLeSO first tries to load the script and run the function *main()* from it. For this to work this function needs the following signature:
+As mentioned before if a python file is defined as shown above ReLeSO first tries to load the script and run the function ``main()`` from it. For this to work this function needs the following signature:
 
 .. code-block:: python
 
@@ -247,7 +247,7 @@ In this example the *python* script could look this this:
 
 
 
-In general you won't need the last 25 lines of code since ReLeSO will directly call the *main* function. but it can be used to trouble shoot the script manually (and also is an old way to use the SPOR system).
+In general you won't need the last 25 lines of code since ReLeSO will directly call the ``main`` function. but it can be used to trouble shoot the script manually (and also is an old way to use the SPOR system).
 
 
 Agent
@@ -255,7 +255,7 @@ Agent
 
 The agent is defined in the *hjson* file. The agent is a standard agent from Stable Baselines3. In this case the PPO agent is used. The only thing that needs to be defined is the type of agent and the parameters for the agent. The parameters are passed directly to the constructor of the agent.
 
-The *tensorboard_log* parameter is used to define the path where the tensorboard logs should be saved. This is not needed, but it is recommended to use it since it helps to debug the agent and the training process.
+The ``tensorboard_log`` parameter is used to define the path where the tensorboard logs should be saved. This is not needed, but it is recommended to use it since it helps to debug the agent and the training process.
 
 .. code-block::
 
@@ -285,6 +285,6 @@ The general part of the *hjson* file defines the number of episodes, the number 
     }
 
 
-The *number_of_timesteps* defines the number of timesteps that should be used for training. The *number_of_episodes* defines the number of episodes that should be used for training. The *save_location* defines the location where the logs should be saved. The *verbosity* defines the verbosity of the logs.
+The ``number_of_timesteps`` defines the number of timesteps that should be used for training. The *number_of_episodes* defines the number of episodes that should be used for training. The *save_location* defines the location where the logs should be saved. The ``verbosity`` defines the verbosity of the logs.
 
 In the full example can be found in the *examples* folder of the ReLeSO repository.
