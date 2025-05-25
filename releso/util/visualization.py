@@ -452,7 +452,9 @@ def plot_step_log(
     df_raw["episodes"] = df_raw["episodes"].apply(lambda x: x[env_id])
     df_raw["reward"] = df_raw["rewards"].apply(lambda x: x[env_id])
     df_raw["obs"] = df_raw["new_obs"].apply(lambda x: x[env_id])
-    df_raw["infos"] = df_raw["infos"].apply(lambda x: x[env_id])
+    has_info = "infos" in df_raw.columns
+    if has_info:
+        df_raw["infos"] = df_raw["infos"].apply(lambda x: x[env_id])
 
     # Convert obs vector into columns
     # obs_array = np.vstack(df_raw["obs"].values)
