@@ -297,6 +297,85 @@ def plot_episode_log(
     return fig
 
 
+def get_data_from_dataframe(
+    df: pd.DataFrame,
+    name: str,
+    selector: list[tuple[str, tuple[int, int]]],
+) -> pd.DataFrame:
+    """Get data from a dataframe based on the provided selector.
+
+    This function extracts specific data from a given dataframe based on the
+    provided selector. The selector is a list of tuples, where each tuple
+    contains a string and a tuple of two integers. The string indicates the
+    type of data to extract (e.g., "obs", "info"), and the tuple of integers
+    specifies the range of indices to extract. The function returns a new
+    dataframe containing the extracted data.
+    The function is designed to handle different types of data extraction,
+    including observations and information from the dataframe. It uses
+    recursion to navigate through the dataframe structure (and subsequent dict)
+    and extract the desired data.
+
+    Args:
+        df (pd.DataFrame): StepDataFrame containing the data to be extracted.
+        name (str): Name of field the extracted data should be stored in.
+        selector (list[tuple[str, tuple[int, int]]]): List of tuples
+          containing the type of data to extract and the range of indices.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the extracted data.
+    """
+
+    def get_elem_from_crums(df: pd.DataFrame, crums: list[str]) -> np.ndarray:
+        """Get the element from the dataframe/dictionary based on the crums."""
+        if len(crums) == 1:
+            return df.apply(lambda x: x[crums[0]])
+        else:
+            return get_elem_from_crums(
+                df.apply(lambda x: x[crums[0]]), crums[1:]
+            )
+
+    objective_id = 0
+    ret_df = []
+    for element in selector:
+        if element[0] == "obs":
+            selected = np.vstack(df["obs"].values).T[
+                element[1][0] : element[1][1]
+            ]
+            ret_df.append(
+                pd.DataFrame(
+                    selected.T,
+                    columns=[
+                        f"{name}_{objective_id + i}"
+                        for i in range(len(selected))
+                    ],
+                )
+            )
+            objective_id += len(selected)
+        elif element[0].startswith("infos"):
+            if element[0].endswith("geometry_information"):
+                selected = np.vstack(
+                    df["infos"].apply(
+                        lambda x: np.array(x["geometry_information"]).flatten()
+                    )
+                ).T[element[1][0] : element[1][1]]
+            else:
+                crums = element[0].split(".")
+                selected = np.vstack(
+                    get_elem_from_crums(df["infos"], crums[1:])
+                ).T[element[1][0] : element[1][1]]
+            ret_df.append(
+                pd.DataFrame(
+                    selected.T,
+                    columns=[
+                        f"{name}_{objective_id + i}"
+                        for i in range(len(selected))
+                    ],
+                )
+            )
+            objective_id += len(selected)
+    return pd.concat(ret_df, axis=1)
+
+
 def plot_step_log(
     step_log_file: pathlib.Path,
     env_id: int,
@@ -304,6 +383,12 @@ def plot_step_log(
     episode_end: int = np.iinfo(int).max,
     episode_step: int = 1,
     figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
+    objective_observation: list[tuple[str, tuple[int, int]]] = [
+        ("obs", (0, 1))
+    ],
+    design_variable: list[tuple[str, tuple[int, int]]] = [
+        ("obs", (1, None)),
+    ],
 ) -> Figure:
     """Plot the step log data of a single run for multiple episodes.
 
@@ -312,7 +397,7 @@ def plot_step_log(
     policy that is learned by the agent.
     It creates an interactive plot with two subplots:
 
-    1. The first subplot shows the reward and objective value over the number
+    1. The first subplot shows the reward and objective value(s) over the number
        of timesteps within the current episode.
     2. The second subplot shows the values of the design variables (observations)
        over the number of timesteps within the current episode.
@@ -364,24 +449,43 @@ def plot_step_log(
     # The underlying assumption of the extraction is that we are always dealing
     # with a vectorized environment, i.e., that the rewards and observations
     # corresponding to each environment are collected in a list
+    df_raw["episodes"] = df_raw["episodes"].apply(lambda x: x[env_id])
     df_raw["reward"] = df_raw["rewards"].apply(lambda x: x[env_id])
     df_raw["obs"] = df_raw["new_obs"].apply(lambda x: x[env_id])
+    df_raw["infos"] = df_raw["infos"].apply(lambda x: x[env_id])
 
     # Convert obs vector into columns
-    obs_array = np.vstack(df_raw["obs"].values)
-    obs_df = pd.DataFrame(
-        obs_array, columns=[f"obs_{i - 1}" for i in range(obs_array.shape[1])]
+    # obs_array = np.vstack(df_raw["obs"].values)
+    # obs_df = pd.DataFrame(
+    #     obs_array, columns=[f"obs_{i}" for i in range(obs_array.shape[1])]
+    # )
+    # Extract the objective observation
+    objectives = get_data_from_dataframe(
+        df_raw,
+        "objective",
+        objective_observation,
+    )
+
+    # Extract the design variables
+    design_vars = get_data_from_dataframe(
+        df_raw,
+        "design_variable",
+        design_variable,
     )
 
     # Combine everything
-    df = pd.concat([df_raw["episodes"], df_raw["reward"], obs_df], axis=1)
-
-    # Rename 'obs_-1' to 'objective' for clarity
-    df = df.rename(columns={"obs_-1": "objective"})
+    df = pd.concat(
+        [df_raw["episodes"], df_raw["reward"], objectives, design_vars], axis=1
+    )
 
     # Filter only the selected episodes
-    if episode_end > (max_idx:=df["episodes"].max()):
+    max_idx = df["episodes"].max()
+    if episode_end is None or episode_end > max_idx:
         episode_end = max_idx
+    # selected episode numbers do not necessarily match the filter applied. The
+    # filter does not directly filter for episode number but filters the whole
+    # list of episodes, which can have missing episodes, due to episodes
+    # generated outside the environment id chosen.
     selected_episodes = df["episodes"].unique()[
         episode_start : (episode_end + 1) : episode_step
     ]
@@ -390,7 +494,14 @@ def plot_step_log(
     # Create the interactive visualization
 
     # Choose which obs dimensions to show in bottom subplot
-    obs_dims_to_plot = df.columns[df.columns.str.contains("obs_")].tolist()
+    design_var_names = df.columns[
+        df.columns.str.contains("design_variable_")
+    ].tolist()
+
+    # Choose which obs dimensions to show in top subplot
+    objective_names = df.columns[
+        df.columns.str.contains("objective_")
+    ].tolist()
 
     # Get all unique episodes
     episodes = df["episodes"].unique()
@@ -414,17 +525,18 @@ def plot_step_log(
         steps_per_episode = list(range(len(ep_data)))
 
         # First subplot: reward and objective
-        fig.add_trace(
-            go.Scatter(
-                x=steps_per_episode,
-                y=ep_data["objective"],
-                name=f"Objective (Ep. {ep})",
-                visible=(ep == episode_start),
-                line=dict(color="green"),
-            ),
-            row=1,
-            col=1,
-        )
+        for i, obs_dim in enumerate(objective_names):
+            fig.add_trace(
+                go.Scatter(
+                    x=steps_per_episode,
+                    y=ep_data[obs_dim],
+                    name=f"Objective_{i} (Ep. {ep})",
+                    visible=(ep == episode_start),
+                    # line=dict(color="green"),
+                ),
+                row=1,
+                col=1,
+            )
         fig.add_trace(
             go.Scatter(
                 x=steps_per_episode,
@@ -439,12 +551,12 @@ def plot_step_log(
         )
 
         # Second subplot: selected observation dimensions
-        for j, dim in enumerate(obs_dims_to_plot):
+        for j, dim in enumerate(design_var_names):
             fig.add_trace(
                 go.Scatter(
                     x=steps_per_episode,
                     y=ep_data[dim],
-                    name=f"{dim} (Ep. {ep})",
+                    name=f"Design Var. {j} (Ep. {ep})",
                     visible=(ep == episode_start),
                 ),  # one trace per dimension
                 row=2,
@@ -464,7 +576,7 @@ def plot_step_log(
             ],
         })
         # Make the traces for this episode visible
-        n_traces_per_episode = 2 + len(obs_dims_to_plot)
+        n_traces_per_episode = 1 + len(objective_names) + len(design_var_names)
         for k in range(n_traces_per_episode):
             sliders[id]["args"][0]["visible"][
                 id * n_traces_per_episode + k

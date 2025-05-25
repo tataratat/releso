@@ -60,6 +60,28 @@ def check_positive(value) -> int:
     return value
 
 
+def check_positive_or_zero(value) -> int:
+    """Checks if the provided value is positive or zero.
+
+
+    Args:
+        value (Any): Value to be cast to integer.
+
+    Raises:
+        argparse.ArgumentTypeError: Throws error if the value is not positive
+            or zero.
+
+    Returns:
+        int: checked value
+    """
+    value = int(value)
+    if value < 0:
+        raise argparse.ArgumentTypeError(
+            "Provided value is not positive or zero."
+        )
+    return value
+
+
 def check_window_size(value) -> Union[tuple[int, int], Literal["auto"]]:
     """Check window check for error.
 
@@ -308,8 +330,8 @@ def entry():
     )
     parser_visualize_steplog.add_argument(
         "-i",
-        "--episode-id",
-        type=check_positive,
+        "--environment-id",
+        type=check_positive_or_zero,
         default=0,
         help=(
             "ID of the environment whose data is supposed to be visualized "
@@ -319,7 +341,7 @@ def entry():
     parser_visualize_steplog.add_argument(
         "-f",
         "--from-episode",
-        type=check_positive,
+        type=check_positive_or_zero,
         default=0,
         help=(
             "Starting episode of the interactive visualization. Defaults to 0."
@@ -331,9 +353,9 @@ def entry():
         type=check_positive,
         default=1,
         help=(
-            "Select the number of episodes to be included in each visualization. "
-            "Defaults to 1 which means that every episode between from_episode "
-            "and until_episode will be visualized. Set to a larger value to "
+            "Select the amount of episodes skipped between visualized episodes."
+            " Defaults to 1 which means that every episode between from_episode"
+            " and until_episode will be visualized. Set to a larger value to "
             "include less episodes in the visualization."
         ),
     )
@@ -366,7 +388,7 @@ def entry():
         if len(figure_size) == 1:
             figure_size = figure_size[0]
         # Visualize contents of episode_log.csv
-        if args.visualization_mode == "episode_log":
+        if args.visualization_mode == "episode-log":
             folders_to_process: list = [
                 folder.resolve() for folder in args.folders
             ]
@@ -384,10 +406,10 @@ def entry():
             )
             export_figure(fig, args.export_path, "episode_log.html")
         # Visualize contents of step_log.jsonl
-        else:  # args.visualization_mode == "step_log"
+        elif args.visualization_mode == "step-log":
             fig = plot_step_log(
                 args.logfile.resolve(),
-                args.episode_id,
+                args.environment_id,
                 episode_start=args.from_episode,
                 episode_end=args.until_episode,
                 episode_step=args.n_episodes,
@@ -395,6 +417,13 @@ def entry():
             )
             # Export the plot as the suffix or as "steplog_plot.html"
             export_figure(fig, args.export_path, "steplog_plot.html")
+        else:
+            print(
+                f"Unknown visualization mode: {args.visualization_mode}. "
+                "Please choose between 'episode-log' and 'step-log'."
+            )
+            parser.print_help()
+            exit(1)
     else:
         parser.print_help()
         exit(1)
