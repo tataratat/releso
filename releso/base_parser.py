@@ -72,6 +72,9 @@ class BaseParser(BaseModel):
     #: higher will lower the computational overhead. Defaults to 0 which
     #: triggers the output after every episode.
     step_log_update: conint(ge=0) = 0
+    #: Flag indicating whether the step_log should also contain the
+    #: information of the environment step. Defaults to False.
+    step_log_info: bool = False
 
     # internal objects
     #: Holds the trainable agent for the RL use case. The
@@ -135,6 +138,7 @@ class BaseParser(BaseModel):
                     step_log_location=self.save_location / "step_log.jsonl",
                     verbose=1,
                     update_n_steps=self.step_log_update,
+                    step_log_info=self.step_log_info,
                 ),
             )
 

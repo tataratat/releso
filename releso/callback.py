@@ -160,6 +160,7 @@ class StepLogCallback(BaseCallback):
         step_log_location: Path,
         verbose: int = 0,
         update_n_steps: int = 0,
+        log_infos: bool = False,
     ):
         """Constructor for the Callback using SB3 interface.
 
@@ -168,6 +169,8 @@ class StepLogCallback(BaseCallback):
             verbose (int, optional): Verbosity of the callback. Defaults to 0.
             update_every (int, optional): Update the step log file every n
             steps. Defaults to 0 which triggers the update after every episode.
+            log_infos (bool, optional): Whether to log the infos. Defaults to
+            False.
         """
         super().__init__(verbose)
         self.step_log_location: Path = step_log_location
@@ -175,8 +178,16 @@ class StepLogCallback(BaseCallback):
         self.current_episodes: list[int] = []
         self.update_n_episodes: int = update_n_steps
         self.first_export: bool = True
-        self.current_max_episodes: int = 0
-
+	self.current_max_episodes: int = 0        
+	self.log_infos: bool = log_infos
+        self.logger.info(
+            (
+                "The StepLogCallback should only be used for debugging purposes"
+                " and only for use-cases with a smallish observation space."
+                " Otherwise it will create a lot of data and slow down the"
+                " training process. Use with caution!"
+            )
+        )
         self._reset_internal_storage()
 
     def _reset_internal_storage(self) -> None:
@@ -246,7 +257,10 @@ class StepLogCallback(BaseCallback):
         self.actions.append(actions)
         self.new_obs.append(new_obs)
         self.rewards.append(rewards)
-        self.infos.append(infos)
+
+        if self.log_infos:
+            infos = self.locals["infos"]  # Additional information
+            self.infos.append(infos)
 
         done_export = False
         # Check if the environment has completed an episode
