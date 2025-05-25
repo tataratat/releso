@@ -129,6 +129,7 @@ class BaseParser(BaseModel):
                 episode_log_location=self.save_location / "episode_log.csv",
                 verbose=1,
                 update_n_episodes=self.episode_log_update,
+                logger=self.get_logger(),
             ),
         ]
 
@@ -138,7 +139,8 @@ class BaseParser(BaseModel):
                     step_log_location=self.save_location / "step_log.jsonl",
                     verbose=1,
                     update_n_steps=self.step_log_update,
-                    step_log_info=self.step_log_info,
+                    log_infos=self.step_log_info,
+                    logger=self.get_logger(),
                 ),
             )
 
