@@ -200,7 +200,7 @@ class StepLogCallback(BaseCallback):
             from stable_baselines3.common.logger import configure
 
             self._logger = configure(
-                str(self.episode_log_location.parent / "episode_log.log"),
+                str(self.step_log_location.parent / "episode_log.log"),
                 ["stdout", "csv"],
             )
         self._logger.info(
