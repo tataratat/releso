@@ -3,6 +3,7 @@
 File holds all classes which define the geometry and with that also the action
 definition of the problem.
 """
+
 from typing import Any, List, Optional, Tuple, Union
 from uuid import UUID
 
@@ -30,7 +31,12 @@ ShapeTypes = Union[ShapeDefinition, BSplineDefinition, NURBSDefinition]
 class Geometry(BaseModel):
     """Definition of the Geometry."""
 
-    shape_definition: ShapeTypes
+    #: Definition of the shape used for the geometry.
+    #: This is the shape that will be used to define the geometry and
+    #: the action space. If only a single shape is used this can be
+    #: a single shape definition, if multiple shapes are used this can be
+    #: a list of shape definitions.
+    shape_definition: Union[ShapeTypes, List[ShapeTypes]]
     #: use the action space for the observations. If this is set to False
     #: please note that you need to define your own observation via a
     #: :py:class:`releso.spor.SPORObject`
@@ -47,6 +53,21 @@ class Geometry(BaseModel):
     #: positions of all actions values of the previous step
     _last_actions: List[VariableLocation] = PrivateAttr(default=None)
 
+    def _get_actions(self) -> List[VariableLocation]:
+        """Get the actions defined by the shape definition.
+
+        Returns:
+            List[VariableLocation]: List of all actions defined by the
+                shape_definition.
+        """
+        if isinstance(self.shape_definition, list):
+            return [
+                action
+                for shape in self.shape_definition
+                for action in shape.get_actions()
+            ]
+        return self.shape_definition.get_actions()
+
     def __init__(self, **data: Any) -> None:
         """Definition of the Geometry.
 
@@ -56,7 +77,7 @@ class Geometry(BaseModel):
         shape.
         """
         super().__init__(**data)
-        self._actions = self.shape_definition.get_actions()
+        self._actions = self._get_actions()
 
     def setup(self, environment_id: UUID):
         """Setup with additional information from the environment.
@@ -66,7 +87,7 @@ class Geometry(BaseModel):
         Args:
             environment_id (UUID): Environment id.
         """
-        self._actions = self.shape_definition.get_actions()
+        self._actions = self._get_actions()
 
     def get_parameter_values(self) -> List[List[float]]:
         """Return all control_points of the spline.
@@ -74,7 +95,12 @@ class Geometry(BaseModel):
         Returns:
             List[List[float]]: Nested list of control_points.
         """
-        return self.shape_definition.get_parameter_values()
+        if isinstance(self.shape_definition, list):
+            return [
+                shape.get_parameter_values() for shape in self.shape_definition
+            ]
+        else:
+            return self.shape_definition.get_parameter_values()
 
     def apply_action(self, action: Union[List[float], int]) -> Optional[Any]:
         """Function that applies a given action to the Spline.
@@ -180,16 +206,20 @@ class Geometry(BaseModel):
         """
         if not self.action_based_observation:
             return None
-        return np.array(
-            [var_loc.current_position for var_loc in self._actions]
-        )
+        return np.array([
+            var_loc.current_position for var_loc in self._actions
+        ])
 
     def reset(self, validation_id: Optional[int] = None) -> Any:
         """Resets the geometry to its initial values."""
         if self.reset_with_random_action_values:
             self.apply_random_action(validation_id)
         else:
-            self.shape_definition.reset()
+            if isinstance(self.shape_definition, list):
+                for shape in self.shape_definition:
+                    shape.reset()
+            else:
+                self.shape_definition.reset()
         return self.apply()
 
     def apply_random_action(self, seed: Optional[str] = None):
