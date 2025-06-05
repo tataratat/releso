@@ -273,3 +273,14 @@ def basic_verbosity_definition(dir_save_location):
     return {
         "save_location": dir_save_location,
     }
+
+
+@pytest.fixture
+def get_null_logger():
+    import logging
+
+    logger = logging.getLogger("test_logger")
+    logger.setLevel(logging.CRITICAL)
+    null_handler = logging.NullHandler()
+    logger.addHandler(null_handler)
+    return logger

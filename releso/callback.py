@@ -22,6 +22,7 @@ class EpisodeLogCallback(BaseCallback):
         episode_log_location: Path,
         verbose: int = 0,
         update_n_episodes: int = 1,
+        logger=None,
     ):
         """Constructor for the Callback using SB3 interface.
 
@@ -30,6 +31,8 @@ class EpisodeLogCallback(BaseCallback):
             verbose (int, optional): Verbosity of the callback. Defaults to 0.
             update_n_episodes (int, optional): Update the episode every n
             episodes. Defaults to 1.
+            logger (optional): Logger to use for logging. If None, a default
+            logger is created. Defaults to None.
         """
         super().__init__(verbose=verbose)
         self.episode_log_location: Path = episode_log_location
@@ -38,6 +41,14 @@ class EpisodeLogCallback(BaseCallback):
 
         self.episodes: int = -1
         self.last_checked_episode: int = 0
+        self._logger = logger
+        if self._logger is None:
+            from stable_baselines3.common.logger import configure
+
+            self._logger = configure(
+                str(self.episode_log_location.parent / "episode_log.log"),
+                ["stdout", "csv"],
+            )
 
         self.inter_episode_dicts: Optional[
             List[Dict[int, Union[List[float], int]]]
@@ -160,6 +171,8 @@ class StepLogCallback(BaseCallback):
         step_log_location: Path,
         verbose: int = 0,
         update_n_steps: int = 0,
+        log_infos: bool = False,
+        logger=None,
     ):
         """Constructor for the Callback using SB3 interface.
 
@@ -168,6 +181,10 @@ class StepLogCallback(BaseCallback):
             verbose (int, optional): Verbosity of the callback. Defaults to 0.
             update_every (int, optional): Update the step log file every n
             steps. Defaults to 0 which triggers the update after every episode.
+            log_infos (bool, optional): Whether to log the infos. Defaults to
+            False.
+            logger (optional): Logger to use for logging. If None, a default
+            logger is created. Defaults to None.
         """
         super().__init__(verbose)
         self.step_log_location: Path = step_log_location
@@ -176,7 +193,24 @@ class StepLogCallback(BaseCallback):
         self.update_n_episodes: int = update_n_steps
         self.first_export: bool = True
         self.current_max_episodes: int = 0
+        self.log_infos: bool = log_infos
 
+        self._logger = logger
+        if self._logger is None:
+            from stable_baselines3.common.logger import configure
+
+            self._logger = configure(
+                str(self.step_log_location.parent / "episode_log.log"),
+                ["stdout", "csv"],
+            )
+        self._logger.info(
+            (
+                "The StepLogCallback should only be used for debugging purposes"
+                " and only for use-cases with a smallish observation space."
+                " Otherwise it will create a lot of data and slow down the"
+                " training process. Use with caution!"
+            )
+        )
         self._reset_internal_storage()
 
     def _reset_internal_storage(self) -> None:
@@ -202,8 +236,9 @@ class StepLogCallback(BaseCallback):
             "actions": self.actions,
             "new_obs": self.new_obs,
             "rewards": self.rewards,
-            "infos": self.infos,
         })
+        if self.log_infos:
+            export_data_frame["infos"] = self.infos
         export_data_frame.index = self.timesteps
         export_data_frame.index.name = "timesteps"
         # Write the data to file
@@ -246,7 +281,10 @@ class StepLogCallback(BaseCallback):
         self.actions.append(actions)
         self.new_obs.append(new_obs)
         self.rewards.append(rewards)
-        self.infos.append(infos)
+
+        if self.log_infos:
+            infos = self.locals["infos"]  # Additional information
+            self.infos.append(infos)
 
         done_export = False
         # Check if the environment has completed an episode
