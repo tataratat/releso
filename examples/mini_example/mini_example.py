@@ -52,7 +52,7 @@ if __name__ == "__main__":
     path.mkdir(exist_ok=True, parents=True)
 
     local_variable_store_path = path/"local_variable_store.json"
-    if not path.exists():
+    if not local_variable_store_path.exists():
         func_data = {
             "last_error": 0
         }
