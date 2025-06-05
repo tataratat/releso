@@ -230,7 +230,6 @@ def test_ffd_geometry_init(
     assert geometry.is_geometry_changed() is False
     geometry.apply()
 
-
     _ = geometry.get_parameter_values()
 
     # actions
@@ -247,3 +246,126 @@ def test_ffd_geometry_init(
         assert act_def.shape == (len(geometry._actions),)
         geometry.apply_action(np.random.rand(len(geometry._actions)))
     assert geometry.is_geometry_changed()
+
+
+@pytest.mark.parametrize(
+    (
+        "shape_definition",
+        "action_based",
+        "discrete_action",
+        "correct_type",
+        "n_action_variables",
+        "observation_shape",
+    ),
+    [
+        (
+            "default_shape",
+            None,
+            None,
+            ShapeDefinition,
+            2,
+            [5, 5],
+        ),  # test that default is correct
+        (
+            ["default_shape", "default_shape"],
+            True,
+            True,
+            [ShapeDefinition, ShapeDefinition],
+            4,
+            [[5, 5], [5, 5]],
+        ),
+        (
+            ["default_shape", "bspline_shape"],
+            False,
+            False,
+            [ShapeDefinition, BSplineDefinition],
+            20,
+            [[5, 5], [2, 2, 2, 2, 2, 2, 2, 2, 2]],
+        ),
+        (
+            ["default_shape", "nurbs_shape"],
+            False,
+            False,
+            [ShapeDefinition, NURBSDefinition],
+            22,
+            [[5, 5], [2, 2, 2, 2, 2, 2, 2, 2, 2, 9]],
+        ),
+        # # if nurbs and b splines are mixed the shape is always a nurbs.
+        # (
+        #     ["bspline_shape", "nurbs_shape", "nurbs_shape"],
+        #     None,
+        #     False,
+        #     [NURBSDefinition, NURBSDefinition, NURBSDefinition],
+        #     58,
+        #     [
+        #         [2, 2, 2, 2, 2, 2, 2, 2, 2],
+        #         [2, 2, 2, 2, 2, 2, 2, 2, 2, 9],
+        #         [2, 2, 2, 2, 2, 2, 2, 2, 2, 9],
+        #     ],
+        # ),
+    ],
+)
+def test_geometry_shape_list(
+    shape_definition,
+    action_based,
+    discrete_action,
+    correct_type,
+    n_action_variables,
+    observation_shape,
+    dir_save_location,
+    request,
+):
+    call_dict = {
+        "save_location": dir_save_location,
+    }
+    if isinstance(shape_definition, list):
+        call_dict["shape_definition"] = [
+            request.getfixturevalue(shape) for shape in shape_definition
+        ]
+    else:
+        call_dict["shape_definition"] = request.getfixturevalue(
+            shape_definition
+        )
+
+    if action_based is not None:
+        call_dict["action_based_observation"] = action_based
+    if discrete_action is not None:
+        call_dict["discrete_actions"] = discrete_action
+
+    geometry = Geometry(**call_dict)
+
+    # correct type of shape definition
+    if isinstance(correct_type, list):
+        assert isinstance(geometry.shape_definition, list), (
+            "Shape definition should be a list."
+        )
+        assert len(geometry.shape_definition) == len(correct_type), (
+            "Shape definition should have the correct length."
+        )
+        for shape, correct in zip(geometry.shape_definition, correct_type):
+            assert isinstance(shape, correct), (
+                f"Shape definition should be of type {correct}, but is {[type(s) for s in geometry.shape_definition]} {correct_type}."
+            )
+    else:
+        assert isinstance(geometry.shape_definition, correct_type), (
+            f"Shape definition should be of type {correct_type}, but is {type(geometry.shape_definition)}."
+        )
+
+    # correct action shape
+
+    geometry.setup("id")
+
+    assert len(geometry._actions) == n_action_variables
+
+    # correct observation shape
+    def check_shape(item, shape):
+        assert len(item) == len(shape), (
+            f"Length of item and b must be equal. Got {item} and {shape}."
+        )
+        for i, s in zip(item, shape):
+            if isinstance(s, list):
+                check_shape(i, s)
+
+    param_values = geometry.get_parameter_values()
+
+    check_shape(param_values, observation_shape)
