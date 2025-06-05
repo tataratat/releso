@@ -3,6 +3,7 @@
 File defines the base json object which is needed to define the problem setting
 for the command line based usage of the ReLeSO toolbox/framework.
 """
+
 import pathlib
 from copy import deepcopy
 from typing import Any, Optional, Union
@@ -49,8 +50,12 @@ class BaseParser(BaseModel):
     validation: Optional[Validation] = None
     #: Number of environments to train in parallel. Defaults to None.
     n_environments: Optional[conint(ge=1)] = 1
-    # : Should training parameters be normalized to the number of environments?
-    # : Defaults to False.
+    #: Should training parameters be normalized to the number of environments?
+    #: If True the number of steps between learnings are divided by the number
+    #: of environments. This increases the training speed for PPO and A2C
+
+    #: but the training might be a little bit more unstable.
+    #: Defaults to False.
     normalize_training_values: bool = False
     #: Should the multi environment be run sequentially (True) or with multi
     #: processing (False). Defaults to False.
@@ -110,9 +115,9 @@ class BaseParser(BaseModel):
             else:
                 train_env = SubprocVecEnv(env_create_list)
         else:
-            train_env = DummyVecEnv(
-                [lambda: self.environment.get_gym_environment()]
-            )
+            train_env = DummyVecEnv([
+                lambda: self.environment.get_gym_environment()
+            ])
 
         self._agent = self.agent.get_agent(train_env, normalizer_divisor)
         self.get_logger().info(f"Agent is of type {type(self._agent)}")
@@ -127,7 +132,7 @@ class BaseParser(BaseModel):
         if self.export_step_log:
             callbacks.append(
                 StepLogCallback(
-                    step_log_location=self.save_location / "step_log.csv",
+                    step_log_location=self.save_location / "step_log.jsonl",
                     verbose=1,
                     update_n_steps=self.step_log_update,
                 ),

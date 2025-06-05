@@ -4,10 +4,10 @@ authors = [
     {name = "Clemens Fricke", email = "clemens.david.fricke@tuwien.ac.at"}
 ]
 requires-python = ">=3.8"
-license = { file = "LICENSE" }
+license-files = ["LICENSE"]
+license = "MIT"
 classifiers = [
         "Operating System :: OS Independent",
-        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -30,10 +30,10 @@ file = "README.md"
 content-type = "text/markdown"
 
 [project.urls]
-homepage = "https://github.com/clemens-fricke/releso"
+homepage = "https://github.com/tataratat/releso"
 documentation = "https://releso.readthedocs.io/en/latest/"
-issues = "https://github.com/clemens-fricke/releso/issues"
-repository = "https://github.com/clemens-fricke/releso.git"
+issues = "https://github.com/tataratat/releso/issues"
+repository = "https://github.com/tataratat/releso.git"
 
 [project.optional-dependencies]
 all = [
@@ -43,11 +43,18 @@ all = [
 test = [
     "pytest",
     "pytest-cov",
+    "requests",
+    "splinepy[all]>=0.1.2",
+    "torchvision",
 ]
 docs = [
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-jsonschema",
+]
+visualize = [
+    "plotly",
+    "kaleido",
 ]
 dev = [
     "splinepy[all]>=0.1.2",
@@ -57,6 +64,8 @@ dev = [
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-jsonschema",
+    "plotly",
+    "kaleido",
 ]
 
 [project.scripts]
@@ -71,7 +80,7 @@ packages = [
 ]
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]

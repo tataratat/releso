@@ -1,5 +1,6 @@
 import copy
 import pathlib
+import shutil
 import uuid
 from collections.abc import Iterable
 from typing import List
@@ -320,9 +321,9 @@ def test_spor_object_executor(
         multi_processor["save_location"] = dir_save_location
         calling_dict["multi_processor"] = multi_processor
     if use_communication_interface:
-        calling_dict[
-            "use_communication_interface"
-        ] = use_communication_interface
+        calling_dict["use_communication_interface"] = (
+            use_communication_interface
+        )
     if add_step_information:
         calling_dict["add_step_information"] = add_step_information
     if error:
@@ -332,6 +333,70 @@ def test_spor_object_executor(
         return
     spor_object = SPORObjectExecutor(**calling_dict)
     assert type(spor_object.multi_processor) is wanted_mp
+
+
+@pytest.mark.parametrize(
+    "working_dir, wanted_result, relative, pre_create, error",
+    [
+        (".", ".", True, False, False),
+        (
+            "{}/test",
+            "test_save_location_please_delete/test/",
+            False,
+            False,
+            False,
+        ),
+        ("non_existing/folder", "as/", False, False, True),
+        ("existing/folder/", "existing/folder/", True, True, False),
+        (
+            "{}/test/{}",
+            "test_save_location_please_delete/test/idididid/",
+            False,
+            False,
+            False,
+        ),
+    ],
+)
+def test_spor_object_executor_working_dir(
+    working_dir, wanted_result, relative, pre_create, error, dir_save_location
+):
+    if pre_create:
+        pathlib.Path(working_dir).mkdir(parents=True, exist_ok=True)
+
+    if not relative:
+        wanted_result = str(
+            (
+                pathlib.Path("/".join(str(dir_save_location).split("/")[:-1]))
+                / wanted_result
+            )
+            .resolve()
+            .absolute()
+        )
+
+    calling_dict = {
+        "name": "test",
+        "save_location": dir_save_location,
+        "reward_on_error": 0.0,
+        "multi_processor": {
+            "max_core_count": 1,
+            "save_location": dir_save_location,
+        },
+    }
+    calling_dict["working_directory"] = str(working_dir)
+    if error:
+        with pytest.raises(ValidationError):
+            spor_object = SPORObjectExecutor(**calling_dict)
+            spor_object.setup_working_directory("idididid")
+        return
+    spor_object = SPORObjectExecutor(**calling_dict)
+    spor_object.setup_working_directory("idididid")
+    print(spor_object.working_directory)
+    # if relative:
+    #     assert spor_object.working_directory == wanted_result
+    # else:
+    assert spor_object.working_directory == wanted_result
+    if pre_create:
+        shutil.rmtree(wanted_result)
 
 
 @pytest.mark.parametrize("with_multi_processing", [(True), (False)])

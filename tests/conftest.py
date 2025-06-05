@@ -234,16 +234,14 @@ def basic_spor_definition(dir_save_location):
 @pytest.fixture
 def spor_python_external(basic_spor_definition):
     file_path_prefix = str(pathlib.Path(__file__).parent)
-    basic_spor_definition.update(
-        {
-            "python_file_path": (
-                f"{file_path_prefix}/samples/spor_python_scripts_tests/"
-                "file_exists_has_main.py"
-            ),
-            "use_communication_interface": True,
-            "additional_observations": 3,
-        }
-    )
+    basic_spor_definition.update({
+        "python_file_path": (
+            f"{file_path_prefix}/samples/spor_python_scripts_tests/"
+            "file_exists_has_main.py"
+        ),
+        "use_communication_interface": True,
+        "additional_observations": 3,
+    })
     return basic_spor_definition
 
 
