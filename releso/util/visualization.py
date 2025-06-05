@@ -429,7 +429,16 @@ def plot_step_log(
         figure_size (Union[tuple[int, int], Literal['auto']], optional):
           Size of the figure. If 'auto', the size will be adjusted to fit the
           container. Defaults to 'auto'.
-
+        objective_observation (list[tuple[str, tuple[int, int]]]): List of 
+          tuples containing information from which column of the steplog data
+          to extract the information about the objective (each row in a column 
+          generally contains a list of values) and the indices which entries 
+          from that list are supposed to be to extracted.
+        design_variable (list[tuple[str, tuple[int, int]]]): List of tuples 
+          containing information from which column of the steplog data to 
+          extract the information about the design variables (each row in a 
+          column generally contains a list of values) and the indices which 
+          entries from that list are supposed to be to extracted.
     Returns:
         plotly.graph_objects.Figure: A Plotly figure object containing the
           interactive plot for further customization or export.
