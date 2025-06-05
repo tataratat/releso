@@ -83,20 +83,34 @@ def check_positive_or_zero(value) -> int:
 
 
 def check_window_size(value) -> Union[tuple[int, int], Literal["auto"]]:
-    """Check window check for error.
-
+    """Check and validate window size.
+    Args:
+        value (Any): Value to be validated. Can be "auto" or a tuple of two integers.
     Raises:
         argparse.ArgumentTypeError: If value is not correct.
-
     Returns:
         Union[tuple[int, int], Literal["auto"]]: Validated value.
     """
     if str(value) == "auto":
         return "auto"
-    elif value := int(value):
-        return value
+    try:
+        # Check if value is a tuple or string representation of a tuple
+        if isinstance(value, tuple) and len(value) == 2:
+            width, height = map(int, value)
+            if width > 0 and height > 0:
+                return (width, height)
+        elif (
+            isinstance(value, str)
+            and value.startswith("(")
+            and value.endswith(")")
+        ):
+            width, height = map(int, value.strip("()").split(","))
+            if width > 0 and height > 0:
+                return (width, height)
+    except (ValueError, TypeError):
+        pass
     raise argparse.ArgumentTypeError(
-        "Provided values are not 'auto' or two integer values."
+        "Provided value must be 'auto' or a tuple of two positive integers."
     )
 
 
