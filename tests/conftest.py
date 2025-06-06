@@ -1,4 +1,5 @@
 import builtins
+import copy
 import pathlib
 
 import gymnasium as gym
@@ -85,7 +86,8 @@ def bspline_shape(dir_save_location):
 
 @pytest.fixture
 def nurbs_shape(bspline_shape, dir_save_location):
-    bspline_shape["weights"] = [
+    nurbs_shape = copy.deepcopy(bspline_shape)
+    nurbs_shape["weights"] = [
         0.1,
         0.2,
         0.3,
@@ -106,7 +108,7 @@ def nurbs_shape(bspline_shape, dir_save_location):
         ),
         0.9,
     ]
-    return bspline_shape
+    return nurbs_shape
 
 
 @pytest.fixture
