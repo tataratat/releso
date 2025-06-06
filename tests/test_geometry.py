@@ -251,8 +251,6 @@ def test_ffd_geometry_init(
 @pytest.mark.parametrize(
     (
         "shape_definition",
-        "action_based",
-        "discrete_action",
         "correct_type",
         "n_action_variables",
         "observation_shape",
@@ -260,55 +258,43 @@ def test_ffd_geometry_init(
     [
         (
             "default_shape",
-            None,
-            None,
             ShapeDefinition,
             2,
             [5, 5],
         ),  # test that default is correct
         (
             ["default_shape", "default_shape"],
-            True,
-            True,
             [ShapeDefinition, ShapeDefinition],
             4,
             [[5, 5], [5, 5]],
         ),
         (
             ["default_shape", "bspline_shape"],
-            False,
-            False,
             [ShapeDefinition, BSplineDefinition],
             20,
             [[5, 5], [2, 2, 2, 2, 2, 2, 2, 2, 2]],
         ),
         (
             ["default_shape", "nurbs_shape"],
-            False,
-            False,
             [ShapeDefinition, NURBSDefinition],
             22,
             [[5, 5], [2, 2, 2, 2, 2, 2, 2, 2, 2, 9]],
         ),
-        # # if nurbs and b splines are mixed the shape is always a nurbs.
-        # (
-        #     ["bspline_shape", "nurbs_shape", "nurbs_shape"],
-        #     None,
-        #     False,
-        #     [NURBSDefinition, NURBSDefinition, NURBSDefinition],
-        #     58,
-        #     [
-        #         [2, 2, 2, 2, 2, 2, 2, 2, 2],
-        #         [2, 2, 2, 2, 2, 2, 2, 2, 2, 9],
-        #         [2, 2, 2, 2, 2, 2, 2, 2, 2, 9],
-        #     ],
-        # ),
+        # if nurbs and b splines are mixed the shape is always a nurbs.
+        (
+            ["bspline_shape", "nurbs_shape", "default_shape"],
+            [BSplineDefinition, NURBSDefinition, ShapeDefinition],
+            40,
+            [
+                [2, 2, 2, 2, 2, 2, 2, 2, 2],
+                [2, 2, 2, 2, 2, 2, 2, 2, 2, 9],
+                [5, 5],
+            ],
+        ),
     ],
 )
 def test_geometry_shape_list(
     shape_definition,
-    action_based,
-    discrete_action,
     correct_type,
     n_action_variables,
     observation_shape,
@@ -327,13 +313,7 @@ def test_geometry_shape_list(
             shape_definition
         )
 
-    if action_based is not None:
-        call_dict["action_based_observation"] = action_based
-    if discrete_action is not None:
-        call_dict["discrete_actions"] = discrete_action
-
     geometry = Geometry(**call_dict)
-
     # correct type of shape definition
     if isinstance(correct_type, list):
         assert isinstance(geometry.shape_definition, list), (
