@@ -1,6 +1,5 @@
 # Reinforcement Learning based Shape Optimization (ReLeSO)
 
-[![pypi_upload](https://github.com/tataratat/releso/actions/workflows/build_and_upload_wheels.yml/badge.svg)](https://github.com/tataratat/releso)
 [![Read the docs](https://readthedocs.org/projects/releso/badge/?version=latest)](https://releso.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - Version](https://img.shields.io/pypi/v/releso)](https://pypi.org/project/releso/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/releso)](https://pypi.org/project/releso/)
