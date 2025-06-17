@@ -27,6 +27,7 @@ Author:
     Clemens Fricke (clemens.david.fricke@tuwien.ac.at)
 
 """
+
 import datetime
 import pathlib
 from typing import Any, Dict, Literal, Optional, Union
@@ -87,12 +88,10 @@ class BaseAgent(BaseModel):
             str: Experiment name consisting of a time and date stamp.
         """
         if self.tensorboard_log is not None:
-            return "_".join(
-                [
-                    self.tensorboard_log,
-                    datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
-                ]
-            )
+            return "_".join([
+                self.tensorboard_log,
+                datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+            ])
         return None
 
 
@@ -131,13 +130,13 @@ class BaseTrainingAgent(BaseAgent):
         if self.use_custom_feature_extractor:
             self.policy_kwargs["features_extractor_kwargs"] = {}
             if self.policy == "CnnPolicy":
-                self.policy_kwargs[
-                    "features_extractor_class"
-                ] = FeatureExtractor
+                self.policy_kwargs["features_extractor_class"] = (
+                    FeatureExtractor
+                )
             elif self.policy == "MultiInputPolicy":
-                self.policy_kwargs[
-                    "features_extractor_class"
-                ] = CombinedExtractor
+                self.policy_kwargs["features_extractor_class"] = (
+                    CombinedExtractor
+                )
             else:
                 self.get_logger().warning(
                     "Please use the CnnPolicy or the MultiInputPolicy with "
@@ -145,19 +144,19 @@ class BaseTrainingAgent(BaseAgent):
                     " use fully connected layers which might produce large "
                     "networks with image data as input."
                 )
-                self.policy_kwargs[
-                    "features_extractor_class"
-                ] = FeatureExtractor
+                self.policy_kwargs["features_extractor_class"] = (
+                    FeatureExtractor
+                )
             if self.cfe_without_linear:
                 self.policy_kwargs["features_extractor_kwargs"][
                     "without_linear"
                 ] = True
-            self.policy_kwargs["features_extractor_kwargs"][
-                "network_type"
-            ] = self.use_custom_feature_extractor
-            self.policy_kwargs["features_extractor_kwargs"][
-                "logger"
-            ] = self.get_logger()
+            self.policy_kwargs["features_extractor_kwargs"]["network_type"] = (
+                self.use_custom_feature_extractor
+            )
+            self.policy_kwargs["features_extractor_kwargs"]["logger"] = (
+                self.get_logger()
+            )
         # add all object variables to the kwargs, which are not in the
         # blacklist
         return_dict = {

@@ -84,9 +84,9 @@ def test_base_training_agent(
         "policy_kwargs": policy_kwargs,
     }
     if use_custom_feature_extractor is not None:
-        calling_dict[
-            "use_custom_feature_extractor"
-        ] = use_custom_feature_extractor
+        calling_dict["use_custom_feature_extractor"] = (
+            use_custom_feature_extractor
+        )
     base_training_agent = BaseTrainingAgent(**calling_dict)
 
     with caplog.at_level(VerbosityLevel.WARNING):

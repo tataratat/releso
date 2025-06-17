@@ -1,4 +1,5 @@
 """Module Raiser optional dependency for modules."""
+
 from typing import Any, Optional
 
 

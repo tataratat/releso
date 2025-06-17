@@ -182,17 +182,17 @@ def test_parser_environment_test_parsing(
     if max_timesteps_in_episode is not None:
         calling_dict["max_timesteps_in_episode"] = max_timesteps_in_episode
     if end_episode_on_geometry_not_changed is not None:
-        calling_dict[
-            "end_episode_on_geometry_not_changed"
-        ] = end_episode_on_geometry_not_changed
+        calling_dict["end_episode_on_geometry_not_changed"] = (
+            end_episode_on_geometry_not_changed
+        )
     if reward_on_geometry_not_changed is not None:
-        calling_dict[
-            "reward_on_geometry_not_changed"
-        ] = reward_on_geometry_not_changed
+        calling_dict["reward_on_geometry_not_changed"] = (
+            reward_on_geometry_not_changed
+        )
     if reward_on_episodes_exceeds_max_timesteps is not None:
-        calling_dict[
-            "reward_on_episode_exceeds_max_timesteps"
-        ] = reward_on_episodes_exceeds_max_timesteps
+        calling_dict["reward_on_episode_exceeds_max_timesteps"] = (
+            reward_on_episodes_exceeds_max_timesteps
+        )
     if error:
         with pytest.raises(ValidationError) as err:
             Environment(**calling_dict)
@@ -461,13 +461,11 @@ def test_parser_environment_observations_step_reset_simple(
     }
     env = Environment(**calling_dict)
 
-    gym_env = env.get_gym_environment(
-        {
-            "logger_name": "test",
-            "log_file_location": dir_save_location,
-            "logging_level": VerbosityLevel.INFO,
-        }
-    )
+    gym_env = env.get_gym_environment({
+        "logger_name": "test",
+        "log_file_location": dir_save_location,
+        "logging_level": VerbosityLevel.INFO,
+    })
     # clean_up_provider(dir_save_location)
     assert issubclass(type(gym_env), gym.Env)
 

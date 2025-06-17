@@ -9,6 +9,7 @@ Note:
     in a separate module, please see the file `spline.py` for these shape
     definitions.
 """
+
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
@@ -394,14 +395,11 @@ class ShapeDefinition(BaseModel):
                     ),
                 )
         phi = np.linspace(0, 2 * np.pi, len(control_points))
-        rgb_cycle = np.vstack(
-            (  # Three sinusoids
-                0.5 * (1.0 + np.cos(phi)),  # scaled to [0,1]
-                0.5
-                * (1.0 + np.cos(phi + 2 * np.pi / 3)),  # 120° phase shifted.
-                0.5 * (1.0 + np.cos(phi - 2 * np.pi / 3)),
-            )
-        ).T  # Shape = (60,3)
+        rgb_cycle = np.vstack((  # Three sinusoids
+            0.5 * (1.0 + np.cos(phi)),  # scaled to [0,1]
+            0.5 * (1.0 + np.cos(phi + 2 * np.pi / 3)),  # 120° phase shifted.
+            0.5 * (1.0 + np.cos(phi - 2 * np.pi / 3)),
+        )).T  # Shape = (60,3)
         fig, ax = plt.subplots(figsize=fig_size, dpi=dpi)
 
         dots = [[], []]
@@ -418,9 +416,10 @@ class ShapeDefinition(BaseModel):
                     no_boundary = True
             boundary = []
             for i, j in zip([0, 1, 1, 0], [0, 0, 1, 1]):
-                end_pos = np.array(
-                    [spanning_elements[0][i], spanning_elements[1][j]]
-                )
+                end_pos = np.array([
+                    spanning_elements[0][i],
+                    spanning_elements[1][j],
+                ])
                 if not np.isclose(cur_pos, end_pos).all():  # draw arrow
                     difference = end_pos - cur_pos
                     ax.arrow(

@@ -312,7 +312,9 @@ def test_bspline_definition_initiate(
     ):
         assert np.allclose(b_kv, spline_dim.knot_vector)
 
-    assert np.allclose(bspline.control_points, spline_def.get_parameter_values())
+    assert np.allclose(
+        bspline.control_points, spline_def.get_parameter_values()
+    )
 
 
 @pytest.mark.parametrize(

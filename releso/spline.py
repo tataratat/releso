@@ -3,6 +3,7 @@
 File holds all classes which define the spline and with that also the action
 definition of the problem.
 """
+
 import copy
 from typing import Any, Dict, List, Optional, Union
 
@@ -113,9 +114,10 @@ class SplineSpaceDimension(BaseModel):
                     "parts. The knot vector might be to long."
                 )
                 knot_vec = list(
-                    np.array(
-                        [np.zeros(starting_ending), np.ones(starting_ending)]
-                    ).flatten()
+                    np.array([
+                        np.zeros(starting_ending),
+                        np.ones(starting_ending),
+                    ]).flatten()
                 )
             return knot_vec
 
@@ -283,9 +285,9 @@ class SplineDefinition(ShapeDefinition):
         Returns:
             int: number of points in the spline
         """
-        return np.prod(
-            [dimension.number_of_points for dimension in self.space_dimensions]
-        )
+        return np.prod([
+            dimension.number_of_points for dimension in self.space_dimensions
+        ])
 
 
 class BSplineDefinition(SplineDefinition):
@@ -347,12 +349,10 @@ class NURBSDefinition(SplineDefinition):
         Returns:
             List[Union[float, VariableLocation]]: Filled weight vector.
         """
-        n_cp = np.prod(
-            [
-                space_dim.number_of_points
-                for space_dim in values["space_dimensions"]
-            ]
-        )
+        n_cp = np.prod([
+            space_dim.number_of_points
+            for space_dim in values["space_dimensions"]
+        ])
         if isinstance(v, list):
             if len(v) == n_cp:
                 get_parser_logger().debug(
@@ -442,12 +442,11 @@ class NURBSDefinition(SplineDefinition):
             spline.
         """
         actions = super().get_actions()
-        actions.extend(
-            [variable for variable in self.weights if variable.is_action()]
-        )
+        actions.extend([
+            variable for variable in self.weights if variable.is_action()
+        ])
         # raise RuntimeError(f"Actions: {actions}")
         return actions
-
 
     def get_parameter_values(self) -> List[List[float]]:
         """Returns the current positions of all control points with weights as
@@ -457,9 +456,9 @@ class NURBSDefinition(SplineDefinition):
             List[List[float]]: Positions of all control points.
         """
         control_points = super().get_parameter_values()
-        control_points.append(
-            [weight.current_position for weight in self.weights]
-        )
+        control_points.append([
+            weight.current_position for weight in self.weights
+        ])
         return control_points
 
     def reset(self) -> None:

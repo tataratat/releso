@@ -5,6 +5,7 @@ biggest functional change is that they provide default observations. Needed
 in cases where observations are depended on a previous step which errored out
 and could not be completed.
 """
+
 from typing import List, Literal, Tuple
 
 import numpy as np
