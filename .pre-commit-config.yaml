@@ -5,9 +5,9 @@ ci:
     autoupdate_schedule: monthly
 
 
-default_install_hook_types:
-  - pre-commit
-  - commit-msg
+# default_install_hook_types:
+#   - pre-commit
+#   - commit-msg
 default_language_version:
     python: python3.11
 repos:
@@ -42,5 +42,5 @@ repos:
   rev: v4.2.0
   hooks:
     - id: conventional-pre-commit
-      stages: [commit-msg]
+      # stages: [commit-msg]
       args: []
