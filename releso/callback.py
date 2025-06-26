@@ -4,6 +4,7 @@ Defines the custom call backs the ReLeSO library uses. Works now with
 Multi-Environment training and should work with all agents.
 """
 
+import copy
 from datetime import datetime
 from itertools import count
 from pathlib import Path
@@ -265,7 +266,7 @@ class StepLogCallback(BaseCallback):
         ]  # Field indicating if the episode has ended
         if len(self.current_episodes) == 0:
             n_dones = len(dones)
-            self.current_episodes = [idx - n_dones for idx in range(n_dones)]
+            self.current_episodes = [idx for idx in range(n_dones)]
             self.current_max_episodes = max(self.current_episodes)
         prev_obs = self.model._last_obs  # Old observations
         actions = self.locals["actions"]  # Agent's actions
@@ -275,7 +276,7 @@ class StepLogCallback(BaseCallback):
 
         # Store additional information
         self.timesteps.append(self.num_timesteps)
-        self.episodes.append(self.current_episodes)
+        self.episodes.append(copy.deepcopy(self.current_episodes))
         self.dones.append(dones)
         self.prev_obs.append(prev_obs)
         self.actions.append(actions)
