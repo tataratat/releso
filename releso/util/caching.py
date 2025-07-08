@@ -7,6 +7,19 @@ import sqlite3
 class RelesoSporCache:
     """A simple SQLite cache for storing SPOR results.
 
+    This cache is designed for use in Releso's SPOR steps, allowing for
+    efficient storage and retrieval of key-value pairs where keys are strings
+    and values are JSON-serializable dictionaries. The cache is backed by an
+    SQLite database, which is created if it does not already exist. It is designed
+    to be used both in single as well as multi environment setups. In addition,
+    it can allow caching between different training runs. As long as the key and
+    value pair is consistent, the cache can be reused across different runs.
+
+    It is advisable to only cache the input and output if the most computationally
+    expensive part of the SPOR step and not cache the objective and reward since
+    these are usually not expensive to compute and can change between runs.
+
+
     Params:
         db_path (str): Path to the SQLite database file.
         This file will be created if it does not exist.
@@ -34,7 +47,13 @@ class RelesoSporCache:
             conn.commit()
 
     def set(self, key: str, value: dict):
-        """Store a value in the cache."""
+        """Store a value in the cache.
+
+        Args:
+            key (str): The key to store the value under.
+            value (dict): The value to store, must be a dictionary with keys matching
+                          the example data keys.
+        """
         if not isinstance(value, dict):
             if value.keys() != self.keys:
                 raise ValueError(
@@ -48,8 +67,16 @@ class RelesoSporCache:
             )
             conn.commit()
 
-    def get(self, key: str) -> dict:
-        """Retrieve a value from the cache."""
+    def get(self, key: str) -> list[dict] | None:
+        """Retrieve a value from the cache.
+
+        Args:
+            key (str): The key to retrieve the value for.
+
+        Returns:
+            list[dict] | None: The cached value as a list of dictionaries, or
+            None if not found.
+        """
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
