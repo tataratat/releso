@@ -9,6 +9,7 @@ Note:
     in a separate module, please see the file `spline.py` for these shape
     definitions.
 """
+
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
@@ -173,6 +174,7 @@ class VariableLocation(BaseModel):
             n_steps = 10
         step = value_range / n_steps
         values["step"] = step
+        values["n_steps"] = n_steps
         return values
 
     def is_action(self) -> bool:
@@ -194,8 +196,8 @@ class VariableLocation(BaseModel):
     def apply_discrete_action(self, increasing: bool) -> float:
         """Apply a discrete action to the variable.
 
-        Apply the a discrete action to the current value. Also applies clipping
-        if min/max value is surpassed.
+        Apply the a discrete action to the current value. If resulting value
+        would be outside of the min and max value range no step is taken.
 
         Args:
             increasing (bool): Toggle whether or not the value should increase
@@ -205,9 +207,11 @@ class VariableLocation(BaseModel):
             float: Value of the position that the current position is now at.
         """
         step = self.step if increasing else -self.step
-        self.current_position = np.clip(
-            self.current_position + step, self.min_value, self.max_value
-        )
+        if not (
+            self.min_value <= self.current_position + step <= self.max_value
+        ):
+            step = 0.0
+        self.current_position += step
         return self.current_position
 
     def apply_continuous_action(self, value: float) -> float:
@@ -394,14 +398,11 @@ class ShapeDefinition(BaseModel):
                     ),
                 )
         phi = np.linspace(0, 2 * np.pi, len(control_points))
-        rgb_cycle = np.vstack(
-            (  # Three sinusoids
-                0.5 * (1.0 + np.cos(phi)),  # scaled to [0,1]
-                0.5
-                * (1.0 + np.cos(phi + 2 * np.pi / 3)),  # 120° phase shifted.
-                0.5 * (1.0 + np.cos(phi - 2 * np.pi / 3)),
-            )
-        ).T  # Shape = (60,3)
+        rgb_cycle = np.vstack((  # Three sinusoids
+            0.5 * (1.0 + np.cos(phi)),  # scaled to [0,1]
+            0.5 * (1.0 + np.cos(phi + 2 * np.pi / 3)),  # 120° phase shifted.
+            0.5 * (1.0 + np.cos(phi - 2 * np.pi / 3)),
+        )).T  # Shape = (60,3)
         fig, ax = plt.subplots(figsize=fig_size, dpi=dpi)
 
         dots = [[], []]
@@ -418,9 +419,10 @@ class ShapeDefinition(BaseModel):
                     no_boundary = True
             boundary = []
             for i, j in zip([0, 1, 1, 0], [0, 0, 1, 1]):
-                end_pos = np.array(
-                    [spanning_elements[0][i], spanning_elements[1][j]]
-                )
+                end_pos = np.array([
+                    spanning_elements[0][i],
+                    spanning_elements[1][j],
+                ])
                 if not np.isclose(cur_pos, end_pos).all():  # draw arrow
                     difference = end_pos - cur_pos
                     ax.arrow(
