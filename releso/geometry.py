@@ -45,7 +45,9 @@ class Geometry(BaseModel):
     #: will be used.
     discrete_actions: bool = True
     #: Whether or not to reset the controllable control point variables to a
-    #: random state (True) or the default original state (False).
+    #: random state (True) or the default original state (False). If
+    #: discrete actions are used this will reset the action values to
+    #: valid discrete values.
     reset_with_random_action_values: bool = False
 
     #: saved list of all available actions
@@ -248,10 +250,24 @@ class Geometry(BaseModel):
             f"seed {str(seed)}"
         )
         rng_gen = np.random.default_rng(seed)
-        random_action = (rng_gen.random((len(self._actions),)) * 2) - 1
-        for new_value, action_obj in zip(random_action, self._actions):
-            action_obj.apply_continuous_action(new_value)
-        return random_action
+        if self.discrete_actions:
+            for action_obj in self._actions:
+                action_obj.reset()
+                min_bins = int(
+                    (action_obj.min_value - action_obj.current_position)
+                    / action_obj.step
+                )
+                max_bins = int(
+                    (action_obj.max_value - action_obj.current_position)
+                    / action_obj.step
+                )
+                random_action = rng_gen.integers(min_bins, max_bins)
+                # Apply the random action
+                action_obj.current_position += random_action * action_obj.step
+        else:
+            random_action = (rng_gen.random((len(self._actions),)) * 2) - 1
+            for new_value, action_obj in zip(random_action, self._actions):
+                action_obj.apply_continuous_action(new_value)
 
 
 class FFDGeometry(Geometry):
