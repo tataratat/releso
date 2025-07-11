@@ -204,7 +204,7 @@ def entry():
         help="Returns the version of the package.",
     )
     sub_parser = parser.add_subparsers(
-        title="execution modes", dest="execution_mode", required=True
+        title="execution modes", dest="execution_mode"
     )
     parser_run = sub_parser.add_parser(
         "run",
@@ -227,7 +227,7 @@ def entry():
         help=(
             "If this is set only validation on this configuration is run. "
             "Please configure the validation object in the json file so that "
-            "this option can be correctly executed.",
+            "this option can be correctly executed."
         ),
     )
     parser_run.add_argument(
