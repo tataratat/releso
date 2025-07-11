@@ -148,7 +148,8 @@ class RelesoSporCache:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    f"SELECT {self.value_accessor} FROM spor_cache WHERE key = '{key}'"
+                    f"SELECT {self.value_accessor} FROM spor_cache WHERE key = ?",
+                    (key,)
                 )
                 rows = cursor.fetchone()
                 return [json.loads(row) for row in rows] if rows else None
