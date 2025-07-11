@@ -107,17 +107,17 @@ def test(
     if max_timesteps_in_episode is not None:
         calling_dict["max_timesteps_in_episode"] = max_timesteps_in_episode
     if end_episode_on_geometry_not_changed is not None:
-        calling_dict[
-            "end_episode_on_geometry_not_changed"
-        ] = end_episode_on_geometry_not_changed
+        calling_dict["end_episode_on_geometry_not_changed"] = (
+            end_episode_on_geometry_not_changed
+        )
     if reward_on_geometry_not_changed is not None:
-        calling_dict[
-            "reward_on_geometry_not_changed"
-        ] = reward_on_geometry_not_changed
+        calling_dict["reward_on_geometry_not_changed"] = (
+            reward_on_geometry_not_changed
+        )
     if reward_on_episode_exceeds_max_timesteps is not None:
-        calling_dict[
-            "reward_on_episode_exceeds_max_timesteps"
-        ] = reward_on_episode_exceeds_max_timesteps
+        calling_dict["reward_on_episode_exceeds_max_timesteps"] = (
+            reward_on_episode_exceeds_max_timesteps
+        )
 
     if val_error:
         with pytest.raises(ValidationError) as err:

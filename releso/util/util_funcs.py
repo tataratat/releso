@@ -3,6 +3,7 @@
 This files includes multiple functions and classes which are used in this
 package but can not be directly associated to a single sub module.
 """
+
 import datetime
 import json
 import os
@@ -88,7 +89,9 @@ def call_commandline(command, folder, logger=None):
         # WARNING this is a security risk, but necessary to execute the
         # command line arguments
         output = subprocess.check_output(
-            command, shell=True, cwd=folder  # noqa: S602
+            command,
+            shell=True,
+            cwd=folder,  # noqa: S602
         )
         exitcode = 0
     except subprocess.CalledProcessError as exc:

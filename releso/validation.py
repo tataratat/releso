@@ -1,4 +1,5 @@
 """File holds the definition class for the validation."""
+
 import pathlib
 from typing import Any, Dict, Optional, Tuple
 

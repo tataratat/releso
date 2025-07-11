@@ -109,12 +109,10 @@ def test_combined_feature_extractor(
     logger,
     error,
 ):
-    observation_space = spaces.Dict(
-        {
-            "image": observation_space,
-            "vector": spaces.Box(low=-1, high=1, shape=(10,), dtype=float),
-        }
-    )
+    observation_space = spaces.Dict({
+        "image": observation_space,
+        "vector": spaces.Box(low=-1, high=1, shape=(10,), dtype=float),
+    })
 
     calling_dict = {
         "observation_space": observation_space,
@@ -135,9 +133,7 @@ def test_combined_feature_extractor(
         assert error in str(error_info.value)
         return
     model = CombinedExtractor(**calling_dict)
-    _ = model.forward(
-        {
-            key: th.as_tensor(value[None]).float()
-            for key, value in observation_space.sample().items()
-        }
-    )
+    _ = model.forward({
+        key: th.as_tensor(value[None]).float()
+        for key, value in observation_space.sample().items()
+    })

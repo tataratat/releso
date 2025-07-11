@@ -2,6 +2,7 @@
 
 These are implemented in a more or less slapdash fashion. Use at own Risk.
 """
+
 import logging
 from typing import Literal, Optional
 
@@ -63,35 +64,31 @@ class FeatureExtractor(BaseFeaturesExtractor):
             pre_network = models.resnet18(
                 weights=models.ResNet18_Weights.IMAGENET1K_V1
             )
-            self.model = th.nn.Sequential(
-                *[
-                    transforms.Normalize(
-                        (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
-                    ),
-                    pre_network.conv1,
-                    pre_network.bn1,
-                    pre_network.relu,
-                    pre_network.maxpool,
-                    pre_network.layer1,
-                    pre_network.layer2,
-                    pre_network.layer3,
-                    pre_network.layer4,
-                    th.nn.Flatten(),
-                ]
-            )
+            self.model = th.nn.Sequential(*[
+                transforms.Normalize(
+                    (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+                ),
+                pre_network.conv1,
+                pre_network.bn1,
+                pre_network.relu,
+                pre_network.maxpool,
+                pre_network.layer1,
+                pre_network.layer2,
+                pre_network.layer3,
+                pre_network.layer4,
+                th.nn.Flatten(),
+            ])
         elif network_type == "mobilenet_v2":
             pre_network = models.mobilenet_v2(
                 weights=models.MobileNet_V2_Weights.IMAGENET1K_V1
             )
-            self.model = th.nn.Sequential(
-                *[
-                    transforms.Normalize(
-                        (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
-                    ),
-                    pre_network.features,
-                    th.nn.Flatten(),
-                ]
-            )
+            self.model = th.nn.Sequential(*[
+                transforms.Normalize(
+                    (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+                ),
+                pre_network.features,
+                th.nn.Flatten(),
+            ])
         # elif network_type == "mobilenetv3_small":
         #     pre_network = models.mobilenet_v3_small(pretrained=True)
         #     self.model = th.nn.Sequential(

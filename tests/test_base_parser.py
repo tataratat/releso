@@ -8,7 +8,7 @@ from releso.exceptions import ValidationNotSet
 
 
 def recursive_remove_save_location(
-    dict_to_clean: Union[List[Any], Dict[str, Any]]
+    dict_to_clean: Union[List[Any], Dict[str, Any]],
 ):
     if isinstance(dict_to_clean, list):
         for item in dict_to_clean:
@@ -126,9 +126,10 @@ def test_base_parser_validation(
         return
     base_parser.evaluate_model()
 
-    file_paths.extend(
-        (base_parser.save_model(), base_parser.save_model("testing"))
-    )
+    file_paths.extend((
+        base_parser.save_model(),
+        base_parser.save_model("testing"),
+    ))
 
     for file_path in file_paths:
         print(file_path)

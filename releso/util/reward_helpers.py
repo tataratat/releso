@@ -7,6 +7,7 @@ copy these functions into your own scripts. If you need to have other python
 versions/special environment to run your scripts in. The pydantic dependency
 can be exchanged for a string.
 """
+
 import argparse
 import json
 from os import PathLike
