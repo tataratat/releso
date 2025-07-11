@@ -1,4 +1,5 @@
 """File defines the exceptions of the ReLeSO toolbox/library."""
+
 import enum
 import logging
 import os

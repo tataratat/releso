@@ -12,6 +12,7 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 
 
 """
+
 from pydantic import BaseModel
 from sphinx.ext.napoleon import _skip_member
 

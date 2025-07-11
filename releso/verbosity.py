@@ -3,6 +3,7 @@
 File holding the class defining the verbosity of the problem and defining the
 loggers.
 """
+
 import datetime
 import pathlib
 from typing import Any, Literal

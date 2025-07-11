@@ -3,6 +3,7 @@
 File holding the base class for all ReLeSO classes which are needed for the
 command line based application of this toolbox.
 """
+
 import multiprocessing
 import pathlib
 from collections import OrderedDict
@@ -66,10 +67,10 @@ class BaseModel(pydantic.BaseModel):
         if "save_location" in data:
             # This is so that the save location always gets the same
             if isinstance(data["save_location"], str):
-                data[
-                    "save_location"
-                ] = BaseModel.convert_to_pathlib_add_datetime(
-                    data["save_location"]
+                data["save_location"] = (
+                    BaseModel.convert_to_pathlib_add_datetime(
+                        data["save_location"]
+                    )
                 )
             # if a save_location is present in the current object definition
             #  add this save_location also to all object definition which are
