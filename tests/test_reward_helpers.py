@@ -265,13 +265,11 @@ def test_parse_communication_interface_json(
     j, additional_values, json_object, error_j, dir_save_location, capsys
 ):
     args = []
-    args.extend(
-        [
-            f"-r{str(uuid.uuid4())}",
-            f"-e{str(uuid.uuid4())}",
-            f"-l{str(dir_save_location)}",
-        ]
-    )
+    args.extend([
+        f"-r{str(uuid.uuid4())}",
+        f"-e{str(uuid.uuid4())}",
+        f"-l{str(dir_save_location)}",
+    ])
     if j:
         args.extend(["-j", j])
     elif additional_values:

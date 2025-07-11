@@ -1,5 +1,5 @@
-"""Testing BaseModel class
-"""
+"""Testing BaseModel class"""
+
 import datetime
 import os
 import pathlib
@@ -31,9 +31,10 @@ dir_save_location_local = str(
             False,
         ),
         (
-            OrderedDict(
-                [("test", OrderedDict()), ("save_location", "something")]
-            ),
+            OrderedDict([
+                ("test", OrderedDict()),
+                ("save_location", "something"),
+            ]),
             False,
         ),
         (["test", "asdas", 12, 12.0], False),
