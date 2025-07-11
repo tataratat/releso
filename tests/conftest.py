@@ -63,6 +63,14 @@ def default_shape(dir_save_location):
 
 
 @pytest.fixture
+def default_shape_discrete_possible_values():
+    return [
+        [4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0],
+        [4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0],
+    ]
+
+
+@pytest.fixture
 def bspline_shape(dir_save_location):
     ret_dict = {
         "save_location": dir_save_location,

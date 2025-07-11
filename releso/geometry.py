@@ -252,6 +252,7 @@ class Geometry(BaseModel):
         rng_gen = np.random.default_rng(seed)
         if self.discrete_actions:
             for action_obj in self._actions:
+                action_obj.reset()
                 min_bins = int(
                     (action_obj.min_value - action_obj.current_position)
                     / action_obj.step
@@ -262,7 +263,6 @@ class Geometry(BaseModel):
                 )
                 random_action = rng_gen.integers(min_bins, max_bins)
                 # Apply the random action
-                action_obj.reset()
                 action_obj.current_position += random_action * action_obj.step
         else:
             random_action = (rng_gen.random((len(self._actions),)) * 2) - 1

@@ -94,14 +94,12 @@ def test_variable_location_min_max_location(
 def test_variable_location_is_action(
     current_position, min_value, max_value, is_action, dir_save_location
 ):
-    variable_location = VariableLocation(
-        **{
-            "current_position": current_position,
-            "min_value": min_value,
-            "max_value": max_value,
-            "save_location": dir_save_location,
-        }
-    )
+    variable_location = VariableLocation(**{
+        "current_position": current_position,
+        "min_value": min_value,
+        "max_value": max_value,
+        "save_location": dir_save_location,
+    })
     assert variable_location.is_action() is is_action
 
 
@@ -109,10 +107,11 @@ def test_variable_location_is_action(
     "current_position, min_value, max_value, n_steps, step, expected_step, "
     "error",
     [
-        (0, -1, 1, None, None, 0.2, False),
+        (0, -1, 1, 10, None, 0.2, False),
         (0, -1, 1, None, 0.1, 0.1, False),
         (0, -2, 2, 100, None, 4 / 100, False),
         (0, -2, 2, 100, 0.25, 0.25, False),
+        (-1, -1, 0, 10, None, 0.1, False),
     ],
 )
 def test_variable_location_step_length(
@@ -277,16 +276,14 @@ def test_variable_location_discrete_action(
     expect_position,
     dir_save_location,
 ):
-    variable_location = VariableLocation(
-        **{
-            "current_position": current_position,
-            "min_value": min_value,
-            "max_value": max_value,
-            "n_steps": n_steps,
-            "step": step,
-            "save_location": dir_save_location,
-        }
-    )
+    variable_location = VariableLocation(**{
+        "current_position": current_position,
+        "min_value": min_value,
+        "max_value": max_value,
+        "n_steps": n_steps,
+        "step": step,
+        "save_location": dir_save_location,
+    })
     last_current_position = current_position
     for iteration in iterations:
         last_current_position = variable_location.apply_discrete_action(
@@ -348,16 +345,14 @@ def test_variable_location_continuous_action(
     expect_position,
     dir_save_location,
 ):
-    variable_location = VariableLocation(
-        **{
-            "current_position": current_position,
-            "min_value": min_value,
-            "max_value": max_value,
-            "n_steps": n_steps,
-            "step": step,
-            "save_location": dir_save_location,
-        }
-    )
+    variable_location = VariableLocation(**{
+        "current_position": current_position,
+        "min_value": min_value,
+        "max_value": max_value,
+        "n_steps": n_steps,
+        "step": step,
+        "save_location": dir_save_location,
+    })
     last_current_position = current_position
     for iteration in iterations:
         last_current_position = variable_location.apply_continuous_action(
@@ -429,12 +424,10 @@ def test_variable_location_continuous_action(
         (
             [
                 [
-                    OrderedDict(
-                        {
-                            "current_position": 1,
-                            "save_location": dir_save_location_path(),
-                        }
-                    )
+                    OrderedDict({
+                        "current_position": 1,
+                        "save_location": dir_save_location_path(),
+                    })
                 ]
             ],
             1,
@@ -569,12 +562,10 @@ def test_shape_definition_get_actions(
             point["save_location"] = dir_save_location
             new_cps.append(VariableLocation(**point))
         new_control_points.append(new_cps)
-    shape = ShapeDefinition(
-        **{
-            "control_points": new_control_points,
-            "save_location": dir_save_location,
-        }
-    )
+    shape = ShapeDefinition(**{
+        "control_points": new_control_points,
+        "save_location": dir_save_location,
+    })
     actions = shape.get_actions()
     assert len(actions) == n_actions
 

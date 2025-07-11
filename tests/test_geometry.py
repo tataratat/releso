@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import pytest
 from gymnasium import spaces
@@ -122,9 +124,46 @@ def test_geometry_init(
     else:
         assert geometry.reset() == original_cps
 
+
+@pytest.mark.parametrize(
+    ("discrete_actions"),
+    [
+        (True),
+        (False),
+    ],
+)
+def test_geometry_apply_random_action(
+    dir_save_location,
+    discrete_actions,
+    default_shape_discrete_possible_values,
+    request,
+):
+    call_dict = {
+        "shape_definition": request.getfixturevalue("default_shape"),
+        "save_location": dir_save_location,
+        "discrete_actions": discrete_actions,
+    }
+    geometry = Geometry(**call_dict)
+    geometry.setup("id")
     # random action with seed produces same result
-    set_1 = geometry.apply_random_action("asd")
-    set_2 = geometry.apply_random_action("asd")
+    geometry.apply_random_action("asd")
+    set_1 = copy.deepcopy([
+        action.current_position for action in geometry._actions
+    ])
+
+    geometry.apply_random_action("asd")
+    set_2 = copy.deepcopy([
+        action.current_position for action in geometry._actions
+    ])
+    if discrete_actions:
+        for i, action in enumerate(geometry._actions):
+            assert (
+                action.current_position
+                in (default_shape_discrete_possible_values[i])
+            ), (
+                f"Action {i} has value {action.current_position} which is not in "
+                f"the possible values {default_shape_discrete_possible_values[i]}."
+            )
     assert np.allclose(set_1, set_2)
 
 
