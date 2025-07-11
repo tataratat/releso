@@ -148,7 +148,7 @@ class RelesoSporCache:
                 cursor = conn.cursor()
                 cursor.execute(
                     f"SELECT {self.value_accessor} FROM spor_cache WHERE key = ?",
-                    (key,)
+                    (key,),
                 )
                 rows = cursor.fetchone()
                 return [json.loads(row) for row in rows] if rows else None
