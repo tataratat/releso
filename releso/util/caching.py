@@ -121,11 +121,10 @@ class RelesoSporCache:
             value (dict): The value to store, must be a dictionary with keys matching
                           the example data keys.
         """
-        if not isinstance(value, dict):
-            if value.keys() != self.keys:
-                raise ValueError(
-                    f"Value must be a dictionary with keys: {self.keys}"
-                )
+        if not isinstance(value, dict) or value.keys() != self.keys:
+            raise ValueError(
+                f"Value must be a dictionary with keys: {self.keys}"
+            )
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
