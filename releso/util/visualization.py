@@ -33,7 +33,7 @@ plotly_symbols = [
     "pentagon",
 ]
 plotly_lines = ["solid", "dash", "dot", "dashdot"]
-validation_marker_size = 4
+validation_marker_size = 2
 
 
 def export_figure(
@@ -168,10 +168,28 @@ def plot_episode_log(
                 val_data["timesteps"] <= cut_off_point
             ]
             cut_off = len(data["total_timesteps"])
-            for i in range(val_data["ep_lengths"].shape[1]):
+            for i in range(val_data["results"].shape[1]):
                 data[f"val_{i}_reward"] = val_data["results"][:cut_off, i]
                 data[f"val_{i}_length"] = val_data["ep_lengths"][:cut_off, i]
+            data["val_reward_mean"] = val_data["results"][:cut_off].mean(
+                axis=1
+            )
+            data["val_reward_min"] = val_data["results"][:cut_off].min(axis=1)
+            data["val_reward_max"] = val_data["results"][:cut_off].max(axis=1)
+            data["val_length_mean"] = val_data["ep_lengths"][:cut_off].mean(
+                axis=1
+            )
+            data["val_length_min"] = val_data["ep_lengths"][:cut_off].min(
+                axis=1
+            )
+            data["val_length_max"] = val_data["ep_lengths"][:cut_off].max(
+                axis=1
+            )
+
             temp_val = pd.DataFrame(data, index=data["total_timesteps"])
+            temp_val.n_val_values = val_data["results"].shape[1]
+            temp_val.val_results_complete = val_data["results"][:cut_off]
+            temp_val.val_length_complete = val_data["ep_lengths"][:cut_off]
         else:
             temp_val = None
         df_val.append(temp_val)
@@ -203,23 +221,91 @@ def plot_episode_log(
             col=1,
         )
         if val_dataframe is not None:
-            for j in range((len(val_dataframe.columns) - 1) // 2):
+            # for j in range(val_dataframe.n_val_values):
+            #     fig.add_trace(
+            #         go.Scatter(
+            #             x=val_dataframe["total_timesteps"],
+            #             y=val_dataframe[f"val_{j}_reward"],
+            #             mode="markers",
+            #             legendgroup=f"{n_env[idx]}",
+            #             name=f"Validation {n_env[idx]}_{j}",
+            #             # line=dict(
+            #             #     color=plotly_colors[idx],
+            #             #     dash=plotly_lines[j % len(plotly_lines)],
+            #             # ),
+            #             showlegend=False,
+            #             marker=dict(
+            #                 symbol=plotly_symbols[j],
+            #                 opacity=0.5,
+            #             ),
+            #             hovertemplate="(%{x:d},%{y:.2f}," + f"Validation {j})",
+            #         ),
+            #         row=1,
+            #         col=1,
+            #     )
+            # fig.add_trace(
+            #     go.Scatter(
+            #         x=val_dataframe["total_timesteps"],
+            #         y=val_dataframe["val_reward_max"],
+            #         mode="lines",
+            #         legendgroup=f"{n_env[idx]}",
+            #         name=f"Validation {n_env[idx]}",
+            #         line=dict(
+            #             color=plotly_colors[idx],
+            #             # opacity=0.5,
+            #         ),
+            #         showlegend=False,
+            #         # opacity=0.5,
+            #     ),
+            #     row=1,
+            #     col=1,
+            # )
+            # fig.add_trace(
+            #     go.Scatter(
+            #         x=val_dataframe["total_timesteps"],
+            #         y=val_dataframe["val_reward_mean"],
+            #         mode="lines",
+            #         legendgroup=f"{n_env[idx]}",
+            #         name=f"Validation {n_env[idx]}",
+            #         line=dict(
+            #             color=plotly_colors[idx],
+            #         ),
+            #         showlegend=False,
+            #         fill="tonexty",
+            #         opacity=0.1,
+            #     ),
+            #     row=1,
+            #     col=1,
+            # )
+            # fig.add_trace(
+            #     go.Scatter(
+            #         x=val_dataframe["total_timesteps"],
+            #         y=val_dataframe["val_reward_min"],
+            #         mode="lines",
+            #         legendgroup=f"{n_env[idx]}",
+            #         name=f"Validation {n_env[idx]}",
+            #         line=dict(
+            #             color=plotly_colors[idx],
+            #         ),
+            #         showlegend=False,
+            #         fill="tonexty",
+            #         opacity=0.1,
+            #     ),
+            #     row=1,
+            #     col=1,
+            # )
+            for idy, item in enumerate(val_dataframe["total_timesteps"]):
                 fig.add_trace(
-                    go.Scatter(
-                        x=val_dataframe["total_timesteps"],
-                        y=val_dataframe[f"val_{j}_reward"],
-                        mode="markers",
+                    go.Box(
+                        x0=item,
+                        y=val_dataframe.val_results_complete[idy],
                         legendgroup=f"{n_env[idx]}",
-                        name=f"Validation {n_env[idx]}_{j}",
-                        line=dict(
-                            color=plotly_colors[idx],
-                            dash=plotly_lines[j % len(plotly_lines)],
-                        ),
+                        width=500,
+                        name=f"Validation {n_env[idx]}",
+                        line_color=plotly_colors[idx],
                         showlegend=False,
-                        marker=dict(
-                            symbol=plotly_symbols[j],
-                        ),
-                        hovertemplate="(%{x:d},%{y:.2f}," + f"Validation {j})",
+                        boxpoints=False,
+                        opacity=0.5,
                     ),
                     row=1,
                     col=1,
@@ -243,24 +329,40 @@ def plot_episode_log(
         )
 
         if val_dataframe is not None:
-            for j in range((len(val_dataframe.columns) - 1) // 2):
+            # for j in range(val_dataframe.n_val_values):
+            #     fig.add_trace(
+            #         go.Scatter(
+            #             x=val_dataframe["total_timesteps"],
+            #             y=val_dataframe[f"val_{j}_length"],
+            #             mode="markers",
+            #             legendgroup=f"{n_env[idx]}",
+            #             name=f"Validation {n_env[idx]}_{j}",
+            #             line=dict(
+            #                 color=plotly_colors[idx],
+            #                 dash=plotly_lines[j % len(plotly_lines)],
+            #             ),
+            #             showlegend=False,
+            #             marker=dict(
+            #                 symbol=plotly_symbols[j],
+            #                 size=validation_marker_size,
+            #             ),
+            #             hovertemplate="(%{x:d},%{y:.2f}," + f"Validation {j})",
+            #         ),
+            #         row=2,
+            #         col=1,
+            #     )
+            for idy, item in enumerate(val_dataframe["total_timesteps"]):
                 fig.add_trace(
-                    go.Scatter(
-                        x=val_dataframe["total_timesteps"],
-                        y=val_dataframe[f"val_{j}_length"],
-                        mode="markers",
+                    go.Box(
+                        x0=item,
+                        y=val_dataframe.val_length_complete[idy],
                         legendgroup=f"{n_env[idx]}",
-                        name=f"Validation {n_env[idx]}_{j}",
-                        line=dict(
-                            color=plotly_colors[idx],
-                            dash=plotly_lines[j % len(plotly_lines)],
-                        ),
+                        width=500,
+                        name=f"Validation {n_env[idx]}",
+                        line_color=plotly_colors[idx],
                         showlegend=False,
-                        marker=dict(
-                            symbol=plotly_symbols[j],
-                            size=validation_marker_size,
-                        ),
-                        hovertemplate="(%{x:d},%{y:.2f}," + f"Validation {j})",
+                        boxpoints=False,
+                        opacity=0.5,
                     ),
                     row=2,
                     col=1,
