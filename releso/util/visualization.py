@@ -190,6 +190,9 @@ def plot_episode_log(
             temp_val.n_val_values = val_data["results"].shape[1]
             temp_val.val_results_complete = val_data["results"][:cut_off]
             temp_val.val_length_complete = val_data["ep_lengths"][:cut_off]
+            temp_val.box_width = 0.3 * (
+                data["total_timesteps"][1] - data["total_timesteps"][0]
+            )
         else:
             temp_val = None
         df_val.append(temp_val)
@@ -300,7 +303,7 @@ def plot_episode_log(
                         x0=item,
                         y=val_dataframe.val_results_complete[idy],
                         legendgroup=f"{n_env[idx]}",
-                        width=500,
+                        width=val_dataframe.box_width,
                         name=f"Validation {n_env[idx]}",
                         line_color=plotly_colors[idx],
                         showlegend=False,
@@ -357,7 +360,7 @@ def plot_episode_log(
                         x0=item,
                         y=val_dataframe.val_length_complete[idy],
                         legendgroup=f"{n_env[idx]}",
-                        width=500,
+                        width=val_dataframe.box_width,
                         name=f"Validation {n_env[idx]}",
                         line_color=plotly_colors[idx],
                         showlegend=False,
