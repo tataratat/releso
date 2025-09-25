@@ -497,8 +497,10 @@ def plot_step_log(
     # filter does not directly filter for episode number but filters the whole
     # list of episodes, which can have missing episodes, due to episodes
     # generated outside the environment id chosen.
-    selected_episodes = df["episodes"].unique()[
-        episode_start : (episode_end + 1) : episode_step
+    idx_start = df[df["episodes"] >= episode_start].index[0]
+    idx_end = df[df["episodes"] <= episode_end].index[-1]
+    selected_episodes = df.iloc[idx_start : idx_end + 1]["episodes"].unique()[
+        ::episode_step
     ]
     df = df[df["episodes"].isin(selected_episodes)]
 
