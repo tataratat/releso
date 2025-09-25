@@ -20,20 +20,7 @@ plotly_colors = [
     "olive",
     "cyan",
 ]
-plotly_symbols = [
-    "circle",
-    "square",
-    "diamond",
-    "cross",
-    "x",
-    "triangle-up",
-    # "triangle-down",
-    # "triangle-left",
-    # "triangle-right",
-    "pentagon",
-]
 plotly_lines = ["solid", "dash", "dot", "dashdot"]
-validation_marker_size = 2
 
 
 def export_figure(
@@ -168,9 +155,6 @@ def plot_episode_log(
                 val_data["timesteps"] <= cut_off_point
             ]
             cut_off = len(data["total_timesteps"])
-            for i in range(val_data["results"].shape[1]):
-                data[f"val_{i}_reward"] = val_data["results"][:cut_off, i]
-                data[f"val_{i}_length"] = val_data["ep_lengths"][:cut_off, i]
             data["val_reward_mean"] = val_data["results"][:cut_off].mean(
                 axis=1
             )
