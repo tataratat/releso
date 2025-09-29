@@ -571,7 +571,10 @@ def plot_step_log(
     df = pd.concat(
         [df_raw["episodes"], df_raw["reward"], objectives, design_vars], axis=1
     )
-
+    if df.empty:
+        raise ValueError(
+            f"The provided step log file {step_log_file} is empty or does not follow the current format."
+        )
     # Filter only the selected episodes
     max_idx = df["episodes"].max()
     if episode_end is None or episode_end > max_idx:
@@ -580,8 +583,15 @@ def plot_step_log(
     # filter does not directly filter for episode number but filters the whole
     # list of episodes, which can have missing episodes, due to episodes
     # generated outside the environment id chosen.
-    idx_start = df[df["episodes"] >= episode_start].index[0]
-    idx_end = df[df["episodes"] <= episode_end].index[-1]
+    try:
+        idx_start = df[df["episodes"] >= episode_start].index[0]
+        idx_end = df[df["episodes"] <= episode_end].index[-1]
+    except IndexError as err:
+        raise IndexError(
+            f"Could not find any episode in the range {episode_start} to {episode_end}. "
+            f"The available episodes range from {df['episodes'].unique().min()} "
+            f"to {df['episodes'].unique().max()}"
+        ) from err
     selected_episodes = df.iloc[idx_start : idx_end + 1]["episodes"].unique()[
         ::episode_step
     ]
