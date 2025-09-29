@@ -15,11 +15,8 @@ from typing import Literal, Union
 import gymnasium
 import hjson
 import numpy as np
-import stable_baselines3
-import torch
 
 from releso.__version__ import __version__
-from releso.base_parser import BaseParser
 from releso.util.module_import_raiser import ModuleImportRaiser
 
 try:
@@ -126,6 +123,11 @@ def main(args) -> pathlib.Path:
     Raises:
         ValueError: Thrown if the json file could not be found.
     """
+    import stable_baselines3
+    import torch
+
+    from releso.base_parser import BaseParser
+
     ###########################
     #                         #
     #   Loading and parsing   #
@@ -322,6 +324,12 @@ def entry():
             "timesteps will be included."
         ),
     )
+    parser_visualize_episodelog.add_argument(
+        "-v",
+        "--show-validation",
+        action="store_true",
+        help=("Whether to show validation results. Defaults to False."),
+    )
     parser_visualize_steplog = sub_parser_visualize.add_parser(
         "step-log",
         parents=[visualize_shared_args],
@@ -417,6 +425,7 @@ def entry():
                 args.window,
                 window_size=figure_size,
                 cut_off_point=args.cut_off_point,
+                show_validation=args.show_validation,
             )
             export_figure(fig, args.export_path, "episode_log.html")
         # Visualize contents of step_log.jsonl

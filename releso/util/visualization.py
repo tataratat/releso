@@ -68,6 +68,7 @@ def plot_episode_log(
     window: int = 5,
     window_size: Union[tuple[int, int], Literal["auto"]] = "auto",
     cut_off_point: int = np.iinfo(int).max,
+    show_validation: bool = False,
 ) -> Figure:
     """Plot one or multiple episodes to check out the training progress.
 
@@ -109,6 +110,8 @@ def plot_episode_log(
          or container size. Defaults to "auto".
         cut_off_point (int, optional): Plot the episode only to a certain
          number of time steps. Defaults to max int.
+        show_validation (bool, optional): Whether to show validation results.
+         Defaults to False.
 
     Returns:
         fig (plotly.graph_objects.Figure): Plotly figure object with the
@@ -116,6 +119,7 @@ def plot_episode_log(
     """
     end_episode = []
     df: list[pd.DataFrame] = []
+    df_val: list[pd.DataFrame] = []
     # make a separate list for just the names of the experiments
     n_env: list[str] = list(result_folders.keys())
     # set of all episode end reasons
@@ -139,6 +143,37 @@ def plot_episode_log(
             temp_df["episode_reward"] / temp_df["steps_in_episode"]
         )
         unique_values.update(temp_df["episode_end_reason"].unique())
+
+        # Validation
+        if (
+            show_validation
+            and (val_file := folder / "eval/log/evaluations.npz").exists()
+        ):
+            val_data = np.load(val_file)
+            data = dict()
+            data["total_timesteps"] = val_data["timesteps"][
+                val_data["timesteps"] <= cut_off_point
+            ]
+            cut_off = len(data["total_timesteps"])
+            data["val_reward_mean"] = val_data["results"][:cut_off].mean(
+                axis=1
+            )
+            data["val_reward_min"] = val_data["results"][:cut_off].min(axis=1)
+            data["val_reward_max"] = val_data["results"][:cut_off].max(axis=1)
+            data["val_length_mean"] = val_data["ep_lengths"][:cut_off].mean(
+                axis=1
+            )
+            data["val_length_min"] = val_data["ep_lengths"][:cut_off].min(
+                axis=1
+            )
+            data["val_length_max"] = val_data["ep_lengths"][:cut_off].max(
+                axis=1
+            )
+
+            temp_val = pd.DataFrame(data, index=data["total_timesteps"])
+        else:
+            temp_val = None
+        df_val.append(temp_val)
         df.append(temp_df)
 
     fig = make_subplots(
@@ -146,7 +181,7 @@ def plot_episode_log(
     )
     # plot each experiment into each sub plot, the idx is used to determine the
     # episode end and the episode name
-    for idx, dataframe in enumerate(df):
+    for idx, (dataframe, val_dataframe) in enumerate(zip(df, df_val)):
         # first subplot
         fig.add_trace(
             go.Scatter(
@@ -166,6 +201,30 @@ def plot_episode_log(
             row=1,
             col=1,
         )
+        if val_dataframe is not None:
+            fig.add_trace(
+                go.Scatter(
+                    x=val_dataframe["total_timesteps"],
+                    y=val_dataframe["val_reward_mean"],
+                    legendgroup=f"{n_env[idx]}",
+                    name=f"Validation {n_env[idx]}",
+                    # line_color=plotly_colors[idx],
+                    mode="markers",
+                    showlegend=True,
+                    opacity=0.2,
+                    error_y=dict(
+                        type="data",
+                        symmetric=False,
+                        array=val_dataframe["val_reward_max"]
+                        - val_dataframe["val_reward_mean"],
+                        arrayminus=val_dataframe["val_reward_mean"]
+                        - val_dataframe["val_reward_min"],
+                    ),
+                    marker=dict(color=plotly_colors[idx], size=8),
+                ),
+                row=1,
+                col=1,
+            )
         # second subplot
         fig.add_trace(
             go.Scatter(
@@ -183,6 +242,30 @@ def plot_episode_log(
             row=2,
             col=1,
         )
+
+        if val_dataframe is not None:
+            fig.add_trace(
+                go.Scatter(
+                    x=val_dataframe["total_timesteps"],
+                    y=val_dataframe["val_length_mean"],
+                    legendgroup=f"{n_env[idx]}",
+                    name=f"Validation {n_env[idx]}",
+                    mode="markers",
+                    showlegend=False,
+                    opacity=0.2,
+                    error_y=dict(
+                        type="data",
+                        symmetric=False,
+                        array=val_dataframe["val_length_max"]
+                        - val_dataframe["val_length_mean"],
+                        arrayminus=val_dataframe["val_length_mean"]
+                        - val_dataframe["val_length_min"],
+                    ),
+                    marker=dict(color=plotly_colors[idx], size=8),
+                ),
+                row=2,
+                col=1,
+            )
         # third subplot
         fig.add_trace(
             go.Scatter(
