@@ -696,6 +696,14 @@ def plot_step_log(
         title="Steplog Evaluation",
         showlegend=True,
     )
+    print(list(fig.select_yaxes()))
+    for i, yaxis in enumerate(list(fig.select_yaxes())[::2], 1):
+        legend_name = f"legend{i}"
+        fig.update_layout(
+            {legend_name: dict(y=yaxis.domain[1], yanchor="top")},
+            showlegend=True,
+        )
+        fig.update_traces(row=i, legend=legend_name)
 
     # rescale the figure
     if not isinstance(figure_size, list) and figure_size == "auto":
