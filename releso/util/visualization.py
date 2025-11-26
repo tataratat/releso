@@ -638,7 +638,7 @@ def plot_step_log(
                     y=ep_data[obs_dim],
                     name=f"Objective_{i} (Ep. {ep})",
                     visible=(ep == episode_start),
-                    # line=dict(color="green"),
+                    line=dict(color=plotly_colors[i % len(plotly_colors)]),
                 ),
                 row=1,
                 col=1,
@@ -649,7 +649,7 @@ def plot_step_log(
                 y=ep_data["reward"],
                 name=f"Reward (Ep. {ep})",
                 visible=(ep == episode_start),
-                line=dict(color="blue"),
+                line=dict(color=plotly_colors[(i + 1) % len(plotly_colors)]),
             ),
             row=1,
             col=1,
@@ -658,13 +658,15 @@ def plot_step_log(
 
         # Second subplot: selected observation dimensions
         for j, dim in enumerate(design_var_names):
+            # one trace per dimension
             fig.add_trace(
                 go.Scatter(
                     x=steps_per_episode,
                     y=ep_data[dim],
                     name=f"Design Var. {j} (Ep. {ep})",
                     visible=(ep == episode_start),
-                ),  # one trace per dimension
+                    line=dict(color=plotly_colors[j % len(plotly_colors)]),
+                ),
                 row=2,
                 col=1,
             )
