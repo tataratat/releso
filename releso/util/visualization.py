@@ -398,6 +398,12 @@ def get_data_from_dataframe(
     recursion to navigate through the dataframe structure (and subsequent dict)
     and extract the desired data.
 
+    Example:
+        with the selector [("obs", (0, 2)), ("infos.geometry_information", (3, 6))]
+        the function will extract the first two observation values and the
+        geometry information values (which are part of the info field) from index 3
+         to 5 (6 is exclusive) from
+
     Args:
         df (pd.DataFrame): StepDataFrame containing the data to be extracted.
         name (str): Name of field the extracted data should be stored in.
@@ -488,6 +494,9 @@ def plot_step_log(
     This can result in large file sizes, especially when the optimization
     contained a lot of design parameters and when the chosen episode range is
     large. Please be aware of this when using the function.
+
+    For explanation of the parameters objective_observation and design_variable,
+    please refer to the documentation of the function `get_data_from_dataframe`.
 
     Authors:
         Daniel Wolff (d.wolff@unibw.de)
