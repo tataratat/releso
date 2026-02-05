@@ -569,6 +569,16 @@ class Environment(BaseModel):
         reward = 0.0
         info = {}
 
+        if self._validation_ids:
+            if self._current_validation_idx >= len(self._validation_ids):
+                self.get_logger().info(
+                    "The validation callback resets the environment one time "
+                    "to often. Next goal state will again be the correct one."
+                )
+            self._current_validation_idx += 1
+            if self._current_validation_idx > len(self._validation_ids):
+                self._current_validation_idx = 0
+
         # reset geometry
         info["geometry_information"] = self.geometry.reset(
             self.get_validation_id()
@@ -585,34 +595,7 @@ class Environment(BaseModel):
             environment_id=self._id,
         )
 
-        if self._validation_ids:
-            # TODO move to SPOR step
-            # export mesh at end of validation
-            # if self._current_validation_idx > 0 and \
-            #         self._validation_base_mesh_path:
-            #     # validation is performed in single environment
-            #     # with no multi threading so this is not necessary.
-            #     base_path = pathlib.Path(
-            #         self._validation_base_mesh_path).parents[0]/str(
-            #         self._validation_iteration)/str(
-            #         self._current_validation_idx)
-            #    file_name = pathlib.Path(self._validation_base_mesh_path).name
-            #    if "_." in self._validation_base_mesh_path:
-            #        validation_mesh_path = base_path / str(file_name).replace(
-            #            "_.", f"{self.get_reset_reason_string()}.")
-            #    else:
-            #        validation_mesh_path = self._validation_base_mesh_path
-            #    self.export_mesh(validation_mesh_path)
-            #    self.export_spline(validation_mesh_path.with_suffix(".xml"))
-            if self._current_validation_idx >= len(self._validation_ids):
-                self.get_logger().info(
-                    "The validation callback resets the environment one time "
-                    "to often. Next goal state will again be the correct one."
-                )
-            self._current_validation_idx += 1
-            if self._current_validation_idx > len(self._validation_ids):
-                self._current_validation_idx = 0
-                # self._validation_iteration += 1
+        # self._validation_iteration += 1
         self.get_logger().info("Resetting the Environment DONE.")
         # TODO move to separate SPOR Step
         # if self._validation_ids and self._save_image_in_validation:
@@ -662,7 +645,7 @@ class Environment(BaseModel):
                 Defaults to False.
         """
         self._validation_ids = validation_values
-        self._current_validation_idx = 0
+        self._current_validation_idx = -1
         # self._validation_base_mesh_path = base_mesh_path
         self.max_timesteps_in_episode = max_timesteps_in_episode
         self.end_episode_on_geometry_not_changed = (

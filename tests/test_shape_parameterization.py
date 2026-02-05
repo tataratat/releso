@@ -264,6 +264,24 @@ def test_variable_location_step_length_warning(
             ],
             3.5,
         ),  # complex case back and forth
+        (
+            0,
+            -1,
+            1,
+            None,
+            0.1,
+            [False] * 11,
+            -1,
+        ),  # negative limit
+        (
+            0,
+            -1.0,
+            1.0,
+            None,
+            0.1,
+            [True] * 41,
+            1,
+        ),  # positive limit
     ],
 )
 def test_variable_location_discrete_action(
