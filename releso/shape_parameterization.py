@@ -232,8 +232,10 @@ class VariableLocation(BaseModel):
         """
         delta = self.max_value - self.min_value
         descaled_value = ((value + 1.0) / 2.0) * delta
-        self.current_position = np.clip(
-            descaled_value + self.min_value, self.min_value, self.max_value
+        self.current_position = float(
+            np.clip(
+                descaled_value + self.min_value, self.min_value, self.max_value
+            )
         )
         return self.current_position
 
