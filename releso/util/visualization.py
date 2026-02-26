@@ -398,6 +398,12 @@ def get_data_from_dataframe(
     recursion to navigate through the dataframe structure (and subsequent dict)
     and extract the desired data.
 
+    Example:
+        with the selector [("obs", (0, 2)), ("infos.geometry_information", (3, 6))]
+        the function will extract the first two observation values and the
+        geometry information values (which are part of the info field) from index 3
+        to 5 (6 is exclusive).
+
     Args:
         df (pd.DataFrame): StepDataFrame containing the data to be extracted.
         name (str): Name of field the extracted data should be stored in.
@@ -469,9 +475,7 @@ def plot_step_log(
     objective_observation: list[tuple[str, tuple[int, int]]] = [
         ("obs", (0, 1))
     ],
-    design_variable: list[tuple[str, tuple[int, int]]] = [
-        ("obs", (1, None)),
-    ],
+    design_variable: list[tuple[str, tuple[int, int]]] = [("obs", (1, None))],
 ) -> Figure:
     """Plot the step log data of a single run for multiple episodes.
 
@@ -493,7 +497,12 @@ def plot_step_log(
     contained a lot of design parameters and when the chosen episode range is
     large. Please be aware of this when using the function.
 
-    Author: Daniel Wolff (d.wolff@unibw.de)
+    For explanation of the parameters objective_observation and design_variable,
+    please refer to the documentation of the function `get_data_from_dataframe`.
+
+    Authors:
+        Daniel Wolff (d.wolff@unibw.de)
+        Clemens Fricke (clemens.david.fricke@tuwien.ac.at)
 
     Args:
         step_log_file (pathlib.Path): Path to the step log file.
@@ -526,6 +535,8 @@ def plot_step_log(
         plotly.graph_objects.Figure: A Plotly figure object containing the
           interactive plot for further customization or export.
     """
+
+    # ---------- Load data ----------
     # Load the step log data from the provided path
     try:
         df_raw = pd.read_json(step_log_file, lines=True)
@@ -535,175 +546,184 @@ def plot_step_log(
         )
         return
 
-    # Process the data for the visualization
-
-    # Extract scalar reward and observation (we use new_obs for visualization)
-    # The underlying assumption of the extraction is that we are always dealing
-    # with a vectorized environment, i.e., that the rewards and observations
-    # corresponding to each environment are collected in a list
     df_raw["episodes"] = df_raw["episodes"].apply(lambda x: x[env_id])
     df_raw["reward"] = df_raw["rewards"].apply(lambda x: x[env_id])
-    df_raw["obs"] = df_raw["new_obs"].apply(lambda x: x[env_id])
-    has_info = "infos" in df_raw.columns
-    if has_info:
-        df_raw["infos"] = df_raw["infos"].apply(lambda x: x[env_id])
+    df_raw["obs"] = df_raw["new_obs"].apply(lambda x: np.array(x[env_id]))
 
-    # Convert obs vector into columns
-    # obs_array = np.vstack(df_raw["obs"].values)
-    # obs_df = pd.DataFrame(
-    #     obs_array, columns=[f"obs_{i}" for i in range(obs_array.shape[1])]
-    # )
-    # Extract the objective observation
+    # Limitation: Unable to extract the reset values for each episode because the required
+    # "info" field is missing from the step log data. As a result, the "prev_obs" field
+    # only contains the last observation from the previous episode, not the reset value at
+    # the start of the current episode. This means that the initial state of each episode
+    # cannot be visualized, which may affect analyses that rely on episode initialization.
+    # Currently, there is no workaround unless the data collection process is updated to
+    # include the "info" field with reset values.
+
     objectives = get_data_from_dataframe(
-        df_raw,
-        "objective",
-        objective_observation,
+        df_raw, "objective", objective_observation
     )
-
-    # Extract the design variables
     design_vars = get_data_from_dataframe(
-        df_raw,
-        "design_variable",
-        design_variable,
+        df_raw, "design_variable", design_variable
     )
 
-    # Combine everything
+    # combine everything into a single dataframe
     df = pd.concat(
         [df_raw["episodes"], df_raw["reward"], objectives, design_vars], axis=1
     )
+    del df_raw  # free memory
+
     if df.empty:
         raise ValueError(
             f"The provided step log file {step_log_file} is empty or does not follow the current format."
         )
-    # Filter only the selected episodes
-    max_idx = df["episodes"].max()
-    if episode_end is None or episode_end > max_idx:
-        episode_end = max_idx
-    # selected episode numbers do not necessarily match the filter applied. The
-    # filter does not directly filter for episode number but filters the whole
-    # list of episodes, which can have missing episodes, due to episodes
-    # generated outside the environment id chosen.
-    try:
-        idx_start = df[df["episodes"] >= episode_start].index[0]
-        idx_end = df[df["episodes"] <= episode_end].index[-1]
-    except IndexError as err:
+
+    # ---------- Episode selection ----------
+    max_ep = df["episodes"].max()
+    if episode_end is None or episode_end > max_ep:
+        episode_end = max_ep
+
+    mask = (df["episodes"] >= episode_start) & (df["episodes"] <= episode_end)
+    if not mask.any():
         raise IndexError(
             f"Could not find any episode in the range {episode_start} to {episode_end}. "
-            f"The available episodes range from {df['episodes'].unique().min()} "
-            f"to {df['episodes'].unique().max()}"
-        ) from err
-    selected_episodes = df.iloc[idx_start : idx_end + 1]["episodes"].unique()[
-        ::episode_step
-    ]
-    df = df[df["episodes"].isin(selected_episodes)]
-
-    # Create the interactive visualization
-
-    # Choose which obs dimensions to show in bottom subplot
-    design_var_names = df.columns[
-        df.columns.str.contains("design_variable_")
-    ].tolist()
-
-    # Choose which obs dimensions to show in top subplot
-    objective_names = df.columns[
-        df.columns.str.contains("objective_")
-    ].tolist()
-
-    # Get all unique episodes
+            f"The available episodes range from {df['episodes'].min()} to {df['episodes'].max()}"
+        )
+    selected_eps = df.loc[mask, "episodes"].unique()[::episode_step]
+    df = df[df["episodes"].isin(selected_eps)]
     episodes = df["episodes"].unique()
 
-    # Create subplot layout
+    # ---------- Identify trace columns ----------
+    obj_cols = [c for c in df.columns if c.startswith("objective_")]
+    var_cols = [c for c in df.columns if c.startswith("design_variable_")]
+
+    n_obj = len(obj_cols)
+
+    # total traces: objectives + reward + design vars
+    trace_order = []
+    trace_names = []
+    for idx, c in enumerate(obj_cols):
+        trace_order.append(("objective", c))
+        trace_names.append(f"Objective {idx}")
+    trace_order.append(("reward", "reward"))
+    trace_names.append("Reward")
+    for idx, c in enumerate(var_cols):
+        trace_order.append(("design_var", c))
+        trace_names.append(f"Design Var. {idx}")
+
+    # ---------- Precompute data per episode ----------
+    # per_episode is used to define the x/y data for each episode
+    per_episode_x = []
+    per_episode_y = []
+
+    for ep in episodes:
+        ep_df = df[df["episodes"] == ep]
+        steps = np.arange(len(ep_df))
+
+        xs = []
+        ys = []
+
+        # Objective traces
+        for c in obj_cols:
+            xs.append(steps.tolist())
+            ys.append(ep_df[c].tolist())
+
+        # Reward trace
+        xs.append(steps.tolist())
+        ys.append(ep_df["reward"].tolist())
+
+        # Design vars
+        for c in var_cols:
+            xs.append(steps.tolist())
+            ys.append(ep_df[c].tolist())
+
+        per_episode_x.append(xs)
+        per_episode_y.append(ys)
+
+    # ---------- Build figure with one trace per variable ----------
     fig = make_subplots(
         rows=2,
         cols=1,
         shared_xaxes=True,
-        specs=[
-            [{"secondary_y": True}],
-            [{}],
-        ],  # Enable secondary y-axis for row 1
-        subplot_titles=("Reward and Objective", "Design variables"),
+        specs=[[{"secondary_y": True}], [{}]],
+        subplot_titles=("Reward and Objectives", "Design Variables"),
         vertical_spacing=0.1,
     )
 
-    # Build one trace group per episode
-    for ep in episodes:
-        ep_data = df[df["episodes"] == ep]
-        steps_per_episode = list(range(len(ep_data)))
+    # initial episode = first episode
+    first_x = per_episode_x[0]
+    first_y = per_episode_y[0]
 
-        # First subplot: reward and objective
-        for i, obs_dim in enumerate(objective_names):
-            fig.add_trace(
-                go.Scatter(
-                    x=steps_per_episode,
-                    y=ep_data[obs_dim],
-                    name=f"Objective_{i} (Ep. {ep})",
-                    visible=(ep == episode_start),
-                    # line=dict(color="green"),
-                ),
-                row=1,
-                col=1,
-            )
+    # subplot mapping helper
+    def trace_location(idx):
+        if idx < n_obj:  # objective traces
+            return 1, 1, False
+        elif idx == n_obj:  # reward trace
+            return 1, 1, True
+        else:  # design variable traces
+            return 2, 1, False
+
+    # Add traces
+    for idx, (kind, colname) in enumerate(trace_order):
+        row, col, sec = trace_location(idx)
         fig.add_trace(
             go.Scatter(
-                x=steps_per_episode,
-                y=ep_data["reward"],
-                name=f"Reward (Ep. {ep})",
-                visible=(ep == episode_start),
-                line=dict(color="blue"),
+                x=first_x[idx],
+                y=first_y[idx],
+                name=trace_names[idx],
             ),
-            row=1,
-            col=1,
-            secondary_y=True,
+            row=row,
+            col=col,
+            secondary_y=sec,
         )
 
-        # Second subplot: selected observation dimensions
-        for j, dim in enumerate(design_var_names):
-            fig.add_trace(
-                go.Scatter(
-                    x=steps_per_episode,
-                    y=ep_data[dim],
-                    name=f"Design Var. {j} (Ep. {ep})",
-                    visible=(ep == episode_start),
-                ),  # one trace per dimension
-                row=2,
-                col=1,
-            )
-
-    # once all traces are added, set up slider steps
-    sliders = []
-    for id, ep in enumerate(episodes):
-        # Create slider step
-        sliders.append({
-            "label": f"Episode {ep}",
+    # ---------- Build slider steps (update x/y only) ----------
+    steps = []
+    for ep_idx, ep in enumerate(episodes):
+        steps.append({
+            "label": f"Episode {int(ep)}",
             "method": "update",
             "args": [
-                {"visible": [False] * len(fig.data)},
-                {"title": f"Steplog Evaluation — Episode {ep}"},
+                {
+                    "x": per_episode_x[ep_idx],
+                    "y": per_episode_y[ep_idx],
+                },
+                {"title": f"Steplog — Episode {int(ep)}"},
             ],
         })
-        # Make the traces for this episode visible
-        n_traces_per_episode = 1 + len(objective_names) + len(design_var_names)
-        for k in range(n_traces_per_episode):
-            sliders[id]["args"][0]["visible"][
-                id * n_traces_per_episode + k
-            ] = True
 
-    # Set up slider control
     fig.update_layout(
-        sliders=[{"active": 0, "pad": {"t": 50}, "steps": sliders}],
-        title="Steplog Evaluation",
+        sliders=[
+            {
+                "active": 0,
+                "pad": {"t": 50},
+                "steps": steps,
+            }
+        ],
         showlegend=True,
     )
+    # The first subplot has two y-axes, so we need to assign the legend
+    # to only one of them to avoid duplicates. The second subplot
+    # has only one y-axis.
+    for i, yaxis in enumerate(list(fig.select_yaxes())[::2], 1):
+        legend_name = f"legend{i}"
+        fig.update_layout(
+            {legend_name: dict(y=yaxis.domain[1], yanchor="top")},
+            showlegend=True,
+        )
+        fig.update_traces(row=i, legend=legend_name)
 
-    # rescale the figure
-    if not isinstance(figure_size, list) and figure_size == "auto":
+    # ---------- sizing ----------
+    if not isinstance(figure_size, (tuple, list)) and figure_size == "auto":
         fig.update_layout(autosize=True)
-    else:
+    elif isinstance(figure_size, (tuple, list)):
         fig.update_layout(height=figure_size[0], width=figure_size[1])
+    else:
+        raise ValueError(
+            "figure_size must be 'auto' or a tuple of (height, width)"
+        )
 
-    # Set y-axis labbels
+    # ---------- axes labels ----------
     fig.update_yaxes(title_text="Objective", row=1, col=1, secondary_y=False)
     fig.update_yaxes(title_text="Reward", row=1, col=1, secondary_y=True)
-    fig.update_yaxes(title_text="Observation Value", row=2, col=1)
+    fig.update_yaxes(title_text="Variable Value", row=2, col=1)
 
     return fig

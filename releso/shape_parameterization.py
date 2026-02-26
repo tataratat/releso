@@ -207,6 +207,9 @@ class VariableLocation(BaseModel):
             float: Value of the position that the current position is now at.
         """
         step = self.step if increasing else -self.step
+        # if np.isclose(
+        #     [self.min_value, self.max_value], (self.current_position + step)
+        # ).any():
         if not (
             self.min_value <= self.current_position + step <= self.max_value
         ):
