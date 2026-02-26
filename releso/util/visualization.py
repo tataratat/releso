@@ -402,7 +402,7 @@ def get_data_from_dataframe(
         with the selector [("obs", (0, 2)), ("infos.geometry_information", (3, 6))]
         the function will extract the first two observation values and the
         geometry information values (which are part of the info field) from index 3
-         to 5 (6 is exclusive) from
+        to 5 (6 is exclusive).
 
     Args:
         df (pd.DataFrame): StepDataFrame containing the data to be extracted.
@@ -472,8 +472,8 @@ def plot_step_log(
     episode_end: int = 10**12,
     episode_step: int = 1,
     figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
-    objective_observation=[("obs", (0, 1))],
-    design_variable=[("obs", (1, None))],
+    objective_observation: list[tuple[str, tuple[int, int]]] = [("obs", (0, 1))],
+    design_variable: list[tuple[str, tuple[int, int]]] = [("obs", (1, None))],
 ) -> Figure:
     """Plot the step log data of a single run for multiple episodes.
 
@@ -548,8 +548,13 @@ def plot_step_log(
     df_raw["reward"] = df_raw["rewards"].apply(lambda x: x[env_id])
     df_raw["obs"] = df_raw["new_obs"].apply(lambda x: np.array(x[env_id]))
 
-    # Not able to extract the reset values without info field. prev_obs field shows
-    # last obs from previous episode not reset value in first step.
+    # Limitation: Unable to extract the reset values for each episode because the required
+    # "info" field is missing from the step log data. As a result, the "prev_obs" field
+    # only contains the last observation from the previous episode, not the reset value at
+    # the start of the current episode. This means that the initial state of each episode
+    # cannot be visualized, which may affect analyses that rely on episode initialization.
+    # Currently, there is no workaround unless the data collection process is updated to
+    # include the "info" field with reset values.
 
     objectives = get_data_from_dataframe(
         df_raw, "objective", objective_observation
@@ -558,14 +563,14 @@ def plot_step_log(
         df_raw, "design_variable", design_variable
     )
 
-    # combine everthing into a single dataframe
+    # combine everything into a single dataframe
     df = pd.concat(
         [df_raw["episodes"], df_raw["reward"], objectives, design_vars], axis=1
     )
     del df_raw  # free memory
 
     if df.empty:
-        raise ValueError("Empty or malformed step log.")
+        raise ValueError(f"The provided step log file {step_log_file} is empty or does not follow the current format.")
 
     # ---------- Episode selection ----------
     max_ep = df["episodes"].max()
@@ -573,6 +578,11 @@ def plot_step_log(
         episode_end = max_ep
 
     mask = (df["episodes"] >= episode_start) & (df["episodes"] <= episode_end)
+    if not mask.any():
+        raise IndexError(
+            f"Could not find any episode in the range {episode_start} to {episode_end}. "
+            f"The available episodes range from {df['episodes'].min()} to {df['episodes'].max()}"
+        )
     selected_eps = df.loc[mask, "episodes"].unique()[::episode_step]
     df = df[df["episodes"].isin(selected_eps)]
     episodes = df["episodes"].unique()
