@@ -469,10 +469,12 @@ def plot_step_log(
     step_log_file: pathlib.Path,
     env_id: int,
     episode_start: int = 0,
-    episode_end: int = 10**12,
+    episode_end: int = np.iinfo(int).max,
     episode_step: int = 1,
     figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
-    objective_observation: list[tuple[str, tuple[int, int]]] = [("obs", (0, 1))],
+    objective_observation: list[tuple[str, tuple[int, int]]] = [
+        ("obs", (0, 1))
+    ],
     design_variable: list[tuple[str, tuple[int, int]]] = [("obs", (1, None))],
 ) -> Figure:
     """Plot the step log data of a single run for multiple episodes.
@@ -570,7 +572,9 @@ def plot_step_log(
     del df_raw  # free memory
 
     if df.empty:
-        raise ValueError(f"The provided step log file {step_log_file} is empty or does not follow the current format.")
+        raise ValueError(
+            f"The provided step log file {step_log_file} is empty or does not follow the current format."
+        )
 
     # ---------- Episode selection ----------
     max_ep = df["episodes"].max()
@@ -696,6 +700,9 @@ def plot_step_log(
         ],
         showlegend=True,
     )
+    # The first subplot has two y-axes, so we need to assign the legend
+    # to only one of them to avoid duplicates. The second subplot
+    # has only one y-axis.
     for i, yaxis in enumerate(list(fig.select_yaxes())[::2], 1):
         legend_name = f"legend{i}"
         fig.update_layout(
@@ -705,7 +712,7 @@ def plot_step_log(
         fig.update_traces(row=i, legend=legend_name)
 
     # ---------- sizing ----------
-    if not isinstance(figure_size, list) and figure_size == "auto":
+    if not isinstance(figure_size, (tuple, list)) and figure_size == "auto":
         fig.update_layout(autosize=True)
     elif isinstance(figure_size, (tuple, list)):
         fig.update_layout(height=figure_size[0], width=figure_size[1])
