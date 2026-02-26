@@ -42,7 +42,9 @@ class CachedValue:
         return self.value[index]
 
     def __bool__(self):
-        return bool(self.error)
+        raise RuntimeError(
+            "CachedValue cannot be used in a boolean context. Use the 'error' attribute to check for errors."
+        )
 
     def __iter__(self):
         return iter(self.value)
