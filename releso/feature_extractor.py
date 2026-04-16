@@ -12,6 +12,8 @@ If you need to use the feature extractor please pin the torch version. (Can not 
 used with python>=3.14).
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Literal
 
