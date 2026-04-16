@@ -24,6 +24,8 @@ Note:
     fix for this problem is currently worked on.
 """
 
+from __future__ import annotations
+
 from typing import Any
 
 import gymnasium

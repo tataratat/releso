@@ -1,5 +1,7 @@
 """File holds definition classes for the mesh implementation."""
 
+from __future__ import annotations
+
 import pathlib
 from abc import abstractmethod
 from enum import Enum

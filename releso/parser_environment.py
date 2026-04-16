@@ -5,6 +5,8 @@ hold the functionality for the Reinforcement Learning environment are
 defined here.
 """
 
+from __future__ import annotations
+
 import multiprocessing
 import pathlib
 from timeit import default_timer as timer

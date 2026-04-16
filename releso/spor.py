@@ -13,6 +13,8 @@ A more in depth documentation of the SPOR concept is given here
 :ref:`SPOR Communication Interface <sporcominterface>`
 """
 
+from __future__ import annotations
+
 import importlib
 import json
 import os
