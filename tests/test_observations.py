@@ -97,4 +97,4 @@ def test_multi_observation_definition(
             observation.get_default_observation(),
         )
     else:
-        RuntimeError("Unknown value type")
+        raise RuntimeError("Unknown value type")

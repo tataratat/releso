@@ -266,9 +266,9 @@ def test_parse_communication_interface_json(
 ):
     args = []
     args.extend([
-        f"-r{str(uuid.uuid4())}",
-        f"-e{str(uuid.uuid4())}",
-        f"-l{str(dir_save_location)}",
+        f"-r{uuid.uuid4()!s}",
+        f"-e{uuid.uuid4()!s}",
+        f"-l{dir_save_location!s}",
     ])
     if j:
         args.extend(["-j", j])
@@ -285,11 +285,7 @@ def test_parse_communication_interface_json(
         assert error_j in err
         return
     argparse_ret = spor_com_parse_arguments(args)
-    if json_object:
-        assert argparse_ret.json_object == {"test": 12, "other": "test"}
-    elif additional_values:
-        assert argparse_ret.json_object == {"test": 12, "other": "test"}
-    elif j:
+    if json_object or additional_values or j:
         assert argparse_ret.json_object == {"test": 12, "other": "test"}
     else:
         assert argparse_ret.json_object is None

@@ -91,7 +91,11 @@ class Verbosity(BaseModel):
                 current timestamp
         """
         path: pathlib.Path = None
-        v = v.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        v = v.format(
+            datetime.datetime.now(tz=datetime.timezone.utc).strftime(
+                "%Y-%m-%d_%H-%M-%S"
+            )
+        )
         if "save_location" in values:
             # the path where the logger should write to is the
             # save_location/logfile_location

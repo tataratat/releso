@@ -5,7 +5,7 @@ definition of the problem.
 """
 
 import copy
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 from pydantic.class_validators import root_validator, validator
@@ -39,13 +39,13 @@ class SplineSpaceDimension(BaseModel):
     degree: conint(ge=1)
     #: knot vector describing the knot intervals of the spline in the current
     #: dimension
-    knot_vector: Optional[List[float]]
+    knot_vector: list[float] | None
 
     @validator("knot_vector", always=True)
     @classmethod
     def validate_knot_vector(
-        cls, v: Optional[List[float]], values: Dict[str, Any]
-    ) -> List[float]:
+        cls, v: list[float] | None, values: dict[str, Any]
+    ) -> list[float]:
         """Validator for knot_vector.
 
         If knot vector not given tries to make a default open knot vector.
@@ -62,9 +62,9 @@ class SplineSpaceDimension(BaseModel):
             float: value of the validated value.
         """
         if (
-            "number_of_points" in values.keys()
-            and "degree" in values.keys()
-            and "name" in values.keys()
+            "number_of_points" in values
+            and "degree" in values
+            and "name" in values
         ):
             n_knots = values["number_of_points"] + values["degree"] + 1
         else:
@@ -121,7 +121,7 @@ class SplineSpaceDimension(BaseModel):
                 )
             return knot_vec
 
-    def get_knot_vector(self) -> List[float]:
+    def get_knot_vector(self) -> list[float]:
         """Function returns the Knot vector given in the object.
 
         Returns:
@@ -137,17 +137,17 @@ class SplineDefinition(ShapeDefinition):
     """
 
     #: Definition of the space dimensions of the spline
-    space_dimensions: List[SplineSpaceDimension]
+    space_dimensions: list[SplineSpaceDimension]
     # #: Non parametric spline dimensions is currently not used.
     # spline_dimension: conint(ge=1)
     #: control points of the spline.
-    control_points: Optional[List[List[VariableLocation]]]
+    control_points: list[list[VariableLocation]] | None
 
     @root_validator(pre=True)
     @classmethod
     def make_default_control_point_grid(
-        cls, values: Dict[str, Any]
-    ) -> List[List[VariableLocation]]:
+        cls, values: dict[str, Any]
+    ) -> list[list[VariableLocation]]:
         """Validator for control_point_variables.
 
         If value is None a equidistant grid of control points will be given
@@ -165,12 +165,12 @@ class SplineDefinition(ShapeDefinition):
             List[List[VariableLocation]]: Definition of the control_points
         """
         if not values.get("control_points"):
-            if "space_dimensions" not in values.keys():
+            if "space_dimensions" not in values:
                 raise ParserException(
                     "SplineDefinition",
                     "control_point_variables",
                     "During validation the prerequisite variable "
-                    f"space_dimensions was not present. {str(values)}",
+                    f"space_dimensions was not present. {values!s}",
                 )
             spline_dimensions = values["space_dimensions"]
             n_points_in_dim = [
@@ -325,15 +325,15 @@ class NURBSDefinition(SplineDefinition):
 
     #: weights for the NURBS Spline definition. Other parameters are part of
     #: the spline definition class. Can be fixed or changeable
-    weights: List[Union[float, VariableLocation]]
+    weights: list[float | VariableLocation]
 
     @validator("weights")
     @classmethod
     def validate_weights(
         cls,
-        v: Optional[List[Union[float, VariableLocation]]],
-        values: Dict[str, Any],
-    ) -> List[Union[float, VariableLocation]]:
+        v: list[float | VariableLocation] | None,
+        values: dict[str, Any],
+    ) -> list[float | VariableLocation]:
         """Validator for variable weights.
 
         Validate if the correct number of weights are present in the weight
@@ -378,7 +378,7 @@ class NURBSDefinition(SplineDefinition):
     @validator("weights", each_item=True)
     @classmethod
     def convert_weights_into_variable_location(
-        cls, v: Union[float, VariableLocation], values: Dict[str, Any]
+        cls, v: float | VariableLocation, values: dict[str, Any]
     ) -> VariableLocation:
         """Validator for variable weights.
 
@@ -408,7 +408,7 @@ class NURBSDefinition(SplineDefinition):
         #         f"or a VariableLocation. The type is {type(v)}.",
         #     )
 
-    def get_weights(self) -> List[float]:
+    def get_weights(self) -> list[float]:
         """Returns the weights of the NURBS spline.
 
         Returns:
@@ -434,7 +434,7 @@ class NURBSDefinition(SplineDefinition):
             self.get_weights(),
         )
 
-    def get_actions(self) -> List[VariableLocation]:
+    def get_actions(self) -> list[VariableLocation]:
         """Extends the control point actions with the weight actions.
 
         Returns:
@@ -448,7 +448,7 @@ class NURBSDefinition(SplineDefinition):
         # raise RuntimeError(f"Actions: {actions}")
         return actions
 
-    def get_parameter_values(self) -> List[List[float]]:
+    def get_parameter_values(self) -> list[list[float]]:
         """Returns the current positions of all control points with weights as
         well.
 

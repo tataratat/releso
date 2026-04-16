@@ -28,9 +28,11 @@ Author:
 
 """
 
+from __future__ import annotations
+
 import datetime
 import pathlib
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Literal
 
 from pydantic import Field
 from pydantic.types import FilePath
@@ -76,9 +78,9 @@ class BaseAgent(BaseModel):
 
     #: base directory of the tensorboard logs if given an experiment name
     #: with a current timestamp is also added.
-    tensorboard_log: Optional[str]
+    tensorboard_log: str | None
 
-    def get_next_tensorboard_experiment_name(self) -> Optional[str]:
+    def get_next_tensorboard_experiment_name(self) -> str | None:
         """Return tensorboard experiment name.
 
         Adds a date and time marker to the tensorboard experiment name so that
@@ -90,7 +92,9 @@ class BaseAgent(BaseModel):
         if self.tensorboard_log is not None:
             return "_".join([
                 self.tensorboard_log,
-                datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+                datetime.datetime.now(datetime.timezone.utc).strftime(
+                    "%Y-%m-%d_%H-%M-%S"
+                ),
             ])
         return None
 
@@ -105,25 +109,26 @@ class BaseTrainingAgent(BaseAgent):
     #: policy defines the network structure which the agent uses
     policy: Literal["MlpPolicy", "CnnPolicy", "MultiInputPolicy"]
     #: If given the str identifies the Custom Feature Extractor to be added.
-    use_custom_feature_extractor: Optional[
+    use_custom_feature_extractor: (
         Literal[
             "resnet18",
             "mobilenet_v2",  # , "mobilenetv3_small", "mobilenetv3_large"
         ]
-    ] = None
+        | None
+    ) = None
     #: use the custom feature extractor with out a final linear layer
     cfe_without_linear: bool = False
     #: additional arguments to be passed to the policy on creation
-    policy_kwargs: Optional[Dict[str, Any]] = None
+    policy_kwargs: dict[str, Any] | None = None
 
-    def get_additional_kwargs(self, **kwargs) -> Dict[str, Any]:
+    def get_additional_kwargs(self, **kwargs) -> dict[str, Any]:
         """Add additional keyword arguments for agent instantiation.
 
         Reads and gets the additional keyword arguments for the agent
         definition.
 
         Returns:
-            Dict[str, Any]: Dictionary of the needed additional keywords.
+            dict[str, Any]: Dictionary of the needed additional keywords.
         """
         if self.policy_kwargs is None:
             self.policy_kwargs = {}
@@ -189,11 +194,11 @@ class PretrainedAgent(BaseAgent):
         alias="type"
     )
     #: Path to the save files of the pretrained agent.
-    path: Union[FilePath, pathlib.Path]
+    path: FilePath | pathlib.Path
     #: If the agent is to be trained further the results can be added to the
     # existing tensorboard experiment. This is the path to the existing
     # tensorboard experiment
-    tesorboard_run_directory: Union[str, pathlib.Path, None] = None
+    tesorboard_run_directory: str | pathlib.Path | None = None
 
     # TODO add testing of agent loading. Need trained agents?
     def get_agent(
@@ -230,7 +235,7 @@ class PretrainedAgent(BaseAgent):
         else:
             raise AgentUnknownException(self.agent_type)
 
-    def get_next_tensorboard_experiment_name(self) -> Optional[str]:
+    def get_next_tensorboard_experiment_name(self) -> str | None:
         """Return the name of the tensorboard experiment.
 
         The tensorboard experiment name of the original training run if given
@@ -290,7 +295,7 @@ class A2CAgent(BaseTrainingAgent):
     #: Whether to normalize or not the advantage
     normalize_advantage = False
     #: Seed for the pseudo random generators
-    seed: Optional[int] = None
+    seed: int | None = None
     #: Device (cpu, cuda, …) on which the code should be run. Setting it to
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
@@ -348,7 +353,7 @@ class PPOAgent(BaseTrainingAgent):
     #: https://github.com/pytorch/pytorch/issues/29372
     n_steps: int = 2048
     #: Minibatch size
-    batch_size: Optional[int] = 64
+    batch_size: int | None = 64
     #: Number of epoch when optimizing the surrogate loss
     n_epochs: int = 10
     #: Discount factor
@@ -364,7 +369,7 @@ class PPOAgent(BaseTrainingAgent):
     #: Value function coefficient for the loss calculation
     vf_coef: float = 0.5
     #: Seed for the pseudo random generators
-    seed: Optional[int] = None
+    seed: int | None = None
     #: Device (cpu, cuda, …) on which the code should be run. Setting it to
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
@@ -422,7 +427,7 @@ class DDPGAgent(BaseTrainingAgent):
     #: starts
     learning_starts: int = 100
     #: Minibatch size
-    batch_size: Optional[int] = 64
+    batch_size: int | None = 64
     #: the soft update coefficient ("Polyak update", between 0 and 1)
     tau: float = 0.005
     #: Discount factor
@@ -433,7 +438,7 @@ class DDPGAgent(BaseTrainingAgent):
     # -637501195
     optimize_memory_usage: bool = False
     #: Seed for the pseudo random generators
-    seed: Optional[int] = None
+    seed: int | None = None
     #: Device (cpu, cuda, …) on which the code should be run. Setting it to
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
@@ -477,7 +482,7 @@ class SACAgent(BaseTrainingAgent):
     #: starts
     learning_starts: int = 100
     #: Minibatch size
-    batch_size: Optional[int] = 64
+    batch_size: int | None = 64
     #: the soft update coefficient ("Polyak update", between 0 and 1)
     tau: float = 0.005
     #: Discount factor
@@ -490,12 +495,12 @@ class SACAgent(BaseTrainingAgent):
     #: scale in the original SAC paper.)  Controlling exploration/exploitation
     #: trade-off. Set it to 'auto' to learn it automatically (and 'auto_0.1'
     #: for using 0.1 as initial value)
-    ent_coef: Union[str, float] = "auto"
+    ent_coef: str | float = "auto"
     #: update the target network every ``target_network_update_freq`` gradient
     #: steps.
     target_update_interval: int = 1
     #: target entropy when learning ``ent_coef`` (``ent_coef = 'auto'``)
-    target_entropy: Union[str, float] = "auto"
+    target_entropy: str | float = "auto"
     #: Whether to use generalized State Dependent Exploration (gSDE) instead
     #: of action noise exploration (default: False)
     use_sde: bool = False
@@ -506,7 +511,7 @@ class SACAgent(BaseTrainingAgent):
     #: phase (before learning starts)
     use_sde_at_warmup: bool = False
     #: Seed for the pseudo random generators
-    seed: Optional[int] = None
+    seed: int | None = None
     #: Device (cpu, cuda, …) on which the code should be run. Setting it to
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
@@ -550,7 +555,7 @@ class DQNAgent(BaseTrainingAgent):
     #: starts
     learning_starts: int = 256
     #: Minibatch size for each gradient update
-    batch_size: Optional[int] = 32
+    batch_size: int | None = 32
     #: the soft update coefficient ("Polyak update", between 0 and 1) default
     #: 1 for hard update
     tau: float = 1.0
@@ -578,7 +583,7 @@ class DQNAgent(BaseTrainingAgent):
     #: The maximum value for the gradient clipping
     max_grad_norm: float = 10
     #: Seed for the pseudo random generators
-    seed: Optional[int] = None
+    seed: int | None = None
     #: Device (cpu, cuda, …) on which the code should be run. Setting it to
     #: auto, the code will be run on the GPU if possible.
     device: str = "auto"
@@ -603,6 +608,6 @@ class DQNAgent(BaseTrainingAgent):
         return DQN(env=environment, **self.get_additional_kwargs())
 
 
-AgentTypeDefinition = Union[
-    PPOAgent, DDPGAgent, SACAgent, PretrainedAgent, DQNAgent, A2CAgent
-]
+AgentTypeDefinition = (
+    PPOAgent | DDPGAgent | SACAgent | PretrainedAgent | DQNAgent | A2CAgent
+)

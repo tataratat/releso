@@ -322,7 +322,7 @@ def test_mixd_mesh_export_and_get(
 ):
     mesh_exporter = MeshExporter(
         format="mixd",
-        export_path=f"{str(dir_save_location)}/export/" + "{}/test.xns",
+        export_path=f"{dir_save_location!s}/export/" + "{}/test.xns",
         save_location=dir_save_location,
     )
     mesh = MeshIOMesh(
@@ -333,7 +333,7 @@ def test_mixd_mesh_export_and_get(
     )
     mesh.adapt_export_path("123")
     mesh.export.export_mesh(mesh.get_mesh())
-    exported_file = pathlib.Path(f"{str(dir_save_location)}/export")
+    exported_file = pathlib.Path(f"{dir_save_location!s}/export")
     mesh_exporter.mesh_format = "other"
     with pytest.raises(RuntimeError) as err:
         mesh_exporter.export_mesh(None)

@@ -4,11 +4,13 @@ This files includes multiple functions and classes which are used in this
 package but can not be directly associated to a single sub module.
 """
 
+from __future__ import annotations
+
 import datetime
 import json
 import os
 import subprocess
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -40,13 +42,13 @@ class JSONEncoder(json.JSONEncoder):
         try:
             return json.JSONEncoder.default(self, o)
         except TypeError:
-            print(type(o), o)  # noqa: T201
+            print(type(o), o)
             return json.JSONEncoder.default(self, "")
 
 
 def which(
     program: str,
-) -> Optional[str]:  # pragma: no cover # not used anymore
+) -> str | None:  # pragma: no cover # not used anymore
     """Finds if the given program is accessible or in the $PATH.
 
     Args:
@@ -91,7 +93,7 @@ def call_commandline(command, folder, logger=None):
         output = subprocess.check_output(
             command,
             shell=True,
-            cwd=folder,  # noqa: S602
+            cwd=folder,
         )
         exitcode = 0
     except subprocess.CalledProcessError as exc:
@@ -133,7 +135,9 @@ def get_path_extension() -> str:
     Returns:
         str: See function documentation body for definition.
     """
-    ret_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    ret_str = datetime.datetime.now(tz=datetime.timezone.utc).strftime(
+        "%Y-%m-%d_%H-%M-%S"
+    )
     # check if slurm job is running
     if os.getenv("SLURM_CLUSTER_NAME"):  # pragma: no cover
         # check if slurm task array is running

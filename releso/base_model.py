@@ -7,7 +7,7 @@ command line based application of this toolbox.
 import multiprocessing
 import pathlib
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pydantic
 
@@ -33,9 +33,7 @@ def add_save_location_if_elem_is_o_dict(
         the save_location.
         save_location (str): string that defines the location
     """
-    if isinstance(possible_value, OrderedDict) or isinstance(
-        possible_value, Dict
-    ):
+    if isinstance(possible_value, (OrderedDict, dict)):
         if "save_location" not in possible_value:
             possible_value["save_location"] = save_location
     elif isinstance(possible_value, list):
@@ -60,7 +58,7 @@ class BaseModel(pydantic.BaseModel):
     #: name of the logger. If this variable gives you trouble, the framework is
     #: at least a little bit buggy. Does not need to be set. And might be
     #: changed if set by user, if multi-environment training is utilized.
-    logger_name: Optional[str] = None
+    logger_name: str | None = None
 
     def __init__(self, **data: Any) -> None:
         """Constructor for the ReLeSO basemodel object."""
@@ -106,7 +104,7 @@ class BaseModel(pydantic.BaseModel):
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def _check_list(self, list_item: List[Any], logger_name: str):
+    def _check_list(self, list_item: list[Any], logger_name: str):
         """Helper function for set_logger_name_recursively.
 
         Recursively goes through lists and add the logger_name where

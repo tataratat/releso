@@ -1,16 +1,18 @@
-#!/usr/bin/env python
 """ReLeSO main file and framework starting point.
 
 File defines the main entry point of the framework if it is called via the
 command line. (via $python -m ReLeSO; or $releso)
 """
 
+from __future__ import annotations
+
 import argparse
 import datetime
 import pathlib
 import pprint
 import shutil
-from typing import Literal, Union
+import sys
+from typing import Literal
 
 import gymnasium
 import hjson
@@ -79,14 +81,14 @@ def check_positive_or_zero(value) -> int:
     return value
 
 
-def check_window_size(value) -> Union[tuple[int, int], Literal["auto"]]:
+def check_window_size(value) -> tuple[int, int] | Literal["auto"]:
     """Check and validate window size.
     Args:
         value (Any): Value to be validated. Can be "auto" or a tuple of two integers.
     Raises:
         argparse.ArgumentTypeError: If value is not correct.
     Returns:
-        Union[tuple[int, int], Literal["auto"]]: Validated value.
+        tuple[int, int] | Literal["auto"]: Validated value.
     """
     if str(value) == "auto":
         return "auto"
@@ -401,7 +403,11 @@ def entry():
 
     # We want to run releso
     if args.execution_mode == "run":
-        print(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        print(
+            datetime.datetime.now(datetime.timezone.utc).strftime(
+                "%Y-%m-%d_%H:%M:%S.%f"
+            )
+        )
         run_folder = main(args)
     # We want to use releso for visualization
     elif args.execution_mode == "visualize":
@@ -446,10 +452,10 @@ def entry():
                 "Please choose between 'episode-log' and 'step-log'."
             )
             parser.print_help()
-            exit(1)
+            sys.exit(1)
     else:
         parser.print_help()
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":  # pragma: no cover

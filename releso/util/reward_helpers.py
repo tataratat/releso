@@ -12,13 +12,13 @@ import argparse
 import json
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic.types import UUID4
 
 
 def spor_com_parse_arguments(
-    own_arguments: Optional[List[str]] = None,
+    own_arguments: list[str] | None = None,
 ) -> argparse.Namespace:
     """Parses the spor com arguments.
 
@@ -103,7 +103,7 @@ def spor_com_parse_arguments(
     return args
 
 
-def spor_com_additional_information(j_str: str) -> Dict[str, Any]:
+def spor_com_additional_information(j_str: str) -> dict[str, Any]:
     """Converts the given string (should hold a json string) into a dictionary.
 
     This function is currently only used for the spor_com_parse_arguments
@@ -119,7 +119,7 @@ def spor_com_additional_information(j_str: str) -> Dict[str, Any]:
     return a
 
 
-def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
+def load_json(f_n: PathLike | str) -> dict[str, Any]:
     """Loads data from a given file as a json object.
 
     Will create a dummy file if it does not exist.
@@ -133,7 +133,7 @@ def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
     """
     path = Path(f_n)
     if not (path.exists() and path.is_file()):
-        empty_dict: Dict[str, Any] = {}
+        empty_dict: dict[str, Any] = {}
         try:
             with open(path, "w") as wf:
                 json.dump(empty_dict, wf)
@@ -145,7 +145,7 @@ def load_json(f_n: Union[PathLike, str]) -> Dict[str, Any]:
         return json.load(rf)
 
 
-def write_json(f_n: Union[PathLike, str], obj_dict: Dict[str, Any]):
+def write_json(f_n: PathLike | str, obj_dict: dict[str, Any]):
     """Write the obj_dict to the given file (json encoded).
 
     Can be used to store persistent variables between calls to the same script.

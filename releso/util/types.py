@@ -7,7 +7,7 @@ files. Here only types with strictly external contents are created.
 
 from __future__ import annotations
 
-from typing import Dict, Tuple, Union
+from typing import Any
 
 from numpy import ndarray
 
@@ -21,18 +21,18 @@ except ModuleNotFoundError as err:
 
 
 #: Type definition for Observations.
-ObservationType = Union[ndarray, Dict[str, ndarray], Tuple[ndarray, ...]]
+ObservationType = ndarray | dict[str, ndarray] | tuple[ndarray, ...]
 #: Type definition for the info object returned for every step in the RL
 #: Environment
-InfoType = Dict
+InfoType = dict[str, Any]
 #: Type definition of the reward for every step in the RL Environment
 RewardType = float
 #: Type definition of the done marker for every step in the RL Environment
 DoneType = bool
 
 #: All possible classes that can make up a mesh
-GustafMeshTypes = Union[Volumes, Faces]
+GustafMeshTypes = Volumes | Faces
 #: Type definition for the return value of a Step. A step return the steps
 #: observation, generated reward, whether or not the current step is complete
 #: and additional info.
-StepReturnType = Tuple[ObservationType, RewardType, DoneType, InfoType]
+StepReturnType = tuple[ObservationType, RewardType, DoneType, InfoType]

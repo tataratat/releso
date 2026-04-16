@@ -5,9 +5,11 @@ Please check if any updates to the required files are needed before
 using these functions.
 """
 
+from __future__ import annotations
+
 import datetime
 import pathlib
-from typing import Any, Dict, Tuple, Union
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -104,7 +106,7 @@ def get_visual_representation(
 
 
 def save_current_solution_as_png(
-    save_location: Union[pathlib.Path, str],
+    save_location: pathlib.Path | str,
     include_pressure: bool = True,
     height: int = 10,
     width: int = 10,
@@ -135,7 +137,7 @@ def save_current_solution_as_png(
     meta_data_dict = {
         "Author": "Clemens Fricke",
         "Software": "ReLeSO",
-        "Creation Time": str(datetime.datetime.now()),
+        "Creation Time": str(datetime.datetime.now(tz=datetime.timezone.utc)),
         "Description": "This is a description",
     }
     if isinstance(save_location, str):
@@ -144,7 +146,7 @@ def save_current_solution_as_png(
     plt.imsave(save_location, image_arr, metadata=meta_data_dict)
 
 
-def main(args, logger, func_data) -> Tuple[Dict[str, Any], Any]:
+def main(args, logger, func_data) -> tuple[dict[str, Any], Any]:
     """Function which is called from the spor step.
 
     The parameters need to conform to the SPOR_COMM interface defined by

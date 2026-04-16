@@ -11,7 +11,7 @@ Note:
 """
 
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 from pydantic.class_validators import root_validator, validator
@@ -34,22 +34,22 @@ class VariableLocation(BaseModel):
     #: dimension
     current_position: float
     #: lower bound of possible values which can be reached by this variable
-    min_value: Optional[float] = None
+    min_value: float | None = None
     #: upper bound  of possible values which can be reached by this variable
-    max_value: Optional[float] = None
+    max_value: float | None = None
     #: number of steps the value range is divided into used to define the step
     #: if not given.
-    n_steps: Optional[conint(ge=1)] = 10
+    n_steps: conint(ge=1) | None = 10
     #: If discrete actions are used the step is used to define the new current
     #: position by adding/subtracting it from the current position.
-    step: Optional[float] = None
+    step: float | None = None
 
     # non json variables
     #: Is true if min_value and max_value are not the same value
-    _is_action: Optional[bool] = PrivateAttr(default=None)
+    _is_action: bool | None = PrivateAttr(default=None)
     #: Original position needs to be saved so that the shape can be easily
     #: reset to its original state.
-    _original_position: Optional[float] = PrivateAttr(default=None)
+    _original_position: float | None = PrivateAttr(default=None)
 
     def __init__(self, **data: Any) -> None:
         """Constructor for VariableLocation."""
@@ -79,7 +79,7 @@ class VariableLocation(BaseModel):
             float: value of the validated value.
         """
         if v is None:
-            if "current_position" in values.keys():
+            if "current_position" in values:
                 return values["current_position"]
             else:
                 raise ParserException(
@@ -139,7 +139,7 @@ class VariableLocation(BaseModel):
 
     @root_validator
     @classmethod
-    def define_step(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def define_step(cls, values: dict[str, Any]) -> dict[str, Any]:
         """Validator for class.
 
         Validation function that defines the step taken if the action would be
@@ -251,7 +251,7 @@ class ShapeDefinition(BaseModel):
     #: control_points of the shape. These are the base variables used for the
     #: optimization. Overwrite `get_actions` and `get_parameter_values` if
     #: additional optimization variables are needed. See (WIP) NURBSDefinition.
-    control_points: List[List[VariableLocation]]
+    control_points: list[list[VariableLocation]]
 
     def get_number_of_points(self) -> int:
         """Returns the number of points in the Cube.
@@ -307,7 +307,7 @@ class ShapeDefinition(BaseModel):
                     ) from None
         return new_list
 
-    def get_parameter_values(self) -> List[List[float]]:
+    def get_parameter_values(self) -> list[list[float]]:
         """Returns the current positions of all control points.
 
         Returns:
@@ -318,7 +318,7 @@ class ShapeDefinition(BaseModel):
             for sub_list in self.control_points
         ]
 
-    def get_actions(self) -> List[VariableLocation]:
+    def get_actions(self) -> list[VariableLocation]:
         """Returns the action defined.
 
         Returns list of VariableLocations but only if the variable location is
@@ -356,9 +356,9 @@ class ShapeDefinition(BaseModel):
 
     def draw_action_space(
         self,
-        save_location: Optional[str] = None,
+        save_location: str | None = None,
         no_axis: bool = False,
-        fig_size: List[float] = None,
+        fig_size: list[float] | None = None,
         dpi: int = 400,
     ):  # pragma: no cover
         """Draw the action space of the defined shape as a matplotlib figure.

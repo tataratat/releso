@@ -8,7 +8,7 @@ defined here.
 import multiprocessing
 import pathlib
 from timeit import default_timer as timer
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 from uuid import uuid4
 
 import gymnasium
@@ -50,20 +50,20 @@ class Environment(BaseModel):
     """
 
     #: defines if multi-processing can be used.
-    multi_processing: Optional[MultiProcessing]
+    multi_processing: MultiProcessing | None
     #: definition of the Geometry
     geometry: GeometryTypes
     #: definition of the spor objects
     spor: SPORList
     #: maximal number of timesteps to run each episode for
-    max_timesteps_in_episode: Optional[conint(ge=1)] = None
+    max_timesteps_in_episode: conint(ge=1) | None = None
     #: whether or not to reset the environment if the geometry has not change
     #: after a step
     end_episode_on_geometry_not_changed: bool = False
     #: reward if episode is ended due to reaching max step in episode
-    reward_on_geometry_not_changed: Optional[float] = None
+    reward_on_geometry_not_changed: float | None = None
     #: reward if episode is ended due to geometry not changed
-    reward_on_episode_exceeds_max_timesteps: Optional[float] = None
+    reward_on_episode_exceeds_max_timesteps: float | None = None
     # #: periodically save the end result of the optimization T-junction use
     # #: case TODO the next few cases I see personally more in a separate SPOR
     # #: Step but I am not sure how this can be worked since it needs data from
@@ -78,15 +78,15 @@ class Environment(BaseModel):
 
     # object variables
     #: id if the environment, important for multi-environment learning
-    _id: Optional[UUID4] = PrivateAttr(default=None)
+    _id: UUID4 | None = PrivateAttr(default=None)
     #: if validation environment validation ids are stored here
-    _validation_ids: Optional[List[float]] = PrivateAttr(default=None)
+    _validation_ids: list[float] | None = PrivateAttr(default=None)
     #: id of the current validation id
-    _current_validation_idx: Optional[int] = PrivateAttr(default=None)
+    _current_validation_idx: int | None = PrivateAttr(default=None)
     #: number of timesteps currently spend in the episode
-    _timesteps_in_episode: Optional[int] = PrivateAttr(default=0)
+    _timesteps_in_episode: int | None = PrivateAttr(default=0)
     #: StepReturn values from last step
-    _last_step_results: Dict[str, Any] = PrivateAttr(default={})
+    _last_step_results: dict[str, Any] = PrivateAttr(default={})
     #: Toggle to whether or not it is possible to flatten the observation
     #: space. If the observation space is flattened the agents feature
     #: extractor is more compact
@@ -230,9 +230,9 @@ class Environment(BaseModel):
 
     def _compress_observation_space_definition(
         self,
-        observation_spaces: List[Tuple[str, ObservationType]],
+        observation_spaces: list[tuple[str, ObservationType]],
         has_cnn_observations: bool,
-    ) -> List[Tuple[str, ObservationType]]:
+    ) -> list[tuple[str, ObservationType]]:
         """If possible compress observation space.
 
         If possible will compress the observation space into a single
@@ -310,7 +310,7 @@ class Environment(BaseModel):
         Returns:
             # gymnasium.Space: Observation space of the current problem.
         """
-        observation_spaces: List[Tuple[str, gymnasium.Space]] = []
+        observation_spaces: list[tuple[str, gymnasium.Space]] = []
         # define base observation
         if self.geometry.action_based_observation:
             observation_spaces.append(
@@ -322,10 +322,7 @@ class Environment(BaseModel):
         if spor_obs is not None:
             for item in spor_obs:
                 observation_spaces.append(item.get_observation_definition())
-                if (
-                    "value_type" in item.__dict__.keys()
-                    and item.value_type == "CNN"
-                ):
+                if "value_type" in item.__dict__ and item.value_type == "CNN":
                     has_cnn_observations = True
 
         # check if dict is actually necessary
@@ -371,7 +368,7 @@ class Environment(BaseModel):
         """
         return self.multi_processing.number_of_cores
 
-    def get_validation_id(self) -> Optional[int]:
+    def get_validation_id(self) -> int | None:
         """Return the validation id of the current run, if applicable.
 
         Checks if current environment has validation values if return the
@@ -386,7 +383,7 @@ class Environment(BaseModel):
             ]
         return None
 
-    def step(self, action: Any) -> Tuple[Any, float, bool, Dict[str, Any]]:
+    def step(self, action: Any) -> tuple[Any, float, bool, dict[str, Any]]:
         """Performs the step of the environment.
 
         Function that is called for each step. Contains all steps that are
@@ -454,15 +451,17 @@ class Environment(BaseModel):
                 done = True
                 reward += self.reward_on_episode_exceeds_max_timesteps
                 info["reset_reason"] = "max_timesteps_exceeded"
-            if self.end_episode_on_geometry_not_changed:
-                if not self.geometry.is_geometry_changed():
-                    self.get_logger().info(
-                        "The geometry observation have"
-                        " not changed will exit episode."
-                    )
-                    reward += self.reward_on_geometry_not_changed
-                    done = True
-                    info["reset_reason"] = "geometry_not_changed"
+            if (
+                self.end_episode_on_geometry_not_changed
+                and not self.geometry.is_geometry_changed()
+            ):
+                self.get_logger().info(
+                    "The geometry observation have"
+                    " not changed will exit episode."
+                )
+                reward += self.reward_on_geometry_not_changed
+                done = True
+                info["reset_reason"] = "geometry_not_changed"
         # else:
         #     pass  # TODO convert to separate SPOR Steps
         #     if reward >= 5.:
@@ -543,13 +542,13 @@ class Environment(BaseModel):
             new_observation = observations[next(iter(observations.keys()))]
         else:
             if self._flatten_observations:
-                for key in observations.keys():
+                for key in observations:
                     new_observation.extend(observations[key])
             else:
                 new_observation = observations
         return new_observation
 
-    def reset(self, seed: Optional[int] = None) -> ObservationType:
+    def reset(self, seed: int | None = None) -> ObservationType:
         """Resets the environment.
 
         This can either be the case if the episode is done due to #time_steps
@@ -614,11 +613,11 @@ class Environment(BaseModel):
 
     def set_validation(
         self,
-        validation_values: List[float],
+        validation_values: list[float],
         end_episode_on_geometry_not_changed: bool = False,
         max_timesteps_in_episode: int = 0,
-        reward_on_geometry_not_changed: Optional[float] = None,
-        reward_on_episode_exceeds_max_timesteps: Optional[float] = None,
+        reward_on_geometry_not_changed: float | None = None,
+        reward_on_episode_exceeds_max_timesteps: float | None = None,
     ):
         """Converts the environment to a validation environment.
 
@@ -664,9 +663,8 @@ class Environment(BaseModel):
 
     def get_gym_environment(
         self,
-        logging_information: Optional[
-            Dict[str, Union[str, pathlib.Path, VerbosityLevel]]
-        ] = None,
+        logging_information: dict[str, str | pathlib.Path | VerbosityLevel]
+        | None = None,
     ) -> gymnasium.Env:
         """Creates the parametrized gymnasium environment.
 

@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import copy
 import pathlib
 import shutil
 import uuid
 from collections.abc import Iterable
-from typing import List
 
 import numpy as np
 import pytest
@@ -27,7 +28,7 @@ from releso.spor import (  # SPORObjectPythonFunction,; SPORObjectTypes,
 from releso.verbosity import VerbosityLevel
 
 
-def get_obs_name(object_to_check) -> List[str]:
+def get_obs_name(object_to_check) -> list[str]:
     if isinstance(
         object_to_check, (ObservationDefinition, ObservationDefinitionMulti)
     ):
@@ -499,7 +500,7 @@ def test_spor_object_executor_spor_com_interface(
     else:
         assert "--reset" not in interface_string
     if validation_id is not None:
-        assert f"--validation_value {str(validation_id)}" in interface_string
+        assert f"--validation_value {validation_id!s}" in interface_string
     else:
         assert "--validation_value" not in interface_string
     if add_step_info:

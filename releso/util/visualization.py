@@ -1,5 +1,5 @@
 import pathlib
-from typing import Literal, Union
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -66,7 +66,7 @@ def export_figure(
 def plot_episode_log(
     result_folders: dict[str, pathlib.Path],
     window: int = 5,
-    window_size: Union[tuple[int, int], Literal["auto"]] = "auto",
+    window_size: tuple[int, int] | Literal["auto"] = "auto",
     cut_off_point: int = np.iinfo(int).max,
     show_validation: bool = False,
 ) -> Figure:
@@ -150,7 +150,7 @@ def plot_episode_log(
             and (val_file := folder / "eval/log/evaluations.npz").exists()
         ):
             val_data = np.load(val_file)
-            data = dict()
+            data = {}
             data["total_timesteps"] = val_data["timesteps"][
                 val_data["timesteps"] <= cut_off_point
             ]
@@ -193,7 +193,7 @@ def plot_episode_log(
                 mode="lines",
                 legendgroup=f"{n_env[idx]}",  # Used so that each experiment can be disabled
                 name=f"{n_env[idx]}",  # name the legend item
-                line=dict(color=plotly_colors[idx]),
+                line={"color": plotly_colors[idx]},
                 showlegend=True,  # show legend only for first subplot
                 customdata=dataframe.index,
                 hovertemplate="(%{x:d},%{y:.2f}) Episode: %{customdata:d}",
@@ -212,15 +212,15 @@ def plot_episode_log(
                     mode="markers",
                     showlegend=True,
                     opacity=0.2,
-                    error_y=dict(
-                        type="data",
-                        symmetric=False,
-                        array=val_dataframe["val_reward_max"]
+                    error_y={
+                        "type": "data",
+                        "symmetric": False,
+                        "array": val_dataframe["val_reward_max"]
                         - val_dataframe["val_reward_mean"],
-                        arrayminus=val_dataframe["val_reward_mean"]
+                        "arrayminus": val_dataframe["val_reward_mean"]
                         - val_dataframe["val_reward_min"],
-                    ),
-                    marker=dict(color=plotly_colors[idx], size=8),
+                    },
+                    marker={"color": plotly_colors[idx], "size": 8},
                 ),
                 row=1,
                 col=1,
@@ -236,7 +236,7 @@ def plot_episode_log(
                 mode="lines",
                 legendgroup=f"{n_env[idx]}",
                 name=f"{n_env[idx]}",
-                line=dict(color=plotly_colors[idx]),
+                line={"color": plotly_colors[idx]},
                 showlegend=False,
             ),
             row=2,
@@ -253,15 +253,15 @@ def plot_episode_log(
                     mode="markers",
                     showlegend=False,
                     opacity=0.2,
-                    error_y=dict(
-                        type="data",
-                        symmetric=False,
-                        array=val_dataframe["val_length_max"]
+                    error_y={
+                        "type": "data",
+                        "symmetric": False,
+                        "array": val_dataframe["val_length_max"]
                         - val_dataframe["val_length_mean"],
-                        arrayminus=val_dataframe["val_length_mean"]
+                        "arrayminus": val_dataframe["val_length_mean"]
                         - val_dataframe["val_length_min"],
-                    ),
-                    marker=dict(color=plotly_colors[idx], size=8),
+                    },
+                    marker={"color": plotly_colors[idx], "size": 8},
                 ),
                 row=2,
                 col=1,
@@ -277,7 +277,7 @@ def plot_episode_log(
                 mode="lines",
                 legendgroup=f"{n_env[idx]}",
                 name=f"{n_env[idx]}",
-                line=dict(color=plotly_colors[idx]),
+                line={"color": plotly_colors[idx]},
                 showlegend=False,
             ),
             row=3,
@@ -294,11 +294,11 @@ def plot_episode_log(
                     .iloc[: end_episode[idx]]
                     .rolling(100, 0)
                     .mean(),
-                    line=dict(
-                        color=plotly_colors[idx],
-                        dash=marker,
-                        width=4,
-                    ),
+                    line={
+                        "color": plotly_colors[idx],
+                        "dash": marker,
+                        "width": 4,
+                    },
                     legendgroup=f"{n_env[idx]}",
                     name=f"{unique_key}: {n_env[idx]}",
                     showlegend=False,
@@ -317,7 +317,7 @@ def plot_episode_log(
                 mode="lines",
                 legendgroup=f"{n_env[idx]}",
                 name=f"{n_env[idx]}",
-                line=dict(color=plotly_colors[idx]),
+                line={"color": plotly_colors[idx]},
                 showlegend=False,
             ),
             row=5,
@@ -334,7 +334,7 @@ def plot_episode_log(
                 mode="lines",
                 legendgroup=f"{n_env[idx]}",
                 name=f"{n_env[idx]}",
-                line=dict(color=plotly_colors[idx]),
+                line={"color": plotly_colors[idx]},
                 showlegend=False,
             ),
             row=6,
@@ -348,13 +348,13 @@ def plot_episode_log(
                 x=[None],
                 y=[None],
                 legendgroup="end_reason",
-                legendgrouptitle=dict(text="Episode End Reasons"),
+                legendgrouptitle={"text": "Episode End Reasons"},
                 name=f"{unique_key}",
-                line=dict(
-                    color="black",
-                    dash=marker,
-                    width=4,
-                ),
+                line={
+                    "color": "black",
+                    "dash": marker,
+                    "width": 4,
+                },
                 mode="lines",
                 showlegend=True,
             ),
@@ -363,7 +363,7 @@ def plot_episode_log(
         )
 
     # adapt figure size
-    fig.update_traces(line=dict(width=0.6))
+    fig.update_traces(line={"width": 0.6})
     if not isinstance(window_size, list) and window_size == "auto":
         fig.update_layout(autosize=True)
     else:
@@ -471,11 +471,9 @@ def plot_step_log(
     episode_start: int = 0,
     episode_end: int = np.iinfo(int).max,
     episode_step: int = 1,
-    figure_size: Union[tuple[int, int], Literal["auto"]] = "auto",
-    objective_observation: list[tuple[str, tuple[int, int]]] = [
-        ("obs", (0, 1))
-    ],
-    design_variable: list[tuple[str, tuple[int, int]]] = [("obs", (1, None))],
+    figure_size: tuple[int, int] | Literal["auto"] = "auto",
+    objective_observation: list[tuple[str, tuple[int, int]]] | None = None,
+    design_variable: list[tuple[str, tuple[int, int]]] | None = None,
 ) -> Figure:
     """Plot the step log data of a single run for multiple episodes.
 
@@ -535,7 +533,11 @@ def plot_step_log(
         plotly.graph_objects.Figure: A Plotly figure object containing the
           interactive plot for further customization or export.
     """
-
+    # defaults
+    if design_variable is None:
+        design_variable = [("obs", (1, None))]
+    if objective_observation is None:
+        objective_observation = [("obs", (0, 1))]
     # ---------- Load data ----------
     # Load the step log data from the provided path
     try:
@@ -706,7 +708,7 @@ def plot_step_log(
     for i, yaxis in enumerate(list(fig.select_yaxes())[::2], 1):
         legend_name = f"legend{i}"
         fig.update_layout(
-            {legend_name: dict(y=yaxis.domain[1], yanchor="top")},
+            {legend_name: {"y": yaxis.domain[1], "yanchor": "top"}},
             showlegend=True,
         )
         fig.update_traces(row=i, legend=legend_name)
