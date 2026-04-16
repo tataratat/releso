@@ -4,6 +4,8 @@ File holds all classes which define the spline and with that also the action
 definition of the problem.
 """
 
+from __future__ import annotations
+
 import copy
 from typing import Any
 

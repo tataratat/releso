@@ -4,6 +4,8 @@ This file holds the verbosity definitions and helper functions for the logger
 used in this package.
 """
 
+from __future__ import annotations
+
 import enum
 import logging
 import pathlib

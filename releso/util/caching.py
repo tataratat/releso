@@ -1,5 +1,7 @@
 """Caching utilities for Releso. To be used in SPOR steps."""
 
+from __future__ import annotations
+
 import json
 import sqlite3
 

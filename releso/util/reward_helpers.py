@@ -8,6 +8,8 @@ versions/special environment to run your scripts in. The pydantic dependency
 can be exchanged for a string.
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 from os import PathLike

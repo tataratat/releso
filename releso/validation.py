@@ -1,5 +1,7 @@
 """File holds the definition class for the validation."""
 
+from __future__ import annotations
+
 import pathlib
 from typing import Any
 

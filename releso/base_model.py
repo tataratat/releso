@@ -4,6 +4,8 @@ File holding the base class for all ReLeSO classes which are needed for the
 command line based application of this toolbox.
 """
 
+from __future__ import annotations
+
 import multiprocessing
 import pathlib
 from collections import OrderedDict
