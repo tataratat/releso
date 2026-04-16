@@ -3,7 +3,7 @@ name = "releso"
 authors = [
     {name = "Clemens Fricke", email = "clemens.david.fricke@tuwien.ac.at"}
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 license-files = ["LICENSE"]
 license = "MIT"
 classifiers = [
@@ -12,7 +12,7 @@ classifiers = [
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
-#        "Programming Language :: Python :: 3.14",
+    #    "Programming Language :: Python :: 3.14",
         "Natural Language :: English",
         "Topic :: Scientific/Engineering",
 ]
