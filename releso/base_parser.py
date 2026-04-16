@@ -6,7 +6,7 @@ for the command line based usage of the ReLeSO toolbox/framework.
 
 import pathlib
 from copy import deepcopy
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 from pydantic.fields import Field, PrivateAttr
@@ -45,11 +45,11 @@ class BaseParser(BaseModel):
     #: Number of episodes the training process should run for. If given both
     #: timesteps and max episodes can stop the trainings progress.
     #: Default: None
-    number_of_episodes: Optional[conint(ge=1)] = None
+    number_of_episodes: conint(ge=1) | None = None
     #: Definition of the validation . Defaults to None.
-    validation: Optional[Validation] = None
+    validation: Validation | None = None
     #: Number of environments to train in parallel. Defaults to None.
-    n_environments: Optional[conint(ge=1)] = 1
+    n_environments: conint(ge=1) | None = 1
     #: Should training parameters be normalized to the number of environments?
     #: If True the number of steps between learnings are divided by the number
     #: of environments. This increases the training speed for PPO and A2C
@@ -80,7 +80,7 @@ class BaseParser(BaseModel):
     #: Holds the trainable agent for the RL use case. The
     #: ReLeSO.base_parser.BaseParser.agent defines the type and parameters of
     #: the agent this is the actual trainable agent.
-    _agent: Optional[BaseAlgorithm] = PrivateAttr(default=None)
+    _agent: BaseAlgorithm | None = PrivateAttr(default=None)
 
     def __init__(self, **data: Any) -> None:
         """Constructor of the base parser.
@@ -98,7 +98,7 @@ class BaseParser(BaseModel):
 
         but reinitialize the agent.
         """
-        train_env: Optional[VecEnv] = None
+        train_env: VecEnv | None = None
         validation_environment = self._create_validation_environment()
         normalizer_divisor = (
             1
@@ -150,15 +150,14 @@ class BaseParser(BaseModel):
                 num = int(num / normalizer_divisor)
             callbacks.append(StopTrainingOnMaxEpisodes(max_episodes=num))
 
-        if self.validation:
-            if self.validation.should_add_callback():
-                callbacks.append(
-                    self.validation.get_callback(
-                        validation_environment.get_gym_environment(),
-                        save_location=self.save_location,
-                        normalizer_divisor=normalizer_divisor,
-                    )
+        if self.validation and self.validation.should_add_callback():
+            callbacks.append(
+                self.validation.get_callback(
+                    validation_environment.get_gym_environment(),
+                    save_location=self.save_location,
+                    normalizer_divisor=normalizer_divisor,
                 )
+            )
 
         self.get_logger().info(
             f"The environment is now trained for {self.number_of_episodes} "
@@ -174,7 +173,7 @@ class BaseParser(BaseModel):
         self.save_model()
         self.evaluate_model(validation_environment)
 
-    def save_model(self, file_name: Optional[str] = None) -> str:
+    def save_model(self, file_name: str | None = None) -> str:
         """Save the state of the agent.
 
         Saves the current agent to the specified location or to a default
@@ -201,7 +200,7 @@ class BaseParser(BaseModel):
 
     def evaluate_model(
         self,
-        validation_env: Union[None, Environment] = None,
+        validation_env: None | Environment = None,
         throw_error_if_none: bool = False,
     ) -> None:
         """Validate the current agent.
@@ -271,7 +270,7 @@ class BaseParser(BaseModel):
 
     def _create_validation_environment(
         self, throw_error_if_none: bool = False
-    ) -> Optional[Environment]:
+    ) -> Environment | None:
         """Creates a validation environment.
 
         Args:

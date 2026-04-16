@@ -1,6 +1,6 @@
 """Module Raiser optional dependency for modules."""
 
-from typing import Any, Optional
+from typing import Any
 
 
 class ModuleImportRaiser:
@@ -12,9 +12,7 @@ class ModuleImportRaiser:
     Examples are `splinepy`, `torchvision`, and `imageio`.
     """
 
-    def __init__(
-        self, lib_name: str, error_mesg: Optional[str] = None
-    ) -> None:
+    def __init__(self, lib_name: str, error_mesg: str | None = None) -> None:
         """Constructor of object of class ModuleImportRaiser.
 
         Args:
@@ -41,7 +39,7 @@ class ModuleImportRaiser:
         """
         raise ImportError(self._message)
 
-    def __getattr__(self, __name: str) -> Any:
+    def __getattr__(self, name: str) -> Any:
         """Dummy method for object.__name.
 
         Is called when any attribute of the object is accessed by object.attr.
@@ -53,15 +51,15 @@ class ModuleImportRaiser:
         # else:
         raise ImportError(self._message)
 
-    def __setattr__(self, __name: str, __value: Any) -> None:
+    def __setattr__(self, name: str, __value: Any) -> None:
         """Dummy method for object.__name = __value.
 
         Is called when any attribute of the object is set by object.attr = new.
         Will notify the user, that the functionality is not accessible and how
         to proceed to access the functionality.
         """
-        if __name == "_message":
-            object.__setattr__(self, __name, __value)
+        if name == "_message":
+            object.__setattr__(self, name, __value)
         else:
             raise ImportError(self._message)
 

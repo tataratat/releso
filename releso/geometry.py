@@ -4,7 +4,9 @@ File holds all classes which define the geometry and with that also the action
 definition of the problem.
 """
 
-from typing import Any, List, Optional, Tuple, Union
+from __future__ import annotations
+
+from typing import Any
 from uuid import UUID
 
 import numpy as np
@@ -25,7 +27,7 @@ except ImportError as err:  # pragma: no cover
 
     FFD = ModuleImportRaiser("splinepy - FFD", err)
 
-ShapeTypes = Union[ShapeDefinition, BSplineDefinition, NURBSDefinition]
+ShapeTypes = ShapeDefinition | BSplineDefinition | NURBSDefinition
 
 
 class Geometry(BaseModel):
@@ -36,7 +38,7 @@ class Geometry(BaseModel):
     #: the action space. If only a single shape is used this can be
     #: a single shape definition, if multiple shapes are used this can be
     #: a list of shape definitions.
-    shape_definition: Union[ShapeTypes, List[ShapeTypes]]
+    shape_definition: ShapeTypes | list[ShapeTypes]
     #: use the action space for the observations. If this is set to False
     #: please note that you need to define your own observation via a
     #: :py:class:`releso.spor.SPORObject`
@@ -51,15 +53,15 @@ class Geometry(BaseModel):
     reset_with_random_action_values: bool = False
 
     #: saved list of all available actions
-    _actions: List[VariableLocation] = PrivateAttr()
+    _actions: list[VariableLocation] = PrivateAttr()
     #: positions of all actions values of the previous step
-    _last_actions: List[VariableLocation] = PrivateAttr(default=None)
+    _last_actions: list[VariableLocation] = PrivateAttr(default=None)
 
-    def _get_actions(self) -> List[VariableLocation]:
+    def _get_actions(self) -> list[VariableLocation]:
         """Get the actions defined by the shape definition.
 
         Returns:
-            List[VariableLocation]: List of all actions defined by the
+            list[VariableLocation]: List of all actions defined by the
                 shape_definition.
         """
         if isinstance(self.shape_definition, list):
@@ -91,11 +93,11 @@ class Geometry(BaseModel):
         """
         self._actions = self._get_actions()
 
-    def get_parameter_values(self) -> List[List[float]]:
+    def get_parameter_values(self) -> list[list[float]]:
         """Return all control_points of the spline.
 
         Returns:
-            List[List[float]]: Nested list of control_points.
+            list[list[float]]: Nested list of control_points.
         """
         if isinstance(self.shape_definition, list):
             return [
@@ -104,7 +106,9 @@ class Geometry(BaseModel):
         else:
             return self.shape_definition.get_parameter_values()
 
-    def apply_action(self, action: Union[List[float], int]) -> Optional[Any]:
+    def apply_action(
+        self, action: list[float] | int
+    ) -> list[list[float]] | None:
         """Function that applies a given action to the Spline.
 
         Args:
@@ -122,13 +126,14 @@ class Geometry(BaseModel):
                 f"Setting discrete action, of variable {action_index}."
             )
             self._actions[action_index].apply_discrete_action(increasing)
-            # TODO check if this is correct
         else:
-            for new_value, action_obj in zip(action, self._actions):
+            for new_value, action_obj in zip(
+                action, self._actions, strict=True
+            ):
                 action_obj.apply_continuous_action(new_value)
         return self.apply()
 
-    def apply(self) -> Optional[Any]:
+    def apply(self) -> list[list[float]]:
         """Function which applies the current action values to the geometry.
 
         Overwrite if the geometry is represented by more than the shape
@@ -143,7 +148,7 @@ class Geometry(BaseModel):
         subclasses. If you need the control_points use the relevant function.
 
         Returns:
-            List[List[float]]: Current control points of the shape.
+            list[list[float]]: Current control points of the shape.
         """
         return self.get_parameter_values()
 
@@ -177,7 +182,7 @@ class Geometry(BaseModel):
         else:
             return spaces.Box(low=-1, high=1, shape=(len(self._actions),))
 
-    def get_observation_definition(self) -> Tuple[str, ObservationType]:
+    def get_observation_definition(self) -> tuple[str, ObservationType]:
         """Return the geometry observation definition.
 
         The geometry observation by default just includes the action space of
@@ -196,7 +201,7 @@ class Geometry(BaseModel):
             low=0, high=1, shape=(len(self._actions),), dtype=np.float32
         )
 
-    def get_observation(self) -> Optional[np.ndarray]:
+    def get_observation(self) -> np.ndarray | None:
         """Returns the current observations.
 
         For the basic geometry it is possible to define the current values of
@@ -212,7 +217,7 @@ class Geometry(BaseModel):
             var_loc.current_position for var_loc in self._actions
         ])
 
-    def reset(self, validation_id: Optional[int] = None) -> Any:
+    def reset(self, validation_id: int | None = None) -> Any:
         """Resets the geometry to its initial values."""
         if self.reset_with_random_action_values:
             self.apply_random_action(validation_id)
@@ -224,7 +229,7 @@ class Geometry(BaseModel):
                 self.shape_definition.reset()
         return self.apply()
 
-    def apply_random_action(self, seed: Optional[str] = None):
+    def apply_random_action(self, seed: str | None = None):
         """Apply a random continuous action.
 
         Applying a random continuous action to all movable control point
@@ -232,7 +237,7 @@ class Geometry(BaseModel):
         environment.
 
         Args:
-            seed (Optional[str], optional): Seed for the generation of the
+            seed (str | None, optional): Seed for the generation of the
                 random action. The same seed will result in always the same
                 action. This functionality is chosen to make validation
                 possible. If None (default) a random seed will be used and
@@ -247,7 +252,7 @@ class Geometry(BaseModel):
         seed = _parse_string_to_int(str(seed)) if seed is not None else seed
         self.get_logger().debug(
             f"A random action is applied during reset with the following "
-            f"seed {str(seed)}"
+            f"seed {seed!s}"
         )
         rng_gen = np.random.default_rng(seed)
         if self.discrete_actions:
@@ -274,7 +279,7 @@ class FFDGeometry(Geometry):
     """FFD based variable shape."""
 
     mesh: MeshTypes
-    export_mesh: Optional[MeshExporter] = None
+    export_mesh: MeshExporter | None = None
 
     #: FreeFormDeformation used for the spline based shape optimization
     _FFD: None = PrivateAttr()
@@ -311,25 +316,27 @@ class FFDGeometry(Geometry):
         if self.export_mesh:
             self.export_mesh.adapt_export_path(environment_id=environment_id)
 
-    def apply_action(self, action: Union[List[float], int]) -> Optional[Any]:
+    def apply_action(
+        self, action: list[float] | int
+    ) -> list[list[float]] | None:
         """Function that applies a given action to the Spline.
 
         Args:
-            action (Union[List[float], int]):  Action value depends on if the
+            action (list[float] | int):  Action value depends on if the
                 ActionSpace is discrete (int - Signifier of the action) or
-                Continuous (List[float] - Value for each continuous variable.)
+                Continuous (list[float] - Value for each continuous variable.)
         """
         return super().apply_action(action)
 
-    def apply(self) -> Optional[Any]:
+    def apply(self) -> list[list[float]] | None:
         """Apply the shape via FFD on to the geometry.
 
         Returns:
-            Optional[Any]: Return the correct values.
+            list[list[float]] | None: Return the correct values.
         """
         return self.apply_ffd()
 
-    def apply_ffd(self, path: Optional[str] = None) -> Union[str, np.ndarray]:
+    def apply_ffd(self, path: str | None = None) -> str | np.ndarray:
         """Apply FFD for the current shape.
 
         Might move in the future to a SPORStep. Can be deactivated with
@@ -339,12 +346,12 @@ class FFDGeometry(Geometry):
         and export the resulting mesh to the path given.
 
         Args:
-            path (Optional[str], optional):
+            path (str | None, optional):
                 Path to where the deformed mesh was exported to or the of no
                 export wanted the vertices of the mesh. Defaults to None.
 
         Returns:
-            Union[str, np.ndarray]: Path to the exported mesh file or the
+            str | np.ndarray: Path to the exported mesh file or the
                 vertices of the mesh.
         """
         self._FFD.spline = self.shape_definition.get_shape()
@@ -357,4 +364,4 @@ class FFDGeometry(Geometry):
             return self._FFD.mesh.vertices
 
 
-GeometryTypes = Union[Geometry, FFDGeometry]
+GeometryTypes = Geometry | FFDGeometry

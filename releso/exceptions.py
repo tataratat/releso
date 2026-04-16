@@ -5,7 +5,6 @@ import logging
 import os
 import platform
 import sys
-from typing import List
 
 from releso.util.logger import get_parser_logger
 
@@ -32,7 +31,7 @@ class Stylings(enum.Enum):
         Returns:
             str: encoded enum value.
         """
-        return "%s" % self.value
+        return f"{self.value!s}"
 
 
 def check_if_color_is_supported_in_console() -> bool:
@@ -47,12 +46,10 @@ def check_if_color_is_supported_in_console() -> bool:
         if (hasattr(handle, "isatty") and handle.isatty()) or (
             "TERM" in os.environ and os.environ["TERM"] == "ANSI"
         ):
-            if platform.system() == "Windows" and not (
-                "TERM" in os.environ and os.environ["TERM"] == "ANSI"
-            ):
-                return False
-            else:
-                return True
+            return not (
+                platform.system() == "Windows"
+                and not ("TERM" in os.environ and os.environ["TERM"] == "ANSI")
+            )
         else:
             return False
     return False
@@ -62,7 +59,7 @@ def check_if_color_is_supported_in_console() -> bool:
 color_supported = check_if_color_is_supported_in_console()
 
 
-def output_styling(message: str, stylings: List[Stylings]) -> str:
+def output_styling(message: str, stylings: list[Stylings]) -> str:
     """Style the string according to the given styles.
 
     If ANSI styling is available the message is styled by an the defined

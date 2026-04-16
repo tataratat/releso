@@ -3,21 +3,22 @@ name = "releso"
 authors = [
     {name = "Clemens Fricke", email = "clemens.david.fricke@tuwien.ac.at"}
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license-files = ["LICENSE"]
 license = "MIT"
 classifiers = [
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+#        "Programming Language :: Python :: 3.14",
         "Natural Language :: English",
         "Topic :: Scientific/Engineering",
 ]
 dependencies = [
     "pydantic<2",
+    "torch<2.8",
     "stable-baselines3",
     "tensorboard",
     "hjson",

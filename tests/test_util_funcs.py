@@ -39,7 +39,12 @@ def test_json_encode(dictionary, wanted_value, capsys):
 
 def test_get_path_extension():
     ret_str = get_path_extension()
-    assert datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") in ret_str
+    assert (
+        datetime.datetime.now(tz=datetime.timezone.utc).strftime(
+            "%Y-%m-%d_%H-%M-%S"
+        )
+        in ret_str
+    )
 
 
 def test_join_infos():

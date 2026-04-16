@@ -22,7 +22,7 @@ from releso.__version__ import __version__
 # -- Project information -----------------------------------------------------
 
 project = "ReLeSO"
-copyright = "2023, Clemens Fricke"  # noqa: A001
+copyright = "2026, Clemens Fricke"
 author = "Clemens Fricke"
 
 # The full version, including alpha/beta/rc tags

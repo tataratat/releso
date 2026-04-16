@@ -5,10 +5,9 @@ Multi-Environment training and should work with all agents.
 """
 
 import copy
-from datetime import datetime
+from datetime import datetime, timezone
 from itertools import count
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -51,9 +50,9 @@ class EpisodeLogCallback(BaseCallback):
                 ["stdout", "csv"],
             )
 
-        self.inter_episode_dicts: Optional[
-            List[Dict[int, Union[List[float], int]]]
-        ] = None
+        self.inter_episode_dicts: list[dict[int, list[float] | int]] | None = (
+            None
+        )
 
         # concatenating the dataframe should be faster than appending to it
         self.last_exported_episode: int = -1
@@ -62,12 +61,12 @@ class EpisodeLogCallback(BaseCallback):
         #  data to the dataframe without knowing the index. (append exists but
         #  is deprecated) Has probably something to do with allocating new
         #  memory and pandas not wanting to actually be used for this use case.
-        self.episode_rewards: List[List[float]] = []
-        self.episode_n_steps: List[int] = []
-        self.episode_steps_total: List[int] = []
-        self.episode_wall_time: List[str] = []
-        self.episode_end: List[Optional[str]] = []
-        self.environment_id: List[int] = []
+        self.episode_rewards: list[list[float]] = []
+        self.episode_n_steps: list[int] = []
+        self.episode_steps_total: list[int] = []
+        self.episode_wall_time: list[str] = []
+        self.episode_end: list[str | None] = []
+        self.environment_id: list[int] = []
 
     def _export(self):
         """Function exports the current information into a csv file."""
@@ -108,9 +107,7 @@ class EpisodeLogCallback(BaseCallback):
         """
         # first time setup of local vars for each environment
         if self.inter_episode_dicts is None:
-            self.inter_episode_dicts: List[
-                Dict[str, Union[List[float], int]]
-            ] = []
+            self.inter_episode_dicts: list[dict[str, list[float] | int]] = []
             for _ in range(len(self.locals["dones"])):
                 self.inter_episode_dicts.append({
                     "current_episode_rewards": [],
@@ -136,12 +133,12 @@ class EpisodeLogCallback(BaseCallback):
                 )
                 loc_vars["last_start_step"] = self.n_calls + 1
                 self.episode_steps_total.append(self.num_timesteps)
-                self.episode_wall_time.append(str(datetime.now()))
-                reset_reason = (
-                    None
-                    if "reset_reason" not in info
-                    else info["reset_reason"]
+                self.episode_wall_time.append(
+                    datetime.now(tz=timezone.utc).strftime(
+                        "%Y-%m-%d %H:%M:%S.%f"
+                    )
                 )
+                reset_reason = info.get("reset_reason", None)
                 self.episode_end.append(reset_reason)
                 self.environment_id.append(idx)
                 if reset_reason == "srunError-main_solver":  # pragma: no cover
@@ -205,12 +202,10 @@ class StepLogCallback(BaseCallback):
                 ["stdout", "csv"],
             )
         self._logger.info(
-            (
-                "The StepLogCallback should only be used for debugging purposes"
-                " and only for use-cases with a smallish observation space."
-                " Otherwise it will create a lot of data and slow down the"
-                " training process. Use with caution!"
-            )
+            "The StepLogCallback should only be used for debugging purposes"
+            " and only for use-cases with a smallish observation space."
+            " Otherwise it will create a lot of data and slow down the"
+            " training process. Use with caution!"
         )
         self._reset_internal_storage()
 

@@ -82,7 +82,9 @@ def test_base_model_convert_to_pathlib_add_datetime(test_input):
     else:
         simple_path = pathlib.Path(
             test_input.format(
-                datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                datetime.datetime.now(tz=datetime.timezone.utc).strftime(
+                    "%Y-%m-%d_%H-%M-%S"
+                )
             )
         ).resolve()
     result = BaseModel.convert_to_pathlib_add_datetime(test_input)
