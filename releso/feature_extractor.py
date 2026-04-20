@@ -3,12 +3,12 @@
 These are implemented in a more or less slapdash fashion. Use at own Risk.
 
 
-Deprecated: This might be deprecated in the future since since torchvision
+Deprecated: This might be deprecated in the future since torchvision
 might get deprecated in the future. I will keep it in as long as it does not make
-to many problems. If it does, I will remove it.
+too many problems. If it does, I will remove it.
 
 There is a bug for torch>=2.8 (torchvision>=0.23) where it can't load the models.
-If you need to use the feature extractor please pin the torch version. (Can not be
+If you need to use the feature extractor please pin the torch version. (Cannot be
 used with python>=3.14).
 """
 
