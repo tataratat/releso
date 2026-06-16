@@ -593,6 +593,41 @@ def plot_step_log(
         )
     selected_eps = df.loc[mask, "episodes"].unique()[::episode_step]
     df = df[df["episodes"].isin(selected_eps)]
+    # Filter only the selected episodes
+    max_idx = df["episodes"].max()
+    if episode_end is None or episode_end > max_idx:
+        episode_end = max_idx
+    # selected episode numbers do not necessarily match the filter applied. The
+    # filter does not directly filter for episode number but filters the whole
+    # list of episodes, which can have missing episodes, due to episodes
+    # generated outside the environment id chosen.
+    try:
+        idx_start = df[df["episodes"] >= episode_start].index[0]
+        idx_end = df[df["episodes"] <= episode_end].index[-1]
+    except IndexError as err:
+        raise IndexError(
+            f"Could not find any episode in the range {episode_start} to {episode_end}. "
+            f"The available episodes range from {df['episodes'].unique().min()} "
+            f"to {df['episodes'].unique().max()}"
+        ) from err
+    selected_episodes = df.iloc[idx_start : idx_end + 1]["episodes"].unique()[
+        ::episode_step
+    ]
+    df = df[df["episodes"].isin(selected_episodes)]
+
+    # Create the interactive visualization
+
+    # Choose which obs dimensions to show in bottom subplot
+    design_var_names = df.columns[
+        df.columns.str.contains("design_variable_")
+    ].tolist()
+
+    # Choose which obs dimensions to show in top subplot
+    objective_names = df.columns[
+        df.columns.str.contains("objective_")
+    ].tolist()
+
+    # Get all unique episodes
     episodes = df["episodes"].unique()
 
     # ---------- Identify trace columns ----------
