@@ -22,6 +22,8 @@ dependencies = [
     "stable-baselines3",
     "tensorboard",
     "hjson",
+    "pandas",
+    "numpy",
 ]
 dynamic = [
     "version"
