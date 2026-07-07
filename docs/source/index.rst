@@ -8,17 +8,13 @@ Reinforcement Learning based Shape Optimization (ReLeSO)
 |Build Status| |Documentation Status|
 |PyPI| |Python| |License|
 
-.. |Build Status| image:: https://github.com/tataratat/releso/actions/workflows/build_and_upload_wheels.yml/badge.svg
-   :target: https://github.com/tataratat/releso
+.. |Build Status| image:: https://github.com/isosuite/releso/actions/workflows/build_and_upload_wheels.yml/badge.svg
+   :target: https://github.com/isosuite/releso
    :alt: PyPI - Version
 
 .. |Documentation Status| image:: https://readthedocs.org/projects/releso/badge/?version=latest
     :target: https://releso.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
-
-.. .. |codecov| image:: https://codecov.io/gh/clemensfricke/ReLeSO/branch/master/graph/badge.svg
-..     :target: https://codecov.io/gh/clemensfricke/ReLeSO
-..     :alt: Code Coverage
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/releso
     :target: https://pypi.org/project/releso/
@@ -29,7 +25,7 @@ Reinforcement Learning based Shape Optimization (ReLeSO)
     :alt: Python
 
 .. |License| image:: https://img.shields.io/pypi/l/releso
-    :target: https://github.com/tataratat/releso/blob/main/LICENSE
+    :target: https://github.com/isosuite/releso/blob/main/LICENSE
     :alt: PyPI - License
 
 **ReLeSO** stands for ``Reinforcement Learning based Shape Optimization`` and is a Python framework combining a spline-based shape optimization approach with reinforcement learning.
