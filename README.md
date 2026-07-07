@@ -3,7 +3,7 @@
 [![Read the docs](https://readthedocs.org/projects/releso/badge/?version=latest)](https://releso.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - Version](https://img.shields.io/pypi/v/releso)](https://pypi.org/project/releso/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/releso)](https://pypi.org/project/releso/)
-[![PyPI - License](https://img.shields.io/pypi/l/releso)](https://github.com/tataratat/releso/blob/main/LICENSE)
+[![PyPI - License](https://img.shields.io/pypi/l/releso)](https://github.com/isosuite/releso/blob/main/LICENSE)
 
 Releso is a Library/Framework for
 Reinforcement Learning based Shape Optimization. Please look into the
@@ -78,7 +78,7 @@ The packages can be installed via pip or conda with the following commands:
 
 If the spline-based shape optimization functionality is needed, the package
 ``splinepy`` is needed. Please visit
-[`splinepy` on github](https://github.com/tataratat/splinepy) for installation
+[`splinepy` on github](https://github.com/isosuite/splinepy) for installation
 instructions.
 
 **Development**
