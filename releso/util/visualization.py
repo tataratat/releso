@@ -617,16 +617,6 @@ def plot_step_log(
 
     # Create the interactive visualization
 
-    # Choose which obs dimensions to show in bottom subplot
-    design_var_names = df.columns[
-        df.columns.str.contains("design_variable_")
-    ].tolist()
-
-    # Choose which obs dimensions to show in top subplot
-    objective_names = df.columns[
-        df.columns.str.contains("objective_")
-    ].tolist()
-
     # Get all unique episodes
     episodes = df["episodes"].unique()
 
