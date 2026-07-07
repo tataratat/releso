@@ -3,7 +3,7 @@ name = "releso"
 authors = [
     {name = "Clemens Fricke", email = "clemens.david.fricke@tuwien.ac.at"}
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license-files = ["LICENSE"]
 license = "MIT"
 classifiers = [
@@ -12,7 +12,7 @@ classifiers = [
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
-    #    "Programming Language :: Python :: 3.14",
+        # "Programming Language :: Python :: 3.14",
         "Natural Language :: English",
         "Topic :: Scientific/Engineering",
 ]
@@ -32,10 +32,10 @@ file = "README.md"
 content-type = "text/markdown"
 
 [project.urls]
-homepage = "https://github.com/tataratat/releso"
+homepage = "https://github.com/isosuite/releso"
 documentation = "https://releso.readthedocs.io/en/latest/"
-issues = "https://github.com/tataratat/releso/issues"
-repository = "https://github.com/tataratat/releso.git"
+issues = "https://github.com/isosuite/releso/issues"
+repository = "https://github.com/isosuite/releso.git"
 
 [project.optional-dependencies]
 all = [

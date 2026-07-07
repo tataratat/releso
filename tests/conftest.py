@@ -189,7 +189,7 @@ def dir_save_location(clean_up_provider):
 @pytest.fixture
 def load_sample_file(request):
     file_name = request.param
-    base_url = "https://raw.githubusercontent.com/tataratat/samples/main/"
+    base_url = "https://raw.githubusercontent.com/isosuite/samples/main/"
     local_path = pathlib.Path(__file__).parent / "samples/"
     local_file = local_path / file_name
     local_file.parent.mkdir(parents=True, exist_ok=True)
