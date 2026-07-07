@@ -12,13 +12,13 @@ classifiers = [
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
-        # "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3.14",
         "Natural Language :: English",
         "Topic :: Scientific/Engineering",
 ]
 dependencies = [
     "pydantic<2",
-    "torch<2.8",
+    "torch>2.8",
     "stable-baselines3",
     "tensorboard",
     "hjson",
