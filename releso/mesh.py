@@ -1,9 +1,11 @@
 """File holds definition classes for the mesh implementation."""
 
+from __future__ import annotations
+
 import pathlib
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Literal
 
 from pydantic import Field, PrivateAttr
 from pydantic.class_validators import root_validator, validator
@@ -38,11 +40,11 @@ class MeshExporter(BaseModel):
     #: format to which the mesh should be exported to
     mesh_format: Literal["mixd"] = Field(default="mixd", alias="format")
     #: path to where the mesh should be exported to
-    export_path: Union[str, pathlib.Path]
+    export_path: str | pathlib.Path
 
     #: internal variable if the export path was changed from a different value.
     #: This is the value is returned when the export path is queried.
-    _export_path_changed: Optional[str] = PrivateAttr(default=None)
+    _export_path_changed: str | None = PrivateAttr(default=None)
 
     @root_validator(pre=True)
     @classmethod
@@ -67,7 +69,7 @@ class MeshExporter(BaseModel):
         if mesh_format == "mixd":
             if path.suffix == "":
                 path = path.with_name("_.xns")
-            elif not path.suffix == ".xns":
+            elif path.suffix != ".xns":
                 raise ParserException(
                     "MeshExporter",
                     "export_path",
@@ -131,10 +133,10 @@ class Mesh(BaseModel):
     """Abstract class used to read in the mesh file and load it."""
 
     #: path to the mesh file (might be not used in case of mixd )
-    path: Optional[Union[str, pathlib.Path]] = None
+    path: str | pathlib.Path | None = None
     #: Path to the default export location of the mesh during environment
     #: operations. (So that the solver can use it.)
-    export: Optional[MeshExporter]
+    export: MeshExporter | None
     #: Number of dimensions of the mesh.
     dimensions: conint(ge=1)
 
@@ -160,7 +162,7 @@ class Mesh(BaseModel):
         if self.export:
             self.export.adapt_export_path(environment_id=environment_id)
 
-    def get_export_path(self) -> Optional[pathlib.Path]:
+    def get_export_path(self) -> pathlib.Path | None:
         """Direct return of object variable.
 
         Returns:
@@ -185,7 +187,7 @@ class MixdMesh(Mesh):
 
     #: Please use either the path variable xor the mxyz variable, since if
     #: used both the used mxyz path might not be the one you think.
-    mxyz_path: Optional[FilePath] = Field(
+    mxyz_path: FilePath | None = Field(
         default=None,
         description="Please use either the path variable xor the"
         " mxyz variable, since if used both the used mxyz path might not be "
@@ -193,7 +195,7 @@ class MixdMesh(Mesh):
     )
     #: Please use either the path variable xor the mien variable, since if
     #: used both the used mien path might not be the one you think.
-    mien_path: Optional[FilePath] = Field(
+    mien_path: FilePath | None = Field(
         default=None,
         description="Please use either the path variable xor the"
         " mien variable, since if used both the used mien path might not be "
@@ -224,7 +226,7 @@ class MixdMesh(Mesh):
         )
         mesh = mixd.load(
             simplex=not self.hypercube,
-            volume=True if self.dimensions == 3 else False,
+            volume=self.dimensions == 3,
             mxyz=self.mxyz_path,
             mien=self.mien_path,
         )
@@ -233,7 +235,7 @@ class MixdMesh(Mesh):
 
     @root_validator
     @classmethod
-    def validate_mxyz_mien_path(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_mxyz_mien_path(cls, values: dict[str, Any]) -> dict[str, Any]:
         """Validator for the whole class.
 
         Path to mxyz and mien files are correctly given. If mxyz_path and
@@ -266,7 +268,7 @@ class MixdMesh(Mesh):
                 "Mesh files are defined by mxyz_path and mien_path."
             )
             return values
-        elif "path" in values.keys() and values["path"]:
+        elif values.get("path"):
             get_parser_logger().debug(
                 "Trying to find mxyz_path and mien_path from path variable."
             )
@@ -486,4 +488,4 @@ class MeshIOMesh(Mesh):
         return mesh
 
 
-MeshTypes = Union[MeshIOMesh, MixdMesh]
+MeshTypes = MeshIOMesh | MixdMesh

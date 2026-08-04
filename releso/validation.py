@@ -1,7 +1,9 @@
 """File holds the definition class for the validation."""
 
+from __future__ import annotations
+
 import pathlib
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from pydantic.class_validators import validator
 from pydantic.types import conint, conlist
@@ -23,7 +25,7 @@ class Validation(BaseModel):
     """
 
     #: How many timesteps should pass by learning between validation runs
-    validation_freq: Optional[conint(ge=1)]
+    validation_freq: conint(ge=1) | None
     #: List of validation items. This will be revised later on #TODO
     validation_values: conlist(float, min_items=1)
     #: Whether or not to save the best agent. If agent is not saved only
@@ -34,21 +36,21 @@ class Validation(BaseModel):
     validate_on_training_end: bool
     #: after how many timesteps inside a single episode should the episode be
     #: terminated.
-    max_timesteps_in_episode: Optional[conint(ge=1)] = None
+    max_timesteps_in_episode: conint(ge=1) | None = None
     #: Should the episode be terminated if the geometry representation has not
     #: changed between timesteps?
     end_episode_on_geometry_not_changed: bool = False
     #: What reward should be added to the step reward if the geometry was not
     #: changed for the defined number of steps.
-    reward_on_geometry_not_changed: Optional[float] = None
+    reward_on_geometry_not_changed: float | None = None
     #: What reward should be added to the step reward if the maximal timesteps
     #: per episode is exceeded.
-    reward_on_episode_exceeds_max_timesteps: Optional[float] = None
+    reward_on_episode_exceeds_max_timesteps: float | None = None
 
     @validator("reward_on_geometry_not_changed", always=True)
     @classmethod
     def check_if_reward_given_if_geometry_not_change_episode_killer_activated(
-        cls, value: float, values: Dict[str, Any]
+        cls, value: float, values: dict[str, Any]
     ) -> float:
         """Validator for reward_on_geometry_not_changed.
 
@@ -102,7 +104,7 @@ class Validation(BaseModel):
     @validator("reward_on_episode_exceeds_max_timesteps", always=True)
     @classmethod
     def check_if_reward_given_if_max_steps_killer_activated(
-        cls, value: float, values: Dict[str, Any]
+        cls, value: float, values: dict[str, Any]
     ) -> float:
         """Validator for reward_on_episode_exceeds_max_timesteps.
 
@@ -156,14 +158,12 @@ class Validation(BaseModel):
         Returns:
             bool: Return True if a validation callback is needed else False.
         """
-        if self.validation_freq > 0:
-            return True
-        return False
+        return self.validation_freq > 0
 
     def get_callback(
         self,
         eval_environment: GymEnv,
-        save_location: Optional[pathlib.Path] = None,
+        save_location: pathlib.Path | None = None,
         normalizer_divisor: int = 1,
     ) -> EvalCallback:
         """Creates the EvalCallback with the values given in this object.
@@ -197,7 +197,7 @@ class Validation(BaseModel):
 
     def end_validation(
         self, agent: BaseAlgorithm, environment: GymEnv
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Function is called at the end of a validation.
 
         All clean up and last evaluation is going in here.
@@ -218,7 +218,7 @@ class Validation(BaseModel):
         }
         return evaluate_policy(**variable_dict)
 
-    def get_environment_validation_parameters(self) -> Dict[str, Any]:
+    def get_environment_validation_parameters(self) -> dict[str, Any]:
         """Gather the validation arguments used to initialize validator.
 
         Gets the validation parameters that need to be send to the environment

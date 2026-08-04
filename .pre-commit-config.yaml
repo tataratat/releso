@@ -10,7 +10,7 @@ ci:
 #   - pre-commit
 #   - commit-msg
 default_language_version:
-    python: python3.11
+    python: python3.12
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -30,7 +30,7 @@ repos:
     -   id: mixed-line-ending
     -   id: trailing-whitespace
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.12.11
+  rev: v0.16.1
   hooks:
     # Run the linter.
     - id: ruff-check
@@ -40,7 +40,7 @@ repos:
     - id: ruff-format
       types_or: [ python, pyi ]
 - repo: https://github.com/compilerla/conventional-pre-commit
-  rev: v4.2.0
+  rev: v4.4.0
   hooks:
     - id: conventional-pre-commit
       # stages: [commit-msg]

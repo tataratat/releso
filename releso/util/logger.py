@@ -4,10 +4,11 @@ This file holds the verbosity definitions and helper functions for the logger
 used in this package.
 """
 
+from __future__ import annotations
+
 import enum
 import logging
 import pathlib
-from typing import Optional
 
 
 def get_parser_logger() -> logging.Logger:
@@ -37,7 +38,7 @@ def set_up_logger(
     log_file_location: pathlib.Path = pathlib.Path("."),
     verbosity: VerbosityLevel = VerbosityLevel.INFO,
     console_logging: bool = False,
-    logger: Optional[logging.Logger] = None,
+    logger: logging.Logger | None = None,
 ) -> logging.Logger:
     """Create a logger instance with a specified name.
 

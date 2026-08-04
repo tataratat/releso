@@ -7,8 +7,6 @@ plotting function exist but are not part of the library.
 This file is not tested due to it being very specific to the mixd/xns use case.
 """
 
-from typing import List
-
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -21,8 +19,8 @@ def get_tricontour_solution(
     connectivity: np.ndarray,
     solution: np.ndarray,
     sol_len: int,
-    limits_min: List[float],
-    limits_max: List[float],
+    limits_min: list[float],
+    limits_max: list[float],
 ) -> np.ndarray:  # pragma: no cover
     """_summary_.
 
@@ -40,7 +38,7 @@ def get_tricontour_solution(
     Returns:
         np.ndarray: _description_
     """
-    arrays: List[np.ndarray] = []
+    arrays: list[np.ndarray] = []
     for i in range(sol_len):
         fig = plt.figure(figsize=(width, height), dpi=dpi)
         if i == 2:  # pressure is special

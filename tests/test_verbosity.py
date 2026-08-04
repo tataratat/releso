@@ -97,12 +97,12 @@ def test_verbosity_default(
         with caplog.at_level(VerbosityLevel.DEBUG):
             verbosity = Verbosity(**calling_dict)
             assert (
-                f"Parser logger has logging level: {str(wanted_parser.value)}"
+                f"Parser logger has logging level: {wanted_parser.value!s}"
                 in caplog.text
             )
             assert (
                 f"Environment logger has logging level: "
-                f"{str(wanted_environment.value)}"
+                f"{wanted_environment.value!s}"
             ) in caplog.text
     else:
         verbosity = Verbosity(**calling_dict)
@@ -134,10 +134,13 @@ def test_verbosity_make_logfile_location_absolute(
     values = {}
     if add_save_path:
         values["save_location"] = dir_save_location
+    # The following test might have timing issues.
     ret_path = Verbosity.make_logfile_location_absolute(v, values)
     if add_save_path:
         assert ret_path == dir_save_location / v.format(
-            datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            datetime.datetime.now(tz=datetime.timezone.utc).strftime(
+                "%Y-%m-%d_%H-%M-%S"
+            )
         )
     else:
         if "{}" in v:
@@ -145,7 +148,9 @@ def test_verbosity_make_logfile_location_absolute(
                 ret_path
                 == pathlib.Path(
                     v.format(
-                        datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                        datetime.datetime.now(
+                            tz=datetime.timezone.utc
+                        ).strftime("%Y-%m-%d_%H-%M-%S")
                     )
                 ).resolve()
             )

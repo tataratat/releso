@@ -40,7 +40,7 @@ def test_base_agent_tensorboard_log(log_name, dir_save_location):
     if log_name:
         assert b_agent.get_next_tensorboard_experiment_name() == (
             f"{log_name}_"
-            f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+            f"{datetime.datetime.now(tz=datetime.timezone.utc).strftime('%Y-%m-%d_%H-%M-%S')}"
         )
     else:
         assert b_agent.get_next_tensorboard_experiment_name() is None
@@ -131,9 +131,7 @@ def test_base_training_agent(
         )
         assert (
             "logger"
-            in additional_kwargs["policy_kwargs"][
-                "features_extractor_kwargs"
-            ].keys()
+            in additional_kwargs["policy_kwargs"]["features_extractor_kwargs"]
         )
 
 
@@ -218,7 +216,7 @@ def test_pretrained_agent(
             assert (
                 ag.get_next_tensorboard_experiment_name()
                 == f"{tensorboard_log}_"
-                f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+                f"{datetime.datetime.now(tz=datetime.timezone.utc).strftime('%Y-%m-%d_%H-%M-%S')}"
             )
         else:
             assert ag.get_next_tensorboard_experiment_name() is None

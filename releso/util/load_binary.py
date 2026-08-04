@@ -8,7 +8,6 @@ This file is not tested due to it being very specific to the mixd/xns use case.
 
 import os
 from struct import unpack
-from typing import Tuple
 
 import numpy as np
 
@@ -48,7 +47,7 @@ def read_mixd_double(
 
 def load_mixd(
     mesh_file: str, mesh_dim: int, solution_file: str, ndof: int
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Read in the mesh and the solution of an XNS simulation.
 
     After reading in the XNS solution it is stored in the correct attributes

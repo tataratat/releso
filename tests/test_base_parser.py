@@ -1,5 +1,7 @@
-from typing import Any, Dict, List, Union
+from __future__ import annotations
+
 import pathlib
+from typing import Any
 
 import pytest
 
@@ -8,7 +10,7 @@ from releso.exceptions import ValidationNotSet
 
 
 def recursive_remove_save_location(
-    dict_to_clean: Union[List[Any], Dict[str, Any]],
+    dict_to_clean: list[Any] | dict[str, Any],
 ):
     if isinstance(dict_to_clean, list):
         for item in dict_to_clean:
@@ -17,9 +19,7 @@ def recursive_remove_save_location(
         if "save_location" in dict_to_clean:
             del dict_to_clean["save_location"]
         for value in dict_to_clean.values():
-            if isinstance(value, dict):
-                recursive_remove_save_location(value)
-            elif isinstance(value, list):
+            if isinstance(value, (dict, list)):
                 recursive_remove_save_location(value)
 
 

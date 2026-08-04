@@ -24,7 +24,9 @@ Note:
     fix for this problem is currently worked on.
 """
 
-from typing import Any, List, Union
+from __future__ import annotations
+
+from typing import Any
 
 import gymnasium
 
@@ -40,7 +42,7 @@ class GymEnvironment(gymnasium.Env):
     SbSOvRL.parser_environment.Environment class.
     """
 
-    metadata = {"render.modes": ["mesh"]}
+    metadata = {"render.modes": ["mesh"]}  # noqa: RUF012
 
     def __init__(self, action_space, observation_space) -> None:
         """Constructor for gym environment object.
@@ -56,7 +58,7 @@ class GymEnvironment(gymnasium.Env):
         self.action_space = action_space
         self.observation_space = observation_space
 
-    def step(self, action: Union[int, List[float]]) -> StepReturnType:
+    def step(self, action: int | list[float]) -> StepReturnType:
         """Dummy function definition for gym interface."""
 
     def reset(self) -> Any:

@@ -112,9 +112,9 @@ def test_spline_space_dimension_knot_vector(
         calling_dict["knot_vector"] = knot_vector
 
     if error:
-        with pytest.raises(ValidationError) as error:
+        with pytest.raises(ValidationError) as error_:
             spline_space_dimension = SplineSpaceDimension(**calling_dict)
-        assert msg in str(error.value)
+        assert msg in str(error_.value)
         return
     if msg:
         with caplog.at_level(verbosity_level, logger="ReLeSO_parser"):
@@ -230,17 +230,17 @@ def test_spline_definition_initiate(
         calling_dict["control_points"] = control_points
     # check if error is expected
     if error:
-        with pytest.raises(ValidationError) as error:
+        with pytest.raises(ValidationError) as error_:
             SplineDefinition(**calling_dict)
         assert " the prerequisite variable space_dimensions" in str(
-            error.value
+            error_.value
         )
         return
     # initiate the spline definition
     spline_definition = SplineDefinition(**calling_dict)
     for o_var, o_w_cur, o_w_min, o_w_max in zip(
         spline_definition.control_points,
-        *[wanted_control_points[key] for key in wanted_control_points.keys()],
+        *[wanted_control_points[key] for key in wanted_control_points],
     ):
         assert len(o_var) == len(o_w_cur) == len(o_w_min) == len(o_w_max)
         for var, w_cur, w_min, w_max in zip(
@@ -407,17 +407,16 @@ def test_nurbs_definition_initiate(
     convert,
     dir_save_location,
 ):
-    if convert:
-        if weights:
-            weights = [
-                VariableLocation(
-                    current_position=element,
-                    min_value=element - 1,
-                    max_value=element,
-                    save_location=dir_save_location,
-                )
-                for element in weights
-            ]
+    if convert and weights:
+        weights = [
+            VariableLocation(
+                current_position=element,
+                min_value=element - 1,
+                max_value=element,
+                save_location=dir_save_location,
+            )
+            for element in weights
+        ]
     init_dict = {
         "save_location": dir_save_location,
     }

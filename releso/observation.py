@@ -6,7 +6,7 @@ in cases where observations are depended on a previous step which errored out
 and could not be completed.
 """
 
-from typing import List, Literal, Tuple
+from typing import Literal
 
 import numpy as np
 from gymnasium.spaces import Box, Space
@@ -30,7 +30,7 @@ class ObservationDefinition(BaseModel):
     #: maximum of the range in which the observation is bound
     value_max: float
 
-    def get_observation_definition(self) -> Tuple[str, Space]:
+    def get_observation_definition(self) -> tuple[str, Space]:
         """Provide definition of the defined observations space.
 
         Returns a tuple of name and observation definition defined via the
@@ -70,12 +70,12 @@ class ObservationDefinitionMulti(ObservationDefinition):
     """
 
     #: Shape of the Observation space. List of number of elements per dimension
-    observation_shape: List[int]
+    observation_shape: list[int]
     #: Type of the Observation space. If float uses the value_min etc
     #: definition for the limits of the space. If CNN uses [0, 255] limits.
     value_type: Literal["float", "CNN"]
 
-    def get_observation_definition(self) -> Tuple[str, Space]:
+    def get_observation_definition(self) -> tuple[str, Space]:
         """Provide definition of the defined observations space.
 
         Returns a tuple of name and observation definition defined via the

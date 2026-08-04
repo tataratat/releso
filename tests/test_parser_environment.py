@@ -365,7 +365,7 @@ def test_parser_environment_observations_cnn(dir_save_location, default_shape):
     obs_space = env._define_observation_space()
     assert not env._flatten_observations
     n_envs = 0
-    for k in obs_space.spaces.keys():
+    for k in obs_space.spaces:
         assert k in ["cnn_observation", "geometry_observation"]
         n_envs += 1
     assert n_envs == 2
@@ -424,7 +424,7 @@ def test_parser_environment_observations_non_compressible(
     obs_space = env._define_observation_space()
     assert not env._flatten_observations
     n_envs = 0
-    for k in obs_space.spaces.keys():
+    for k in obs_space.spaces:
         assert k in ["test1", "test2", "test3", "geometry_observation"]
         n_envs += 1
     assert n_envs == 4
@@ -600,7 +600,7 @@ def test_parser_environment_non_geometry_observations(
                     "reward_on_error": -1,
                     "working_directory": str(dir_save_location),
                     "python_file_path": (
-                        f"{str(file_path)}/samples"
+                        f"{file_path!s}/samples"
                         "/spor_python_scripts_tests/file_exists_has_main.py"
                     ),
                     "use_communication_interface": True,
@@ -643,7 +643,7 @@ def test_parser_environment_validation(
                     "reward_on_error": -1,
                     "working_directory": str(dir_save_location),
                     "python_file_path": (
-                        f"{str(file_path)}/samples"
+                        f"{file_path!s}/samples"
                         "/spor_python_scripts_tests/file_exists_has_main.py"
                     ),
                     "use_communication_interface": True,
@@ -665,7 +665,8 @@ def test_parser_environment_validation(
     gym_env.reset()
     for _ in range(len(val_values)):
         _ = gym_env.step(2)
-        assert (val_v := env.get_validation_id()) in val_values
+        val_v = env.get_validation_id()
+        assert val_v in val_values
         gym_env.reset()
         val_values.remove(val_v)
     assert len(val_values) == 0

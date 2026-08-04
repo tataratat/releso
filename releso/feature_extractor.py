@@ -1,10 +1,21 @@
 """File defines the FeatureExtractors currently implemented in this framework.
 
 These are implemented in a more or less slapdash fashion. Use at own Risk.
+
+
+Deprecated: This might be deprecated in the future since torchvision
+might get deprecated in the future. I will keep it in as long as it does not make
+too many problems. If it does, I will remove it.
+
+There is a bug for torch>=2.8 (torchvision>=0.23) where it can't load the models.
+If you need to use the feature extractor please pin the torch version. (Cannot be
+used with python>=3.14).
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Literal, Optional
+from typing import Literal
 
 import torch as th
 from gymnasium import Space, spaces
@@ -14,7 +25,6 @@ from stable_baselines3.common.preprocessing import (
 )
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.type_aliases import TensorDict
-from torchvision import models, transforms
 
 
 class FeatureExtractor(BaseFeaturesExtractor):
@@ -31,7 +41,7 @@ class FeatureExtractor(BaseFeaturesExtractor):
         features_dim: int = 128,
         without_linear: bool = False,
         network_type: Literal["resnet18", "mobilenet_v2"] = "resnet18",
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ):
         """Constructor for normal feature extractor.
 
@@ -60,6 +70,8 @@ class FeatureExtractor(BaseFeaturesExtractor):
         super().__init__(observation_space, features_dim=features_dim)
         self.without_linear = without_linear
         # Define the network
+        from torchvision import models, transforms
+
         if network_type == "resnet18":
             pre_network = models.resnet18(
                 weights=models.ResNet18_Weights.IMAGENET1K_V1
@@ -198,7 +210,7 @@ class CombinedExtractor(BaseFeaturesExtractor):
         cnn_output_dim: int = 256,
         without_linear: bool = False,
         network_type: Literal["resnet18", "mobilenetv2"] = "resnet18",
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ):
         """Combined Feature extractor constructor.
 
