@@ -41,8 +41,6 @@ def add_save_location_if_elem_is_o_dict(
     elif isinstance(possible_value, list):
         for item in possible_value:
             add_save_location_if_elem_is_o_dict(item, save_location)
-    else:
-        pass
 
 
 class BaseModel(pydantic.BaseModel):
