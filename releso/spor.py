@@ -386,7 +386,7 @@ class SPORObjectExecutor(SPORObject):
         # v to validate directory path
         if not v.startswith("{}"):
             path = (
-                pathlib.Path(v.split("{}")[0])
+                pathlib.Path(v.split("{}", maxsplit=1)[0])
                 if "{}" in v
                 else pathlib.Path(v)
             )

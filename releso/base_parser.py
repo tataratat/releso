@@ -202,7 +202,7 @@ class BaseParser(BaseModel):
 
     def evaluate_model(
         self,
-        validation_env: None | Environment = None,
+        validation_env: Environment | None = None,
         throw_error_if_none: bool = False,
     ) -> None:
         """Validate the current agent.
